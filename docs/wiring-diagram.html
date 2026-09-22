@@ -1,0 +1,607 @@
+<title>Vending Controller Wiring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#EDF1F5; --surface:#FFFFFF; --surface-2:#DCE4EC;
+    --ink:#16232E; --ink-dim:#55677A; --line:#B7C4D0;
+    --accent:#B5651D; --accent-ink:#FFFFFF;
+    --net-power:#C4401F; --net-gnd:#16232E; --net-spi:#2A5FBF;
+    --net-tftctl:#0E8E80; --net-touch:#7C3FC4; --net-motor:#BE7710;
+    --net-coin:#3F8F2A; --net-lte:#B23A7E; --net-i2c:#B08A1E; --net-rfid:#4A4FC7;
+    --shadow: 0 1px 2px rgba(22,35,46,.06), 0 8px 24px rgba(22,35,46,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0A121C; --surface:#0F1B29; --surface-2:#15263A;
+      --ink:#E8EEF5; --ink-dim:#8FA3B8; --line:#25384E;
+      --accent:#E8944B; --accent-ink:#0A121C;
+      --net-power:#E0603F; --net-gnd:#C9D6E2; --net-spi:#6D9BF0;
+      --net-tftctl:#3FC4B4; --net-touch:#B587F5; --net-motor:#E3A03C;
+      --net-coin:#6FC456; --net-lte:#EA7DBC; --net-i2c:#E0C24E; --net-rfid:#8C90F0;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0A121C; --surface:#0F1B29; --surface-2:#15263A;
+    --ink:#E8EEF5; --ink-dim:#8FA3B8; --line:#25384E;
+    --accent:#E8944B; --accent-ink:#0A121C;
+    --net-power:#E0603F; --net-gnd:#C9D6E2; --net-spi:#6D9BF0;
+    --net-tftctl:#3FC4B4; --net-touch:#B587F5; --net-motor:#E3A03C;
+    --net-coin:#6FC456; --net-lte:#EA7DBC; --net-i2c:#E0C24E; --net-rfid:#8C90F0;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    padding:28px 20px 60px;
+  }
+  .page{max-width:1300px; margin:0 auto; display:flex; flex-direction:column; gap:28px;}
+
+  .eyebrow{
+    font-family:"IBM Plex Mono", ui-monospace, monospace;
+    font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--accent); font-weight:600; margin:0 0 6px;
+  }
+  h1{
+    font-family:"Barlow Condensed", ui-sans-serif, sans-serif;
+    font-weight:700; letter-spacing:.01em;
+    font-size:clamp(30px,4.2vw,44px); line-height:1.02; margin:0 0 10px;
+    text-wrap:balance;
+  }
+  .dek{
+    color:var(--ink-dim); font-size:15px; line-height:1.6; max-width:70ch; margin:0;
+  }
+  .dek code, td code{
+    font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:.92em;
+    background:var(--surface-2); padding:1px 5px; border-radius:4px; color:var(--ink);
+  }
+
+  header{border-bottom:1px solid var(--line); padding-bottom:20px;}
+
+  .figure-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); padding:18px 18px 14px;
+  }
+  figure{margin:0}
+  .diagram-row{display:flex; gap:22px; align-items:flex-start; flex-wrap:wrap;}
+  .diagram-row svg{flex:1 1 640px; min-width:320px; max-width:100%; height:auto; display:block;}
+  figcaption{
+    margin-top:12px; font-size:13px; color:var(--ink-dim); line-height:1.5;
+    border-top:1px dashed var(--line); padding-top:10px;
+  }
+
+  .legend{
+    flex:0 0 210px; display:flex; flex-direction:column; gap:8px;
+    font-family:"IBM Plex Mono", ui-monospace, monospace; font-size:11.5px;
+  }
+  .legend h3{
+    margin:0 0 2px; font-family:"IBM Plex Sans"; font-size:11px; font-weight:600;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--ink-dim);
+  }
+  .legend .row{display:flex; align-items:center; gap:8px;}
+  .swatch{width:22px; height:3px; border-radius:2px; flex:none;}
+  .swatch.dash{background-image:linear-gradient(90deg, currentColor 60%, transparent 0%); background-size:8px 3px; background-repeat:repeat-x;}
+  .legend .row span.lbl{color:var(--ink)}
+
+  section{display:flex; flex-direction:column; gap:12px;}
+  h2{
+    font-family:"Barlow Condensed", sans-serif; font-weight:700; font-size:22px;
+    letter-spacing:.01em; margin:0; color:var(--ink);
+  }
+  .tables{display:grid; grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); gap:18px;}
+  .tblock{
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    overflow:hidden; box-shadow:var(--shadow);
+  }
+  .tblock h3{
+    margin:0; padding:10px 14px; background:var(--surface-2);
+    font-family:"Barlow Condensed"; font-weight:600; font-size:17px; letter-spacing:.02em;
+    border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px;
+  }
+  .tblock h3 .dot{width:9px; height:9px; border-radius:50%; flex:none;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  thead th{
+    text-align:left; font-family:"IBM Plex Sans"; font-weight:600; font-size:11px;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--ink-dim);
+    padding:8px 14px; border-bottom:1px solid var(--line);
+  }
+  tbody td{padding:7px 14px; border-bottom:1px solid var(--line); vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  td.gpio{font-family:"IBM Plex Mono"; font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--ink); font-weight:500;}
+  td.note{color:var(--ink-dim); font-size:12.5px; line-height:1.45;}
+  .tfoot-note{padding:9px 14px; font-size:12px; color:var(--ink-dim); border-top:1px dashed var(--line); line-height:1.5; background:var(--surface-2);}
+
+  .titleblock{
+    border:1px solid var(--line); border-radius:12px; overflow:hidden;
+    background:var(--surface); box-shadow:var(--shadow);
+    display:grid; grid-template-columns:repeat(3,1fr);
+    font-family:"IBM Plex Mono", monospace;
+  }
+  .titleblock .cell{padding:10px 14px; border-right:1px solid var(--line);}
+  .titleblock .cell:last-child{border-right:none;}
+  .titleblock .k{display:block; font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:4px;}
+  .titleblock .v{font-size:12px; color:var(--ink); font-weight:500;}
+  .titleblock .cell.wide{grid-column:span 2;}
+
+  .tblock.full{grid-column:1 / -1;}
+  .tblock .scroll{overflow-x:auto;}
+  .tblock.full table{font-size:12.5px; min-width:760px;}
+  td.dir{font-family:"IBM Plex Mono", monospace; font-size:11px; color:var(--ink-dim); white-space:nowrap;}
+  tr.dim td{opacity:.6;}
+  tr.spare td.gpio{color:var(--net-coin); font-weight:600;}
+  .grp td{background:var(--surface-2); font-family:"Barlow Condensed", sans-serif;
+          font-weight:700; font-size:13px; letter-spacing:.05em; text-transform:uppercase;
+          color:var(--ink-dim); padding:6px 14px;}
+
+  @media (max-width:720px){
+    .titleblock{grid-template-columns:1fr;}
+    .titleblock .cell{border-right:none; border-bottom:1px solid var(--line);}
+    .titleblock .cell:last-child{border-bottom:none;}
+    .diagram-row{flex-direction:column;}
+    .legend{flex:none; flex-direction:row; flex-wrap:wrap;}
+  }
+
+  /* The complete pin map's table is deliberately wider than its column (five
+     dense columns, one of them prose) and relies on .scroll's overflow-x on
+     screen — a phone or a narrow window scrolls sideways for the Notes
+     column. Paper has no scrollbar: without this block, print/PDF export
+     clips that min-width at the page edge and silently cuts every Notes
+     cell off mid-sentence. Printing removes the min-width instead, so the
+     table shrinks to the page and the same text wraps to more lines rather
+     than disappearing. */
+  @media print{
+    .tblock .scroll{overflow:visible;}
+    .tblock.full table{min-width:0; width:100%; font-size:10.5px;}
+    .tblock.full td{padding:6px 10px;}
+  }
+</style>
+
+<div class="page">
+
+  <div class="titleblock">
+    <div class="cell"><span class="k">Title</span><span class="v">ESP32 Controller Wiring Reference</span></div>
+    <div class="cell"><span class="k">Project</span><span class="v">FTIPL 2.8 inch Disp Vending Machines</span></div>
+    <div class="cell"><span class="k">Date</span><span class="v">2026-09-20</span></div>
+  </div>
+
+  <header>
+    <p class="eyebrow">FTIPL Vending Machine &middot; Firmware-Sourced Reference</p>
+    <h1>ESP32 Controller Wiring</h1>
+    <p class="dek">Every net below is read directly from this firmware's pin constants — <code>Config.h</code>, <code>Core_04_Hardware.ino</code>, <code>Core_13_LTEModem.ino</code>, <code>Core_18_RTC.ino</code>, <code>Core_19_RFID.ino</code> — not a generic ESP32 pinout. Reflects a 5-motor build (<code>CFG_MOTOR_COUNT&nbsp;=&nbsp;5</code>), which is the maximum <code>Core_04_Hardware.ino</code> will now compile &mdash; a <code>static_assert</code> rejects 6. The RTC, the RFID reader and the coin acceptor on GPIO33 are implemented in firmware, not just wired here. Every ESP32 pin, including the unused and unusable ones, is accounted for in <a href="#pinmap">the complete pin map</a>.</p>
+  </header>
+
+  <section>
+    <div class="figure-card">
+      <div class="diagram-row">
+        <figure>
+          <svg viewBox="0 0 1300 900" role="img" aria-label="Wiring diagram: ESP32 DevKit at center, connected above to the ILI9341 display and XPT2046 touch controller over a shared SPI bus, left to a pulse coin acceptor on GPIO33 with an optional external pull-up resistor and, below that, a battery-backed DS3231 RTC module over I2C on GPIO14 and GPIO15, right to a 4G/LTE modem over UART2 with its own dedicated power supply and, below that, a YHY5225 RFID reader over a second UART on GPIO22 and GPIO34, and below all of that to a five-channel motor driver board that is powered from a separate 12 to 24 volt external supply and switches five DC motors labelled M1 through M5.">
+
+            <defs>
+              <marker id="dot" markerWidth="6" markerHeight="6" refX="3" refY="3">
+                <circle cx="3" cy="3" r="2.6" fill="currentColor"/>
+              </marker>
+            </defs>
+
+            <g font-family="IBM Plex Mono, monospace" font-size="11">
+
+            <!-- ===== DISPLAY + TOUCH BLOCK ===== -->
+            <rect x="420" y="30" width="320" height="112" rx="10" fill="var(--surface-2)" stroke="var(--ink)" stroke-opacity=".55"/>
+            <text x="580" y="60" text-anchor="middle" font-family="Barlow Condensed" font-weight="700" font-size="17" fill="var(--ink)">2.8&quot; TFT DISPLAY</text>
+            <text x="580" y="78" text-anchor="middle" fill="var(--ink-dim)" font-size="11">ILI9341 + XPT2046 touch (SPI)</text>
+            <text x="580" y="96" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">backlight LED tied straight to 3V3 — not GPIO-switched</text>
+
+            <!-- display bottom stubs -->
+            <!-- x positions: 3V3 450, GND 483, SCK 516, MISO 549, MOSI 582, CS 615, DC 648, RST 681, T_CS 710 -->
+            <g stroke-width="2" fill="none">
+              <line x1="450" y1="142" x2="450" y2="280" stroke="var(--net-power)"/>
+              <line x1="483" y1="142" x2="483" y2="280" stroke="var(--net-gnd)"/>
+              <line x1="516" y1="142" x2="516" y2="280" stroke="var(--net-spi)" stroke-width="3"/>
+              <line x1="549" y1="142" x2="549" y2="280" stroke="var(--net-spi)" stroke-width="3"/>
+              <line x1="582" y1="142" x2="582" y2="280" stroke="var(--net-spi)" stroke-width="3"/>
+              <line x1="615" y1="142" x2="615" y2="280" stroke="var(--net-tftctl)"/>
+              <line x1="648" y1="142" x2="648" y2="280" stroke="var(--net-tftctl)"/>
+              <line x1="681" y1="142" x2="681" y2="280" stroke="var(--net-tftctl)"/>
+              <line x1="710" y1="142" x2="710" y2="280" stroke="var(--net-touch)"/>
+            </g>
+            <g fill="var(--ink)">
+              <circle cx="450" cy="142" r="2.8" fill="var(--net-power)"/>
+              <circle cx="483" cy="142" r="2.8" fill="var(--net-gnd)"/>
+              <circle cx="516" cy="142" r="2.8" fill="var(--net-spi)"/>
+              <circle cx="549" cy="142" r="2.8" fill="var(--net-spi)"/>
+              <circle cx="582" cy="142" r="2.8" fill="var(--net-spi)"/>
+              <circle cx="615" cy="142" r="2.8" fill="var(--net-tftctl)"/>
+              <circle cx="648" cy="142" r="2.8" fill="var(--net-tftctl)"/>
+              <circle cx="681" cy="142" r="2.8" fill="var(--net-tftctl)"/>
+              <circle cx="710" cy="142" r="2.8" fill="var(--net-touch)"/>
+            </g>
+            <g fill="var(--ink-dim)" font-size="10">
+              <text x="450" y="165" text-anchor="middle">3V3</text>
+              <text x="483" y="180" text-anchor="middle">GND</text>
+              <text x="516" y="195" text-anchor="middle">SCK</text>
+              <text x="549" y="210" text-anchor="middle">MISO</text>
+              <text x="582" y="225" text-anchor="middle">MOSI</text>
+              <text x="615" y="240" text-anchor="middle">CS&#160;5</text>
+              <text x="648" y="255" text-anchor="middle">DC&#160;2</text>
+              <text x="681" y="240" text-anchor="middle">RST&#160;4</text>
+              <text x="710" y="225" text-anchor="middle">T_CS&#160;21</text>
+            </g>
+            <text x="549" y="155" fill="var(--net-spi)" font-size="9.5" text-anchor="middle">18&#183;19&#183;23</text>
+
+            <!-- ===== ESP32 BLOCK ===== -->
+            <rect x="440" y="280" width="280" height="280" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+            <text x="580" y="315" text-anchor="middle" font-family="Barlow Condensed" font-weight="700" font-size="19" fill="var(--ink)">ESP32 DEVKIT</text>
+            <text x="580" y="333" text-anchor="middle" fill="var(--ink-dim)" font-size="11">38-pin, USB Type-C</text>
+            <line x1="472" y1="350" x2="688" y2="350" stroke="var(--line)"/>
+            <text x="580" y="372" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">VSPI bus shared by</text>
+            <text x="580" y="386" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">display &amp; touch chip-selects</text>
+            <text x="580" y="430" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">5 GPIOs drive the motor</text>
+            <text x="580" y="444" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">driver board, not the motors</text>
+            <text x="580" y="488" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">UART2 &#8596; LTE modem</text>
+            <text x="580" y="502" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">UART1 &#8596; RFID reader</text>
+            <text x="580" y="516" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">GPIO33 &#8592; coin pulses</text>
+            <text x="580" y="530" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">I2C (14/15) &#8596; RTC module</text>
+            <text x="580" y="546" text-anchor="middle" fill="var(--ink-dim)" font-size="9.5">3.3V logic regulated on-board</text>
+
+            <!-- ===== COIN ACCEPTOR BLOCK ===== -->
+            <rect x="60" y="290" width="200" height="170" rx="10" fill="var(--surface-2)" stroke="var(--ink)" stroke-opacity=".55"/>
+            <text x="160" y="318" text-anchor="middle" font-family="Barlow Condensed" font-weight="700" font-size="16" fill="var(--ink)">COIN ACCEPTOR</text>
+            <text x="160" y="335" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">open-collector pulse output</text>
+            <text x="160" y="352" text-anchor="middle" fill="var(--ink-dim)" font-size="9.5">GPIO33 &#183; RISING edge, 5ms debounce</text>
+
+            <g stroke-width="2" fill="none">
+              <line x1="260" y1="340" x2="440" y2="340" stroke="var(--net-coin)"/>
+              <line x1="260" y1="420" x2="352" y2="420" stroke="var(--net-power)"/>
+              <line x1="388" y1="420" x2="440" y2="380" stroke="var(--net-power)"/>
+              <line x1="260" y1="400" x2="440" y2="400" stroke="var(--net-gnd)"/>
+            </g>
+            <!-- resistor zigzag on the 3V3 pull-up line -->
+            <polyline points="352,420 360,410 368,430 376,410 384,430 392,410 388,420" fill="none" stroke="var(--net-power)" stroke-width="2"/>
+            <text x="370" y="446" text-anchor="middle" fill="var(--net-power)" font-size="9.5">10k&#8486; pull-up (optional)</text>
+
+            <circle cx="260" cy="340" r="2.8" fill="var(--net-coin)"/>
+            <circle cx="440" cy="340" r="2.8" fill="var(--net-coin)"/>
+            <circle cx="260" cy="420" r="2.8" fill="var(--net-power)"/>
+            <circle cx="440" cy="380" r="2.8" fill="var(--net-power)"/>
+            <circle cx="260" cy="400" r="2.8" fill="var(--net-gnd)"/>
+            <circle cx="440" cy="400" r="2.8" fill="var(--net-gnd)"/>
+
+            <text x="350" y="332" text-anchor="middle" fill="var(--net-coin)" font-size="10">GPIO 33 (pulse in)</text>
+            <text x="350" y="394" text-anchor="middle" fill="var(--net-gnd)" font-size="10">GND</text>
+            <text x="360" y="466" text-anchor="middle" fill="var(--ink-dim)" font-size="9.5">3V3</text>
+
+            <!-- ===== RTC MODULE BLOCK ===== -->
+            <rect x="60" y="470" width="200" height="100" rx="10" fill="var(--surface-2)" stroke="var(--ink)" stroke-opacity=".55"/>
+            <text x="160" y="497" text-anchor="middle" font-family="Barlow Condensed" font-weight="700" font-size="16" fill="var(--ink)">DS3231 RTC MODULE</text>
+            <text x="160" y="514" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">I2C &#183; battery-backed</text>
+            <text x="160" y="530" text-anchor="middle" fill="var(--ink-dim)" font-size="9.5">onboard CR2032 backup battery</text>
+            <text x="160" y="545" text-anchor="middle" fill="var(--net-i2c)" font-size="9.5" font-weight="600">3rd clock source (implemented)</text>
+
+            <g stroke-width="2" fill="none">
+              <line x1="260" y1="490" x2="440" y2="490" stroke="var(--net-power)"/>
+              <line x1="260" y1="510" x2="440" y2="510" stroke="var(--net-gnd)"/>
+              <line x1="260" y1="530" x2="440" y2="530" stroke="var(--net-i2c)" stroke-width="3"/>
+              <line x1="260" y1="550" x2="440" y2="550" stroke="var(--net-i2c)" stroke-width="3"/>
+            </g>
+            <circle cx="260" cy="490" r="2.8" fill="var(--net-power)"/><circle cx="440" cy="490" r="2.8" fill="var(--net-power)"/>
+            <circle cx="260" cy="510" r="2.8" fill="var(--net-gnd)"/><circle cx="440" cy="510" r="2.8" fill="var(--net-gnd)"/>
+            <circle cx="260" cy="530" r="2.8" fill="var(--net-i2c)"/><circle cx="440" cy="530" r="2.8" fill="var(--net-i2c)"/>
+            <circle cx="260" cy="550" r="2.8" fill="var(--net-i2c)"/><circle cx="440" cy="550" r="2.8" fill="var(--net-i2c)"/>
+
+            <text x="350" y="483" text-anchor="middle" fill="var(--net-power)" font-size="9.5">3V3</text>
+            <text x="350" y="505" text-anchor="middle" fill="var(--net-gnd)" font-size="9.5">GND</text>
+            <text x="350" y="524" text-anchor="middle" fill="var(--net-i2c)" font-size="9.5">SDA &#8594; GPIO14</text>
+            <text x="350" y="544" text-anchor="middle" fill="var(--net-i2c)" font-size="9.5">SCL &#8594; GPIO15</text>
+
+            <!-- ===== LTE MODEM BLOCK ===== -->
+            <rect x="920" y="290" width="200" height="170" rx="10" fill="var(--surface-2)" stroke="var(--ink)" stroke-opacity=".55"/>
+            <text x="1020" y="318" text-anchor="middle" font-family="Barlow Condensed" font-weight="700" font-size="16" fill="var(--ink)">4G / LTE MODEM</text>
+            <text x="1020" y="335" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">UART2 &#183; 115200 baud</text>
+
+            <g stroke-width="2" fill="none">
+              <line x1="720" y1="340" x2="920" y2="340" stroke="var(--net-lte)"/>
+              <line x1="720" y1="380" x2="920" y2="380" stroke="var(--net-lte)"/>
+              <line x1="720" y1="400" x2="920" y2="400" stroke="var(--net-gnd)"/>
+            </g>
+            <circle cx="720" cy="340" r="2.8" fill="var(--net-lte)"/>
+            <circle cx="920" cy="340" r="2.8" fill="var(--net-lte)"/>
+            <circle cx="720" cy="380" r="2.8" fill="var(--net-lte)"/>
+            <circle cx="920" cy="380" r="2.8" fill="var(--net-lte)"/>
+            <circle cx="720" cy="400" r="2.8" fill="var(--net-gnd)"/>
+            <circle cx="920" cy="400" r="2.8" fill="var(--net-gnd)"/>
+            <text x="820" y="332" text-anchor="middle" fill="var(--net-lte)" font-size="10">TX2&#160;17&#160;&#8594;&#160;RXD</text>
+            <text x="820" y="372" text-anchor="middle" fill="var(--net-lte)" font-size="10">RX2&#160;16&#160;&#8592;&#160;TXD</text>
+            <text x="820" y="394" text-anchor="middle" fill="var(--net-gnd)" font-size="10">GND (common)</text>
+
+            <!-- LTE dedicated supply, beside the modem so it stays clear of the RFID block below -->
+            <line x1="1120" y1="350" x2="1140" y2="350" stroke="var(--net-power)" stroke-width="2"/>
+            <line x1="1120" y1="370" x2="1140" y2="370" stroke="var(--net-gnd)" stroke-width="2"/>
+            <circle cx="1120" cy="350" r="2.8" fill="var(--net-power)"/><circle cx="1140" cy="350" r="2.8" fill="var(--net-power)"/>
+            <circle cx="1120" cy="370" r="2.8" fill="var(--net-gnd)"/><circle cx="1140" cy="370" r="2.8" fill="var(--net-gnd)"/>
+            <rect x="1140" y="325" width="140" height="90" rx="8" fill="var(--surface-2)" stroke="var(--net-power)" stroke-dasharray="4 3"/>
+            <text x="1210" y="349" text-anchor="middle" fill="var(--ink)" font-size="10.5" font-weight="600">DEDICATED SUPPLY</text>
+            <text x="1210" y="365" text-anchor="middle" fill="var(--ink-dim)" font-size="10">3.7&#8211;4.4V</text>
+            <text x="1210" y="380" text-anchor="middle" fill="var(--ink-dim)" font-size="9.5">&#8805;2A burst</text>
+            <text x="1210" y="404" text-anchor="middle" fill="var(--ink-dim)" font-size="9">never the ESP32 5V pin</text>
+
+            <!-- ===== RFID MODULE BLOCK ===== -->
+            <rect x="920" y="470" width="200" height="100" rx="10" fill="var(--surface-2)" stroke="var(--ink)" stroke-opacity=".55"/>
+            <text x="1020" y="497" text-anchor="middle" font-family="Barlow Condensed" font-weight="700" font-size="16" fill="var(--ink)">YHY5225 RFID READER</text>
+            <text x="1020" y="514" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">13.56MHz &#183; ISO14443A/MIFARE</text>
+            <text x="1020" y="530" text-anchor="middle" fill="var(--ink-dim)" font-size="9.5">UART1, read/write (TX + RX)</text>
+            <text x="1020" y="545" text-anchor="middle" fill="var(--net-rfid)" font-size="9.5" font-weight="600">19200 8N1, confirmed working</text>
+
+            <g stroke-width="2" fill="none">
+              <line x1="720" y1="490" x2="920" y2="490" stroke="var(--net-power)"/>
+              <line x1="720" y1="510" x2="920" y2="510" stroke="var(--net-gnd)"/>
+              <line x1="720" y1="530" x2="920" y2="530" stroke="var(--net-rfid)" stroke-width="3"/>
+              <line x1="720" y1="550" x2="920" y2="550" stroke="var(--net-rfid)" stroke-width="3"/>
+            </g>
+            <circle cx="720" cy="490" r="2.8" fill="var(--net-power)"/><circle cx="920" cy="490" r="2.8" fill="var(--net-power)"/>
+            <circle cx="720" cy="510" r="2.8" fill="var(--net-gnd)"/><circle cx="920" cy="510" r="2.8" fill="var(--net-gnd)"/>
+            <circle cx="720" cy="530" r="2.8" fill="var(--net-rfid)"/><circle cx="920" cy="530" r="2.8" fill="var(--net-rfid)"/>
+            <circle cx="720" cy="550" r="2.8" fill="var(--net-rfid)"/><circle cx="920" cy="550" r="2.8" fill="var(--net-rfid)"/>
+
+            <text x="820" y="483" text-anchor="middle" fill="var(--net-power)" font-size="9.5">3V3</text>
+            <text x="820" y="505" text-anchor="middle" fill="var(--net-gnd)" font-size="9.5">GND</text>
+            <text x="820" y="524" text-anchor="middle" fill="var(--net-rfid)" font-size="9.5">GPIO22 &#8594; RXD</text>
+            <text x="820" y="544" text-anchor="middle" fill="var(--net-rfid)" font-size="9.5">GPIO34 &#8592; TXD</text>
+
+            <!-- ===== ESP32 to MOTOR DRIVER (staircase fan-out) ===== -->
+            <!-- esp bottom x: 460 GND,500 M1,540 M2,580 M3,620 M4,660 M5 at y=560 -->
+            <!-- driver top x: 320 GND,388 M1,484 M2,580 M3,676 M4,772 M5 at y=650 -->
+            <g stroke-width="2" fill="none">
+              <polyline points="460,560 460,600 320,600 320,650" stroke="var(--net-gnd)"/>
+              <polyline points="500,560 500,600 388,600 388,650" stroke="var(--net-motor)"/>
+              <polyline points="540,560 540,608 484,608 484,650" stroke="var(--net-motor)"/>
+              <polyline points="580,560 580,650" stroke="var(--net-motor)"/>
+              <polyline points="620,560 620,608 676,608 676,650" stroke="var(--net-motor)"/>
+              <polyline points="660,560 660,600 772,600 772,650" stroke="var(--net-motor)"/>
+            </g>
+            <g fill="var(--ink)">
+              <circle cx="460" cy="560" r="2.8" fill="var(--net-gnd)"/><circle cx="320" cy="650" r="2.8" fill="var(--net-gnd)"/>
+              <circle cx="500" cy="560" r="2.8" fill="var(--net-motor)"/><circle cx="388" cy="650" r="2.8" fill="var(--net-motor)"/>
+              <circle cx="540" cy="560" r="2.8" fill="var(--net-motor)"/><circle cx="484" cy="650" r="2.8" fill="var(--net-motor)"/>
+              <circle cx="580" cy="560" r="2.8" fill="var(--net-motor)"/><circle cx="580" cy="650" r="2.8" fill="var(--net-motor)"/>
+              <circle cx="620" cy="560" r="2.8" fill="var(--net-motor)"/><circle cx="676" cy="650" r="2.8" fill="var(--net-motor)"/>
+              <circle cx="660" cy="560" r="2.8" fill="var(--net-motor)"/><circle cx="772" cy="650" r="2.8" fill="var(--net-motor)"/>
+            </g>
+            <g font-size="9.5" text-anchor="middle">
+              <text x="390" y="596" fill="var(--net-gnd)">GND ref</text>
+              <text x="447" y="596" fill="var(--net-motor)">13&#160;&#8594;&#160;M1</text>
+              <text x="512" y="622" fill="var(--net-motor)">25&#160;&#8594;&#160;M2</text>
+              <text x="596" y="600" fill="var(--net-motor)" text-anchor="start">26&#160;&#8594;&#160;M3</text>
+              <text x="648" y="622" fill="var(--net-motor)">27&#160;&#8594;&#160;M4</text>
+              <text x="716" y="596" fill="var(--net-motor)">32&#160;&#8594;&#160;M5</text>
+            </g>
+
+            <!-- ===== MOTOR DRIVER BLOCK ===== -->
+            <rect x="280" y="650" width="600" height="90" rx="10" fill="var(--surface-2)" stroke="var(--ink)" stroke-opacity=".55"/>
+            <text x="580" y="678" text-anchor="middle" font-family="Barlow Condensed" font-weight="700" font-size="16" fill="var(--ink)">MOTOR DRIVER BOARD</text>
+            <text x="580" y="695" text-anchor="middle" fill="var(--ink-dim)" font-size="10.5">5-channel MOSFET / opto-relay array</text>
+            <text x="580" y="712" text-anchor="middle" fill="var(--ink-dim)" font-size="10">polarity set by CFG_MOTOR_ACTIVE_HIGH</text>
+            <text x="580" y="728" text-anchor="middle" fill="var(--ink-dim)" font-size="10">to match the board actually fitted</text>
+
+            <!-- driver bottom to motors -->
+            <g stroke-width="2" fill="none" stroke="var(--net-motor)">
+              <line x1="388" y1="740" x2="388" y2="774"/>
+              <line x1="484" y1="740" x2="484" y2="774"/>
+              <line x1="580" y1="740" x2="580" y2="774"/>
+              <line x1="676" y1="740" x2="676" y2="774"/>
+              <line x1="772" y1="740" x2="772" y2="774"/>
+            </g>
+            <g font-family="IBM Plex Mono, monospace" font-weight="600" font-size="13">
+              <circle cx="388" cy="800" r="25" fill="var(--surface)" stroke="var(--net-motor)" stroke-width="2"/>
+              <text x="388" y="805" text-anchor="middle" fill="var(--ink)">M1</text>
+              <circle cx="484" cy="800" r="25" fill="var(--surface)" stroke="var(--net-motor)" stroke-width="2"/>
+              <text x="484" y="805" text-anchor="middle" fill="var(--ink)">M2</text>
+              <circle cx="580" cy="800" r="25" fill="var(--surface)" stroke="var(--net-motor)" stroke-width="2"/>
+              <text x="580" y="805" text-anchor="middle" fill="var(--ink)">M3</text>
+              <circle cx="676" cy="800" r="25" fill="var(--surface)" stroke="var(--net-motor)" stroke-width="2"/>
+              <text x="676" y="805" text-anchor="middle" fill="var(--ink)">M4</text>
+              <circle cx="772" cy="800" r="25" fill="var(--surface)" stroke="var(--net-motor)" stroke-width="2"/>
+              <text x="772" y="805" text-anchor="middle" fill="var(--ink)">M5</text>
+            </g>
+            <text x="580" y="844" text-anchor="middle" fill="var(--ink-dim)" font-size="10">5 &#215; DC gear/solenoid motors &#8212; 2-wire per channel from driver output</text>
+
+            <!-- ===== EXTERNAL MOTOR SUPPLY ===== -->
+            <rect x="80" y="650" width="160" height="90" rx="10" fill="var(--surface-2)" stroke="var(--net-power)" stroke-dasharray="4 3"/>
+            <text x="160" y="678" text-anchor="middle" fill="var(--ink)" font-size="11" font-weight="600">EXTERNAL SUPPLY</text>
+            <text x="160" y="694" text-anchor="middle" fill="var(--ink-dim)" font-size="10">12&#8211;24V DC</text>
+            <text x="160" y="710" text-anchor="middle" fill="var(--ink-dim)" font-size="9.5">motor rail &#8212; not from ESP32</text>
+            <g stroke-width="2" fill="none">
+              <line x1="240" y1="675" x2="280" y2="675" stroke="var(--net-power)"/>
+              <line x1="240" y1="715" x2="280" y2="715" stroke="var(--net-gnd)"/>
+            </g>
+            <circle cx="240" cy="675" r="2.8" fill="var(--net-power)"/><circle cx="280" cy="675" r="2.8" fill="var(--net-power)"/>
+            <circle cx="240" cy="715" r="2.8" fill="var(--net-gnd)"/><circle cx="280" cy="715" r="2.8" fill="var(--net-gnd)"/>
+            <text x="260" y="668" text-anchor="middle" fill="var(--net-power)" font-size="9">V+</text>
+
+            </g>
+          </svg>
+
+          <figcaption>All grounds — ESP32, display, coin acceptor, RTC module, LTE modem, RFID reader, motor driver and its external supplies — tie to one common return. The motor driver and LTE modem are the two blocks that must <em>not</em> draw their power from the ESP32's own 5V/3V3 rails; the RFID reader is fine straight off 3V3.</figcaption>
+        </figure>
+
+        <div class="legend" aria-label="Wire color key">
+          <h3>Net colour key</h3>
+          <div class="row"><span class="swatch" style="background:var(--net-power)"></span><span class="lbl">Power (3V3 / ext. DC rails)</span></div>
+          <div class="row"><span class="swatch" style="background:var(--net-gnd)"></span><span class="lbl">Ground (common return)</span></div>
+          <div class="row"><span class="swatch" style="background:var(--net-spi)"></span><span class="lbl">SPI bus (SCK/MISO/MOSI)</span></div>
+          <div class="row"><span class="swatch" style="background:var(--net-tftctl)"></span><span class="lbl">Display control (CS/DC/RST)</span></div>
+          <div class="row"><span class="swatch" style="background:var(--net-touch)"></span><span class="lbl">Touch chip-select</span></div>
+          <div class="row"><span class="swatch" style="background:var(--net-motor)"></span><span class="lbl">Motor channel GPIO</span></div>
+          <div class="row"><span class="swatch" style="background:var(--net-coin)"></span><span class="lbl">Coin pulse input</span></div>
+          <div class="row"><span class="swatch" style="background:var(--net-i2c)"></span><span class="lbl">I2C bus (SDA/SCL)</span></div>
+          <div class="row"><span class="swatch" style="background:var(--net-lte)"></span><span class="lbl">LTE UART2 (TX/RX)</span></div>
+          <div class="row"><span class="swatch" style="background:var(--net-rfid)"></span><span class="lbl">RFID UART1 (TX/RX)</span></div>
+          <div class="row"><span class="swatch dash" style="color:var(--net-power)"></span><span class="lbl">Dedicated external supply</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pin reference</h2>
+    <div class="tables">
+
+      <div class="tblock">
+        <h3><span class="dot" style="background:var(--net-tftctl)"></span>Display &amp; touch (shared SPI)</h3>
+        <table>
+          <thead><tr><th>Signal</th><th>ESP32</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>VCC / LED</td><td class="gpio">3V3</td><td class="note">backlight wired straight to 3V3, no GPIO switch</td></tr>
+            <tr><td>SCK</td><td class="gpio">GPIO18</td><td class="note">VSPI hardware default</td></tr>
+            <tr><td>MISO / SDO</td><td class="gpio">GPIO19</td><td class="note"></td></tr>
+            <tr><td>MOSI / SDI</td><td class="gpio">GPIO23</td><td class="note"></td></tr>
+            <tr><td>TFT_CS</td><td class="gpio">GPIO5</td><td class="note">display chip-select</td></tr>
+            <tr><td>DC</td><td class="gpio">GPIO2</td><td class="note">data/command</td></tr>
+            <tr><td>RESET</td><td class="gpio">GPIO4</td><td class="note"></td></tr>
+            <tr><td>T_CS</td><td class="gpio">GPIO21</td><td class="note">touch chip-select, same bus</td></tr>
+            <tr><td>T_IRQ</td><td class="gpio">&#8212;</td><td class="note">not wired — firmware polls, no interrupt</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tblock">
+        <h3><span class="dot" style="background:var(--net-motor)"></span>Motor channels (driver board)</h3>
+        <table>
+          <thead><tr><th>Channel</th><th>ESP32</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>M1</td><td class="gpio">GPIO13</td><td class="note"></td></tr>
+            <tr><td>M2</td><td class="gpio">GPIO25</td><td class="note"></td></tr>
+            <tr><td>M3</td><td class="gpio">GPIO26</td><td class="note"></td></tr>
+            <tr><td>M4</td><td class="gpio">GPIO27</td><td class="note"></td></tr>
+            <tr><td>M5</td><td class="gpio">GPIO32</td><td class="note"></td></tr>
+          </tbody>
+        </table>
+        <p class="tfoot-note"><strong>Five channels is the hard maximum.</strong> <code>MOTOR_PIN_POOL</code> holds exactly these five and <code>Core_04_Hardware.ino</code> carries a <code>static_assert</code> that refuses to compile <code>CFG_MOTOR_COUNT&nbsp;&gt;&nbsp;5</code>. GPIO33 used to be M6 and is now the coin acceptor; GPIO14/15 were the pool&#39;s M7/M8 slots and are now the RTC&#39;s I2C bus. Neither is shared, so there is no silent collision to discover &mdash; the build simply fails. GPIO12 stays permanently excluded (boot-strap pin).</p>
+      </div>
+
+      <div class="tblock">
+        <h3><span class="dot" style="background:var(--net-coin)"></span>Coin acceptor</h3>
+        <table>
+          <thead><tr><th>Signal</th><th>ESP32</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>Pulse out</td><td class="gpio">GPIO33</td><td class="note">counts RISING edges, 5&nbsp;ms debounce in the ISR</td></tr>
+            <tr><td>Pull-up</td><td class="gpio">3V3</td><td class="note">external 10k&#8486; &mdash; <strong>optional</strong> on GPIO33, which unlike GPIO34&#8211;39 has an internal pull-up available. Kept because the line was already wired this way.</td></tr>
+            <tr><td>GND</td><td class="gpio">GND</td><td class="note">common return</td></tr>
+          </tbody>
+        </table>
+        <p class="tfoot-note">Pulse&#8594;value: 1&#8239;=&#8239;Rs&nbsp;1, 2&#8239;=&#8239;Rs&nbsp;2, 3&#8211;5&#8239;=&#8239;Rs&nbsp;5, &#8805;10&#8239;=&#8239;Rs&nbsp;10; 6&#8211;9 pulses are rejected as unrecognised. A burst is complete after 200&#8239;ms of silence (3&#8239;s safety cap). The interrupt is attached <em>only</em> while the cash screen is showing, so motor switching cannot inject counts into the next sale.</p>
+        <p class="tfoot-note">Pin history: GPIO22 &#8594; GPIO34 &#8594; GPIO36 (&quot;VP&quot;) &#8594; GPIO35 &#8594; <strong>GPIO33</strong>, which freed up when <code>CFG_MOTOR_COUNT</code> dropped from 6 to 5 and M6 was retired. GPIO35 is now spare.</p>
+      </div>
+
+      <div class="tblock">
+        <h3><span class="dot" style="background:var(--net-rfid)"></span>RFID reader (UART1)</h3>
+        <table>
+          <thead><tr><th>Signal</th><th>ESP32</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>TX &#8594; module RXD</td><td class="gpio">GPIO22</td><td class="note">freed from the coin acceptor</td></tr>
+            <tr><td>RX &#8592; module TXD</td><td class="gpio">GPIO34</td><td class="note">input-only pin — swapped from GPIO36 ("VP") with the coin acceptor, which has since moved on to GPIO35</td></tr>
+            <tr><td>VCC</td><td class="gpio">3V3</td><td class="note">module is rated 3.0&#8211;5.5V</td></tr>
+            <tr><td>GND</td><td class="gpio">GND</td><td class="note">common return</td></tr>
+            <tr><td>Baud</td><td class="gpio">19200</td><td class="note">8N1, <strong>inverted</strong> line levels — the reader idles LOW (RS232), not HIGH. Without the inversion every byte decodes as garbage at any baud rate; this was the reader's entire silent-failure mode.</td></tr>
+          </tbody>
+        </table>
+        <p class="tfoot-note">EHUOYAN YHY5225, 13.56MHz ISO14443A/MIFARE read/write module. Frame protocol (AA BB LEN CMD ... CKSUM, 19200 8N1) and the check-card/read-card command bytes are transcribed from the customer's own working PIC18F8722 reference firmware for this reader — see Core_19_RFID.ino.</p>
+      </div>
+
+      <div class="tblock">
+        <h3><span class="dot" style="background:var(--net-i2c)"></span>RTC module (I2C)</h3>
+        <table>
+          <thead><tr><th>Signal</th><th>ESP32</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>SDA</td><td class="gpio">GPIO14</td><td class="note">dedicated to the RTC, not shared with the motor pool</td></tr>
+            <tr><td>SCL</td><td class="gpio">GPIO15</td><td class="note">dedicated to the RTC, not shared with the motor pool</td></tr>
+            <tr><td>VCC</td><td class="gpio">3V3</td><td class="note"></td></tr>
+            <tr><td>GND</td><td class="gpio">GND</td><td class="note">common return</td></tr>
+            <tr><td>I2C address</td><td class="gpio">0x68</td><td class="note">registers 0x00&#8211;0x06, BCD. Talked to directly over <code>Wire.h</code> — no RTC library dependency.</td></tr>
+          </tbody>
+        </table>
+        <p class="tfoot-note">DS3231 recommended over a DS1307 — &#177;2ppm drift vs. &#177;20ppm, and it keeps time on its onboard CR2032 through a power cycle. Third fallback in the clock chain, after WiFi NTP and LTE NITZ/NTP — see Core_18_RTC.ino.</p>
+      </div>
+
+      <div class="tblock">
+        <h3><span class="dot" style="background:var(--net-lte)"></span>4G / LTE modem (UART2)</h3>
+        <table>
+          <thead><tr><th>Signal</th><th>ESP32</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>TX2 &#8594; RXD</td><td class="gpio">GPIO17</td><td class="note"></td></tr>
+            <tr><td>RX2 &#8592; TXD</td><td class="gpio">GPIO16</td><td class="note"></td></tr>
+            <tr><td>Baud</td><td class="gpio">115200</td><td class="note">8N1</td></tr>
+            <tr><td>Power</td><td class="gpio">&#8212;</td><td class="note">dedicated 3.7&#8211;4.4V, &#8805;2A burst — not the ESP32 5V pin</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="pinmap">
+    <h2>Complete pin map &mdash; every pin on the board</h2>
+    <div class="tables">
+      <div class="tblock full">
+        <h3><span class="dot" style="background:var(--accent)"></span>ESP32 DevKit, all pins accounted for</h3>
+        <div class="scroll">
+        <table>
+          <thead><tr><th>Pin</th><th>Dir</th><th>Net</th><th>Connects to</th><th>Notes</th></tr></thead>
+          <tbody>
+
+            <tr class="grp"><td colspan="5">Power &amp; system</td></tr>
+            <tr><td class="gpio">3V3</td><td class="dir">out</td><td>Power</td><td>Display VCC + LED &middot; RFID VCC &middot; DS3231 VCC &middot; coin pull-up</td><td class="note">On-board regulator. Logic rail for all three peripheral modules. Not for the modem or the motors.</td></tr>
+            <tr><td class="gpio">5V / VIN</td><td class="dir">in</td><td>Power</td><td>USB, or a 5V supply feeding the ESP32 itself</td><td class="note">Never the source for the LTE modem or the motor rail &mdash; both exceed what this pin can pass.</td></tr>
+            <tr><td class="gpio">GND &#215;3</td><td class="dir">&#8212;</td><td>Ground</td><td>Every module, plus both external supplies</td><td class="note">One common return. The motor supply and the modem supply must share it or the UART and pulse signals have no reference.</td></tr>
+            <tr><td class="gpio">EN</td><td class="dir">in</td><td>Reset</td><td>Nothing (or a reset button)</td><td class="note">Pulling it low resets the board. Keep adjacent wiring clear &mdash; a stray connection here held the board in permanent reset once during RFID wiring.</td></tr>
+
+            <tr class="grp"><td colspan="5">Display &amp; touch &mdash; shared VSPI, 8&#8239;MHz, rotation&nbsp;1 (320&#215;240 landscape)</td></tr>
+            <tr><td class="gpio">GPIO2</td><td class="dir">out</td><td>TFT ctl</td><td>ILI9341 <strong>DC</strong></td><td class="note">Boot-mode strapping pin. Safe as an ESP32-driven output; do not add an external pull-up here.</td></tr>
+            <tr><td class="gpio">GPIO4</td><td class="dir">out</td><td>TFT ctl</td><td>ILI9341 <strong>RESET</strong></td><td class="note"></td></tr>
+            <tr><td class="gpio">GPIO5</td><td class="dir">out</td><td>TFT ctl</td><td>ILI9341 <strong>CS</strong></td><td class="note">Strapping pin, must be HIGH at boot. An SPI chip-select idles high, so there is no conflict.</td></tr>
+            <tr><td class="gpio">GPIO18</td><td class="dir">out</td><td>SPI</td><td>ILI9341 <strong>SCK</strong> + XPT2046 <strong>SCK</strong></td><td class="note">VSPI hardware default. One bus, two chip-selects.</td></tr>
+            <tr><td class="gpio">GPIO19</td><td class="dir">in</td><td>SPI</td><td>ILI9341 <strong>MISO/SDO</strong> + XPT2046 <strong>DO</strong></td><td class="note">Shared.</td></tr>
+            <tr><td class="gpio">GPIO21</td><td class="dir">out</td><td>Touch</td><td>XPT2046 <strong>T_CS</strong></td><td class="note">Second chip-select on the same bus.</td></tr>
+            <tr><td class="gpio">GPIO23</td><td class="dir">out</td><td>SPI</td><td>ILI9341 <strong>MOSI/SDI</strong> + XPT2046 <strong>DIN</strong></td><td class="note">Shared.</td></tr>
+            <tr class="dim"><td class="gpio">&#8212;</td><td class="dir">&#8212;</td><td>Touch</td><td>XPT2046 <strong>T_IRQ</strong> &mdash; not wired</td><td class="note">Firmware polls the controller; no interrupt line is run.</td></tr>
+
+            <tr class="grp"><td colspan="5">Motor channels &mdash; GPIO switches a driver input, never a motor</td></tr>
+            <tr><td class="gpio">GPIO13</td><td class="dir">out</td><td>Motor</td><td>Driver input &#8594; <strong>M1</strong></td><td class="note" rowspan="5">Polarity set by <code>CFG_MOTOR_ACTIVE_HIGH</code> (<code>true</code> here = HIGH energises, for MOSFET boards). Each channel runs <code>CFG_MOTOR_RUN_MS</code> = 2500&#8239;ms per unit dispensed. Motor current comes from the external 12&#8211;24V rail, not the ESP32.</td></tr>
+            <tr><td class="gpio">GPIO25</td><td class="dir">out</td><td>Motor</td><td>Driver input &#8594; <strong>M2</strong></td></tr>
+            <tr><td class="gpio">GPIO26</td><td class="dir">out</td><td>Motor</td><td>Driver input &#8594; <strong>M3</strong></td></tr>
+            <tr><td class="gpio">GPIO27</td><td class="dir">out</td><td>Motor</td><td>Driver input &#8594; <strong>M4</strong></td></tr>
+            <tr><td class="gpio">GPIO32</td><td class="dir">out</td><td>Motor</td><td>Driver input &#8594; <strong>M5</strong></td></tr>
+
+            <tr class="grp"><td colspan="5">Serial buses &amp; sensors</td></tr>
+            <tr><td class="gpio">GPIO14</td><td class="dir">bidir (OD)</td><td>I2C</td><td>DS3231 <strong>SDA</strong></td><td class="note">Address 0x68. Pull-ups normally fitted on the RTC module itself.</td></tr>
+            <tr><td class="gpio">GPIO15</td><td class="dir">bidir (OD)</td><td>I2C</td><td>DS3231 <strong>SCL</strong></td><td class="note">Strapping pin, but the I2C pull-up holds it high at boot, which is the state it needs.</td></tr>
+            <tr><td class="gpio">GPIO16</td><td class="dir">in</td><td>UART2</td><td>A7600 modem <strong>TXD</strong></td><td class="note">115200 8N1. Silkscreened RX2.</td></tr>
+            <tr><td class="gpio">GPIO17</td><td class="dir">out</td><td>UART2</td><td>A7600 modem <strong>RXD</strong></td><td class="note">115200 8N1. Silkscreened TX2.</td></tr>
+            <tr><td class="gpio">GPIO22</td><td class="dir">out</td><td>UART1</td><td>YHY5225 reader <strong>RXD</strong></td><td class="note">19200 8N1, <strong>inverted</strong> line levels.</td></tr>
+            <tr><td class="gpio">GPIO33</td><td class="dir">in</td><td>Coin</td><td>Acceptor <strong>pulse output</strong></td><td class="note">RISING-edge interrupt, 5&#8239;ms debounce. Internal pull-up available; a 10k&#8486; external one is fitted and may stay.</td></tr>
+            <tr><td class="gpio">GPIO34</td><td class="dir">in only</td><td>UART1</td><td>YHY5225 reader <strong>TXD</strong></td><td class="note">Input-only pin: no output driver and no internal pull-up. Fine here &mdash; a UART receive line never needs either.</td></tr>
+
+            <tr class="grp"><td colspan="5">USB console &mdash; in use, do not repurpose</td></tr>
+            <tr><td class="gpio">GPIO1 (TX0)</td><td class="dir">out</td><td>UART0</td><td>USB&#8211;serial bridge</td><td class="note">115200 debug console (<code>Serial</code>). Also carries the boot log.</td></tr>
+            <tr><td class="gpio">GPIO3 (RX0)</td><td class="dir">in</td><td>UART0</td><td>USB&#8211;serial bridge</td><td class="note">Same. Loading anything onto these two breaks flashing.</td></tr>
+
+            <tr class="grp"><td colspan="5">Spare &mdash; free for future use</td></tr>
+            <tr class="spare"><td class="gpio">GPIO35</td><td class="dir">in only</td><td>&#8212;</td><td>Free</td><td class="note"><strong>Preferred spare for a new input.</strong> Freed when the coin acceptor moved to GPIO33. Input-only, no internal pull-ups, so an external one is mandatory on any switch or open-collector source.</td></tr>
+            <tr class="spare"><td class="gpio">GPIO36 (VP)</td><td class="dir">in only</td><td>&#8212;</td><td>Free</td><td class="note"><strong>Avoid.</strong> Sits directly beside EN on the header; a stray or adjacent connection that briefly pulls EN low holds the whole board in reset. Already hit once on this bench.</td></tr>
+            <tr class="spare"><td class="gpio">GPIO39 (VN)</td><td class="dir">in only</td><td>&#8212;</td><td>Free</td><td class="note">Input-only, same pull-up caveat as GPIO35.</td></tr>
+            <tr class="spare"><td class="gpio">GPIO0</td><td class="dir">in/out</td><td>&#8212;</td><td>Free</td><td class="note"><strong>Last-resort spare for a new output</strong> &mdash; the only free output-capable pin left. It is the boot-mode strap: held low at reset the chip enters flash-download instead of running. Anything wired here must leave it high at boot.</td></tr>
+
+            <tr class="grp"><td colspan="5">Unusable &mdash; never wire these</td></tr>
+            <tr class="dim"><td class="gpio">GPIO12</td><td class="dir">in/out</td><td>&#8212;</td><td>Leave unconnected</td><td class="note">Flash-voltage strap (MTDI), read at every reset and required LOW. An external connection here caused a real, reproducible upload failure on this project &mdash; which is why it is excluded from the motor pool by name.</td></tr>
+            <tr class="dim"><td class="gpio">GPIO6&#8211;GPIO11</td><td class="dir">&#8212;</td><td>&#8212;</td><td>Internal SPI flash</td><td class="note">Bonded to the on-module flash die. Wiring anything here stops the board booting.</td></tr>
+
+          </tbody>
+        </table>
+        </div>
+        <p class="tfoot-note"><strong>19 GPIOs wired to peripherals, 2 more on the USB console, 4 spare, 7 unusable.</strong> Physical header positions differ between 30-pin and 38-pin DevKit variants, so this table is ordered by function and GPIO number rather than by position on the strip &mdash; match the silkscreen labels on the board in front of you, not a pin count.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
