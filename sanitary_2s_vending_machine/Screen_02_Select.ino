@@ -143,6 +143,43 @@ int productNameSize(int nameBoxW, int cardH, int priceSize) {
   return 1;
 }
 
+// Same serif family as every screen header (drawHeaderTitle(),
+// Core_08_UIHelpers.ino) and the Welcome card's big title
+// (drawBigTitleLine(), Screen_01_Welcome.ino) — one typographic voice
+// instead of the plain bitmap font this card used to fall back to for
+// product names. Tries 12pt first (the same face the header strip uses),
+// then 9pt (the header's own fallback face) if 12pt would run past two
+// lines or blow the card's height budget, uniform across every enabled
+// product for the same "shortest name doesn't win by default" reason
+// productNameSize() above exists. Only the tightest layouts — a 5-product,
+// 3-column build with ~43px card rows — fall all the way back to the old
+// bitmap-font sizing, where even 9pt runs too tall; that path returns
+// nullptr and *outBitmapSize instead of a font.
+const GFXfont* productNameFont(int nameBoxW, int cardH, int priceSize, int &outLines, int &outBitmapSize) {
+  int idx[MAX_PRODUCTS];
+  int count = getEnabledProducts(idx);
+  int avail = cardH - 4 - (PCARD_GAP + 8 * priceSize) - (PCARD_GAP + 8);
+
+  const GFXfont* candidates[2] = { &FreeSerifBold12pt7b, &FreeSerifBold9pt7b };
+  for (int c = 0; c < 2; c++) {
+    bool fits = true;
+    int maxLines = 0;
+    for (int k = 0; k < count && fits; k++) {
+      int lines = wrapFontInBox(candidates[c], products[idx[k]].name, 0, nameBoxW, 0, false);
+      if (lines > PCARD_MAX_NAME_LINES) fits = false;
+      else if (wrapFontHeight(lines, candidates[c]) > avail) fits = false;
+      if (lines > maxLines) maxLines = lines;
+    }
+    if (fits) {
+      outLines = maxLines;
+      return candidates[c];
+    }
+  }
+
+  outBitmapSize = productNameSize(nameBoxW, cardH, priceSize);
+  return nullptr;
+}
+
 void drawProductCard(int i, int x, int y, int w, int h) {
   int totalStock = totalStockForProduct(i);
   bool outOfStock = (totalStock <= 0);
@@ -196,22 +233,28 @@ void drawProductCard(int i, int x, int y, int w, int h) {
     statusColor = COL_SUCCESS;
   }
 
-  int nameSize = productNameSize(innerW, h, priceSize);
-  // The price may never out-size the name. On a crowded screen the name can
-  // be forced down to size 1 while "Rs 10" still fits at size 2, and an
-  // accent-colored price twice the height of the product it belongs to
-  // inverts the whole card. Clamping only ever shrinks the block, so the
-  // height budget productNameSize() just worked to is still good.
-  if (priceSize > nameSize) priceSize = nameSize;
-  int nameLines = wrapTextInBox(products[i].name, innerX, innerW, 0, nameSize, false);
-  int nameH = wrapTextHeight(nameLines, nameSize);
+  int nameLines = 0, bitmapSize = 1;
+  const GFXfont* nameFont = productNameFont(innerW, h, priceSize, nameLines, bitmapSize);
+  int nameH = nameFont ? wrapFontHeight(nameLines, nameFont) : wrapTextHeight(nameLines, bitmapSize);
+
+  // The price may never out-size the name. Only matters on the bitmap-font
+  // fallback path — the name there can be forced down to size 1 while
+  // "Rs 10" still fits at size 2, and an accent-colored price twice the
+  // height of the product it belongs to inverts the whole card. A serif
+  // name is already sized to the card's own height budget above, so it
+  // never needs this clamp.
+  if (!nameFont && priceSize > bitmapSize) priceSize = bitmapSize;
 
   int blockH = nameH + (showPrice ? PCARD_GAP + 8 * priceSize : 0) + PCARD_GAP + 8;
   int cursorY = y + (h - blockH) / 2;
 
   tft.setTextColor(outOfStock ? COL_TEXT_DIM : COL_TEXT, bg);
-  tft.setTextSize(nameSize);
-  wrapTextInBox(products[i].name, innerX, innerW, cursorY, nameSize, true);
+  if (nameFont) {
+    wrapFontInBox(nameFont, products[i].name, innerX, innerW, cursorY, true);
+  } else {
+    tft.setTextSize(bitmapSize);
+    wrapTextInBox(products[i].name, innerX, innerW, cursorY, bitmapSize, true);
+  }
   cursorY += nameH;
 
   if (showPrice) {

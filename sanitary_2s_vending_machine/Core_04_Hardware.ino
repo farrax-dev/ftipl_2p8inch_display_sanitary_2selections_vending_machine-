@@ -29,6 +29,16 @@ XPT2046_Touchscreen ts(TOUCH_CS);
 // shared with a hypothetical extra motor, so there's no reason to keep a
 // pool entry that would silently collide the moment CFG_MOTOR_COUNT went
 // past 5. See the motor-channel table in docs/wiring-diagram.html.
+//
+// Sanitary-napkin build note: CFG_MOTOR_COUNT is 2 here, so only pool[0]
+// (GPIO13, M1) and pool[1] (GPIO25, M2) are ever touched by initMotorPins()
+// below. pool[4] (GPIO32, "M5") is left completely alone by this file at
+// that count and is reused externally, behind a dip switch, as the coin
+// acceptor's ON/OFF power control line — see COIN_ENABLE_PIN in
+// Screen_06_PaymentOther.ino. pool[2]/pool[3] (GPIO26/27, "M3"/"M4") are
+// simply idle/reserved. None of this needs a code change to work; it only
+// stops being true if CFG_MOTOR_COUNT is ever raised past 4, at which point
+// the dip switch must be moved back to the "M5" position first.
 const int MOTOR_PIN_POOL[] = { 13, 25, 26, 27, 32 };
 const int MOTOR_PINS_AVAILABLE = sizeof(MOTOR_PIN_POOL) / sizeof(MOTOR_PIN_POOL[0]);
 

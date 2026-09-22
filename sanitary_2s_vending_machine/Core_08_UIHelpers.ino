@@ -251,6 +251,93 @@ int wrapTextHeight(int lines, int size) {
   return (lines > 0) ? lines * (8 * size + WRAP_LINE_GAP) - WRAP_LINE_GAP : 0;
 }
 
+// ---------- Word-wrapped label text for a custom GFX font ----------
+// wrapTextInBox() above assumes the default bitmap font's fixed 6px-wide
+// cell (maxChars = boxW / (6*size)) — wrong for a proportional face like the
+// FreeSerif set, where "W" and "i" aren't the same width. This measures each
+// candidate line for real with getTextBounds() instead of counting
+// characters, the same way drawHeaderTitle()/drawBigTitleLine() measure a
+// single line.
+//
+// Always setTextSize(1) before touching the font — a custom GFXfont is one
+// fixed point size; letting a leftover setTextSize() scale it multiplies the
+// point size right along with it (see drawHeaderTitle()'s comment on that
+// exact trap). Leaves the default bitmap font active on return, same
+// contract as every other call site in this file.
+//
+// draw=false just counts lines/measures height, same as wrapTextInBox(),
+// so a caller can decide whether a font choice fits before committing to it.
+int wrapFontInBox(const GFXfont* font, const char* text, int boxX, int boxW, int topY, bool draw) {
+  tft.setTextSize(1);
+  tft.setFont(font);
+
+  int lineH = font->yAdvance;
+  int lines = 0;
+  int len = strlen(text);
+  int i = 0;
+
+  while (i < len) {
+    while (text[i] == ' ') i++;
+    if (i >= len) break;
+
+    int lineStart = i;
+    int lineEnd = i;     // end of the best-fitting line found so far
+    int probe = i;
+
+    while (probe < len) {
+      int wordEnd = probe;
+      while (wordEnd < len && text[wordEnd] != ' ') wordEnd++;
+
+      char tryBuf[40];
+      int tryLen = wordEnd - lineStart;
+      if (tryLen > (int)sizeof(tryBuf) - 1) tryLen = sizeof(tryBuf) - 1;
+      memcpy(tryBuf, text + lineStart, tryLen);
+      tryBuf[tryLen] = '\0';
+
+      int16_t x1, y1;
+      uint16_t w, h;
+      tft.getTextBounds(tryBuf, 0, 0, &x1, &y1, &w, &h);
+
+      // Adding this word would overflow the box, and the line already has
+      // at least one word on it — stop before this word, not mid-word. A
+      // single word too wide for the box on its own still gets drawn (and
+      // overflows), same as a bitmap-font line that hits wrapTextInBox()'s
+      // maxChars with nowhere to back up to.
+      if ((int)w > boxW && lineEnd > lineStart) break;
+      lineEnd = wordEnd;
+
+      probe = wordEnd;
+      while (probe < len && text[probe] == ' ') probe++;
+    }
+
+    if (draw) {
+      char buf[40];
+      int lineLen = lineEnd - lineStart;
+      if (lineLen > (int)sizeof(buf) - 1) lineLen = sizeof(buf) - 1;
+      memcpy(buf, text + lineStart, lineLen);
+      buf[lineLen] = '\0';
+
+      int16_t x1, y1;
+      uint16_t w, h;
+      tft.getTextBounds(buf, 0, 0, &x1, &y1, &w, &h);
+      // y1 is the glyph top's offset from the baseline (negative), same
+      // top-to-baseline conversion as drawBigTitleLine()/drawHeaderTitle().
+      tft.setCursor(boxX + (boxW - (int)w) / 2, topY + lines * lineH - y1);
+      tft.print(buf);
+    }
+
+    lines++;
+    i = probe;
+  }
+
+  tft.setFont();  // back to the default bitmap font, same contract as callers expect
+  return lines;
+}
+
+int wrapFontHeight(int lines, const GFXfont* font) {
+  return (lines > 0) ? lines * font->yAdvance : 0;
+}
+
 // Longer labels ("Exit Admin", "Motor Stock") don't fit BTN_*_W at a fixed
 // text size 2 — a size-2 char cell is 12px, so anything past 8-ish
 // characters runs past the button edge. fitTextSize() (below) picks the

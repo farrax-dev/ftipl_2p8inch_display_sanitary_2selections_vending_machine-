@@ -43,6 +43,18 @@
 // leaving GPIO35 spare.
 const int COIN_PIN = 33;
 
+// Cuts power to the coin acceptor itself via an external relay/MOSFET —
+// GPIO32, the pool slot that would have been motor M5 (see the
+// sanitary-napkin note on MOTOR_PIN_POOL in Core_04_Hardware.ino). Free to
+// reuse because this build's CFG_MOTOR_COUNT is 2, so initMotorPins() never
+// touches it. Sits behind its own external dip switch so it can be swapped
+// back to driving M5 if the machine is ever reconfigured for a 5th product.
+//
+// Same active-high/low convention as the motor driver channels — it's
+// wired to the same kind of driver board — so it's driven through
+// MOTOR_ACTIVE_HIGH rather than a hardcoded HIGH/LOW.
+const int COIN_ENABLE_PIN = 32;
+
 const unsigned long COIN_TRAIN_GAP_MS = 200;    // silence -> burst is complete
 const unsigned long COIN_TRAIN_MAX_MS = 3000;   // safety cap on a stuck line
 const unsigned long CASH_TIMEOUT_MS   = 90000;  // give up if nothing happens
@@ -62,6 +74,12 @@ void IRAM_ATTR coinPulseISR() {
   coinISRPulseCount++;
 }
 
+// Same HIGH/LOW-energises convention as motorWrite() in Core_04_Hardware.ino
+// — COIN_ENABLE_PIN drives the same kind of relay/MOSFET driver board.
+void coinAcceptorPower(bool on) {
+  digitalWrite(COIN_ENABLE_PIN, (on == MOTOR_ACTIVE_HIGH) ? HIGH : LOW);
+}
+
 void initCoinAcceptor() {
   // Plain INPUT, not INPUT_PULLUP — kept consistent with how this line was
   // already wired (external 10k pull-up to 3V3, see the comment on
@@ -69,12 +87,23 @@ void initCoinAcceptor() {
   // external resistor is ever removed, unlike the GPIO34-39 pins this line
   // used to live on.
   pinMode(COIN_PIN, INPUT);
+
+  // Written before pinMode(OUTPUT), same order as initMotorPins() — so the
+  // pin never glitches HIGH/energised for the instant between the two
+  // calls. Powered down until a cash screen actually needs it.
+  digitalWrite(COIN_ENABLE_PIN, MOTOR_ACTIVE_HIGH ? LOW : HIGH);
+  pinMode(COIN_ENABLE_PIN, OUTPUT);
+  coinAcceptorPower(false);
 }
 
 // The interrupt is live only while the cash screen is showing. Nothing else
 // in the machine cares about coins, and leaving it attached means motor
 // switching during a dispense can inject counts into the next sale.
+// Acceptor power follows the same lifecycle: it's only powered up while
+// something is actually listening for its pulses, so a coin dropped in
+// outside of the cash screen physically can't register.
 void coinAcceptorListen(bool on) {
+  coinAcceptorPower(on);
   if (on) attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinPulseISR, RISING);
   else    detachInterrupt(digitalPinToInterrupt(COIN_PIN));
 }

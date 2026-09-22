@@ -153,6 +153,12 @@ struct Product {
 void mapTouchToScreen(TS_Point raw, int &sx, int &sy);
 void getSelectCardRect(int k, int count, int &x, int &y, int &w, int &h);
 void color565toRGB(uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b);
+// Same reason as the rest of this block — GFXfont isn't fully declared yet at
+// the point Arduino's generator inserts its own attempt, which breaks on
+// these three (Core_08_UIHelpers.ino, Screen_02_Select.ino).
+int wrapFontInBox(const GFXfont* font, const char* text, int boxX, int boxW, int topY, bool draw);
+int wrapFontHeight(int lines, const GFXfont* font);
+const GFXfont* productNameFont(int nameBoxW, int cardH, int priceSize, int &outLines, int &outBitmapSize);
 bool rtcReadTime(struct tm &out);
 void rtcWriteTime(const struct tm &t);
 bool parseDateTimeEntry(const char* buf, int &d, int &mo, int &y, int &h, int &mi);
