@@ -1,5 +1,5 @@
 // =====================================================
-//   PER-MACHINE CONFIGURATION
+//   PER-MACHINE CONFIGURATION //
 // =====================================================
 // Everything that differs between one physical machine and the next lives in
 // this one file. To commission a new unit: edit the values below and flash.

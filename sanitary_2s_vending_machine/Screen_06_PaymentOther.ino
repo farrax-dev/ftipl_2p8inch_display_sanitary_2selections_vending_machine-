@@ -128,7 +128,7 @@ void initCoinAcceptor() {
 void coinAcceptorListen(bool on) {
   coinAcceptorPower(on);
   if (!COIN_PULSE_PIN_FREE) return;  // GPIO33 is M6's driver output in this build
-  if (on) attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinPulseISR, RISING);
+  if (on) attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinPulseISR, FALLING);
   else    detachInterrupt(digitalPinToInterrupt(COIN_PIN));
 }
 
