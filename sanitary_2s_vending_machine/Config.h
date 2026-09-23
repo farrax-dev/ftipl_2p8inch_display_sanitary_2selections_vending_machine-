@@ -58,15 +58,26 @@
 // How many dispensing motors are PHYSICALLY wired. Pins are taken in order
 // from MOTOR_PIN_POOL in Core_04_Hardware.ino, so 2 here means the first two
 // pins of that pool (GPIO13, GPIO25) — M1 and M2. Maximum is the size of
-// that pool.
+// that pool: 6.
 //
-// This sanitary-napkin build only fills 2 of the 5 pool slots. The other
-// three pool pins (GPIO26, GPIO27, GPIO32) are deliberately left untouched —
-// GPIO26/27 sit idle in reserve, and GPIO32 is dual-purposed behind an
-// external dip switch as the coin acceptor's ON/OFF power control line (see
-// COIN_ENABLE_PIN in Screen_06_PaymentOther.ino). Raising this back past 4
-// would collide with that dip-switch wiring on GPIO32 — move the switch back
-// to its "M5" position first.
+// This sanitary-napkin build only fills 2 of the 6 pool slots. GPIO26/27
+// (M3/M4) simply sit idle in reserve — no code change needed to wire up a
+// 3rd/4th product later, just reassign and reflash.
+//
+// GPIO32 (M5) and GPIO33 (M6) are different: each is dual-purposed behind
+// its own external dip switch, defaulting to coin duty rather than motor
+// duty —
+//   - GPIO32/M5's default throw is the coin acceptor's ON/OFF power relay
+//     (COIN_ENABLE_PIN, Screen_06_PaymentOther.ino).
+//   - GPIO33/M6's default throw is the coin acceptor's pulse input
+//     (COIN_PIN, Screen_06_PaymentOther.ino).
+// Firmware can't sense either switch's position, so it goes by this value
+// instead: raising it to 5 claims GPIO32 for M5 and silently drops the coin
+// power relay (cash still credits coins, just without software control over
+// the acceptor's power); raising it to 6 also claims GPIO33 for M6 and the
+// entire coin subsystem has nowhere left to run — turn
+// CFG_PAYMENT_CASH_AVAILABLE off below to match. Either way, flip the
+// matching dip switch(es) to their motor throw first, then reflash.
 #define CFG_MOTOR_COUNT        2
 
 // How many product slots the admin menu offers. Names, prices and motor

@@ -16,8 +16,12 @@
 // see the earlier IO budget). So an unrecognized pulse count is simply not
 // credited, same limitation the original hardware had.
 //
-// GPIO33, freed from the motor pool when CFG_MOTOR_COUNT dropped from 6 to 5
-// (it was M6's pin — see Core_04_Hardware.ino's MOTOR_PIN_POOL comment).
+// GPIO33 is also motor-pool slot M6 (MOTOR_PIN_POOL, Core_04_Hardware.ino) —
+// behind an external dip switch rather than fixed to one job. Its default
+// throw feeds this pulse line; the other throw reconnects the same pin to a
+// 6th motor driver channel. See COIN_PULSE_PIN_FREE below for how firmware
+// decides which one it's allowed to assume.
+//
 // Unlike the GPIO34-39 pins this line lived on before, GPIO33 is a regular
 // GPIO with an internal pull-up available, but the code below still asks for
 // a plain INPUT and leans on the external 10k pull-up to 3V3 described in
@@ -39,21 +43,35 @@
 // directly next to the header's EN pin, and a stray/adjacent connection
 // there briefly holding EN low holds the whole board in reset — a real
 // failure mode already hit once while wiring the RFID reader); then onto
-// GPIO33 when CFG_MOTOR_COUNT dropped from 6 to 5 and freed M6's pin,
-// leaving GPIO35 spare.
+// GPIO33/M6, which is where the dip switch replaced a permanent hand-off.
 const int COIN_PIN = 33;
 
 // Cuts power to the coin acceptor itself via an external relay/MOSFET —
-// GPIO32, the pool slot that would have been motor M5 (see the
-// sanitary-napkin note on MOTOR_PIN_POOL in Core_04_Hardware.ino). Free to
-// reuse because this build's CFG_MOTOR_COUNT is 2, so initMotorPins() never
-// touches it. Sits behind its own external dip switch so it can be swapped
-// back to driving M5 if the machine is ever reconfigured for a 5th product.
+// GPIO32, motor-pool slot M5 (see Core_04_Hardware.ino's MOTOR_PIN_POOL
+// comment), behind its own external dip switch. Its default throw feeds
+// this relay; the other throw reconnects the same pin to the M5 motor
+// driver channel. See COIN_POWER_PIN_FREE below.
 //
 // Same active-high/low convention as the motor driver channels — it's
 // wired to the same kind of driver board — so it's driven through
 // MOTOR_ACTIVE_HIGH rather than a hardcoded HIGH/LOW.
 const int COIN_ENABLE_PIN = 32;
+
+// GPIO33/GPIO32 are also motor-pool slots M6/M5 (MOTOR_PIN_POOL,
+// Core_04_Hardware.ino), each behind its own external dip switch rather
+// than fixed to one job. Firmware has no way to sense either switch's
+// physical position, so it goes by CFG_MOTOR_COUNT instead: a pin that
+// falls within MOTOR_PIN_POOL[0..MAX_MOTORS-1] is assumed to actually be
+// wired to a motor driver right now, and the matching half of the coin
+// subsystem backs off rather than fighting initMotorPins() over the same
+// pin. Below 5 motors, both are free and cash works exactly as before; at
+// 5, the power relay backs off (cash still credits coins, just without
+// software control over the acceptor's power); at 6, there's no pin left
+// for the pulse input either, so the whole coin subsystem goes quiet — a
+// 6-motor build has no cash hardware, and CFG_PAYMENT_CASH_AVAILABLE
+// should be turned off in Config.h to match.
+const bool COIN_POWER_PIN_FREE = (MAX_MOTORS < 5);
+const bool COIN_PULSE_PIN_FREE = (MAX_MOTORS < 6);
 
 const unsigned long COIN_TRAIN_GAP_MS = 200;    // silence -> burst is complete
 const unsigned long COIN_TRAIN_MAX_MS = 3000;   // safety cap on a stuck line
@@ -77,23 +95,28 @@ void IRAM_ATTR coinPulseISR() {
 // Same HIGH/LOW-energises convention as motorWrite() in Core_04_Hardware.ino
 // — COIN_ENABLE_PIN drives the same kind of relay/MOSFET driver board.
 void coinAcceptorPower(bool on) {
+  if (!COIN_POWER_PIN_FREE) return;  // GPIO32 is M5's driver output in this build
   digitalWrite(COIN_ENABLE_PIN, (on == MOTOR_ACTIVE_HIGH) ? HIGH : LOW);
 }
 
 void initCoinAcceptor() {
-  // Plain INPUT, not INPUT_PULLUP — kept consistent with how this line was
-  // already wired (external 10k pull-up to 3V3, see the comment on
-  // COIN_PIN). GPIO33 does have an internal pull-up available if that
-  // external resistor is ever removed, unlike the GPIO34-39 pins this line
-  // used to live on.
-  pinMode(COIN_PIN, INPUT);
+  if (COIN_PULSE_PIN_FREE) {
+    // Plain INPUT, not INPUT_PULLUP — kept consistent with how this line was
+    // already wired (external 10k pull-up to 3V3, see the comment on
+    // COIN_PIN). GPIO33 does have an internal pull-up available if that
+    // external resistor is ever removed, unlike the GPIO34-39 pins this
+    // line used to live on.
+    pinMode(COIN_PIN, INPUT);
+  }
 
-  // Written before pinMode(OUTPUT), same order as initMotorPins() — so the
-  // pin never glitches HIGH/energised for the instant between the two
-  // calls. Powered down until a cash screen actually needs it.
-  digitalWrite(COIN_ENABLE_PIN, MOTOR_ACTIVE_HIGH ? LOW : HIGH);
-  pinMode(COIN_ENABLE_PIN, OUTPUT);
-  coinAcceptorPower(false);
+  if (COIN_POWER_PIN_FREE) {
+    // Written before pinMode(OUTPUT), same order as initMotorPins() — so
+    // the pin never glitches HIGH/energised for the instant between the two
+    // calls. Powered down until a cash screen actually needs it.
+    digitalWrite(COIN_ENABLE_PIN, MOTOR_ACTIVE_HIGH ? LOW : HIGH);
+    pinMode(COIN_ENABLE_PIN, OUTPUT);
+    coinAcceptorPower(false);
+  }
 }
 
 // The interrupt is live only while the cash screen is showing. Nothing else
@@ -104,6 +127,7 @@ void initCoinAcceptor() {
 // outside of the cash screen physically can't register.
 void coinAcceptorListen(bool on) {
   coinAcceptorPower(on);
+  if (!COIN_PULSE_PIN_FREE) return;  // GPIO33 is M6's driver output in this build
   if (on) attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinPulseISR, RISING);
   else    detachInterrupt(digitalPinToInterrupt(COIN_PIN));
 }
