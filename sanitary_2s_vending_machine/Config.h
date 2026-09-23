@@ -67,7 +67,7 @@
 // COIN_ENABLE_PIN in Screen_06_PaymentOther.ino). Raising this back past 4
 // would collide with that dip-switch wiring on GPIO32 — move the switch back
 // to its "M5" position first.
-#define CFG_MOTOR_COUNT        
+#define CFG_MOTOR_COUNT        2
 
 // How many product slots the admin menu offers. Names, prices and motor
 // assignments for each are set on the admin screens.

@@ -75,9 +75,15 @@ void drawSelectScreen() {
 
   drawBackButton("< Back");
 
-  if (isQuickVend()) {
+  // The Proceed button's "just buy the only thing here" shortcut only means
+  // something with exactly one product on sale — with 2+, there's no single
+  // product for it to mean without a card tap having picked one already
+  // (which sends straight to payment on its own; see onSelectTouched()).
+  // So quick-vend with multiple products draws no Proceed button at all —
+  // every card is already the complete action, nothing left to proceed to.
+  if (isQuickVend() && count == 1) {
     drawProceedButton("Proceed >");
-  } else {
+  } else if (!isQuickVend()) {
     int items = cartItemCount();
     char cartLabel[16];
     if (items > 0) snprintf(cartLabel, sizeof(cartLabel), "Cart(%d) >", items);
@@ -329,22 +335,23 @@ void onSelectTouched(int sx, int sy) {
     return;
   }
 
+  int idx[MAX_PRODUCTS];
+  int count = getEnabledProducts(idx);
+
   if (pointInRect(sx, sy, BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H)) {
-    if (isQuickVend()) {
-      int idx[MAX_PRODUCTS];
-      int count = getEnabledProducts(idx);
+    // Matches drawSelectScreen()'s guard on which button is actually drawn
+    // here — quick-vend with 2+ products draws no Proceed button, so there's
+    // nothing this tap should do in that case.
+    if (isQuickVend() && count == 1) {
       int x, y, w, h;
       getSelectCardRect(0, count, x, y, w, h);
       quickVendSelect(idx[0], x, y, w, h);
-    } else if (cartItemCount() > 0) {
+    } else if (!isQuickVend() && cartItemCount() > 0) {
       currentScreen = SCREEN_CART_REVIEW;
       drawCartReviewScreen();
     }
     return;
   }
-
-  int idx[MAX_PRODUCTS];
-  int count = getEnabledProducts(idx);
 
   for (int k = 0; k < count; k++) {
     int x, y, w, h;
