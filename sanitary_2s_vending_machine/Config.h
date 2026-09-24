@@ -110,6 +110,14 @@
 // check it against your driver board before the first test.
 #define CFG_MOTOR_ACTIVE_HIGH  true
 
+// Product-drop IR sensor (Core_20_DropSensor.ino), GPIO35. Confirmed on the
+// actual module in hand: idles HIGH, reads LOW while the beam is cut (a
+// product passing/displaced). true here means exactly that polarity; only
+// flip it if the module is ever swapped for one that idles the other way —
+// same role as CFG_MOTOR_ACTIVE_HIGH above, kept as a flag rather than a
+// hardcoded LOW so a future module swap doesn't need a code change to match.
+#define CFG_IR_SENSOR_ACTIVE_LOW true
+
 // ---------- Selling ----------
 // Maximum items in one purchase. Setting this to 1 with a single enabled
 // product turns on quick-vend: the cart is hidden and tapping the product

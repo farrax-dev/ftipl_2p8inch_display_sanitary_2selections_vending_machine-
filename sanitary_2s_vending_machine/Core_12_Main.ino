@@ -4,6 +4,7 @@ void setup() {
   initCoinAcceptor();
   initRTC();
   initRFID();
+  initDropSensor();
 
   // CFG_LTE_ENABLED specifically, not lteEnabled: this runs before
   // loadPersistedProductData() below has loaded lteEnabled's real value from
