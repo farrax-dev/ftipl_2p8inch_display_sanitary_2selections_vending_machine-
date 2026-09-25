@@ -45,17 +45,27 @@ bool runMotorPulseVerified(int m, unsigned long motorMs) {
 // reporting success on a partially-jammed order.
 bool dispenseProduct(int i, int qty) {
   bool allDetected = true;
+  int failedUnits = 0;
+  int unitNum = 0;
   int remaining = qty;
   for (int m = 0; m < MAX_MOTORS && remaining > 0; m++) {
     if (!(products[i].motorMask & (1 << m))) continue;
     int take = min(remaining, motorStock[m]);
     for (int k = 0; k < take; k++) {
-      if (!runMotorPulseVerified(m, runTimeForProduct(i))) allDetected = false;
+      unitNum++;
+      Serial.printf("Dispense: '%s' unit %d/%d -> M%d\n", products[i].name, unitNum, qty, m + 1);
+      if (!runMotorPulseVerified(m, runTimeForProduct(i))) {
+        allDetected = false;
+        failedUnits++;
+      }
       decrementMotorStock(m, 1);
       delay(MOTOR_GAP_MS);
     }
     remaining -= take;
   }
+  Serial.printf("Dispense: '%s' done - %d/%d units confirmed%s\n",
+                products[i].name, qty - failedUnits, qty,
+                failedUnits ? " (JAM/EMPTY SUSPECTED)" : "");
   return allDetected;
 }
 
@@ -94,6 +104,9 @@ bool dispenseCart(const char* paymentMethod, bool freeVend) {
   // is the figure from before this sale rather than after it.
   ensureTodaySlot();
 
+  Serial.printf("Dispense: cart start, payment=%s%s\n",
+                paymentMethod, freeVend ? " (free vend)" : "");
+
   bool allDetected = true;
   for (int i = 0; i < MAX_PRODUCTS; i++) {
     if (cartQty[i] > 0) {
@@ -111,6 +124,9 @@ bool dispenseCart(const char* paymentMethod, bool freeVend) {
   // Stock just dropped, so this is the moment a motor can cross the low-stock
   // line (Core_16_ReportSchedule.ino decides whether that warrants an email).
   checkLowStockAlert();
+
+  Serial.printf("Dispense: cart done, payment=%s - %s\n", paymentMethod,
+                allDetected ? "all units confirmed" : "ONE OR MORE UNITS NOT CONFIRMED");
 
   return allDetected;
 }

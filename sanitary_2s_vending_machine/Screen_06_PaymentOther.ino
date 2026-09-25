@@ -126,6 +126,7 @@ void initCoinAcceptor() {
 // something is actually listening for its pulses, so a coin dropped in
 // outside of the cash screen physically can't register.
 void coinAcceptorListen(bool on) {
+  Serial.printf("coin acceptor: listening %s\n", on ? "ON" : "OFF");
   coinAcceptorPower(on);
   if (!COIN_PULSE_PIN_FREE) return;  // GPIO33 is M6's driver output in this build
   if (on) attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinPulseISR, FALLING);
@@ -320,6 +321,8 @@ void handlePaymentCashScreen() {
     cashStatusColor = COL_SUCCESS;
 
     if (cashAmountDue <= 0) {
+      Serial.printf("coin acceptor: payment complete, Rs %d order paid (Rs %d overpaid, no change given)\n",
+                    orderTotal, -cashAmountDue);
       bool dispensedOk = dispenseCart("Cash", false);
 
       drawGradientBackground();
@@ -371,6 +374,8 @@ void handlePaymentCashScreen() {
   // refund" Back-button swap above left the screen stuck forever once a
   // single coin had been credited.
   if (millis() - cashEnteredTime > CASH_TIMEOUT_MS) {
+    Serial.printf("coin acceptor: cash screen timed out, Rs %d of Rs %d still due\n",
+                  cashAmountDue, orderTotal);
     coinAcceptorListen(false);
     currentScreen = SCREEN_PAYMENT_METHOD;
     drawPaymentMethodScreen();
@@ -383,6 +388,7 @@ void handlePaymentCashScreen() {
     int sx, sy;
     mapTouchToScreen(raw, sx, sy);
     if (!cashAnyCoinAccepted && pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
+      Serial.println("coin acceptor: cash payment cancelled by user (Back, no coins accepted)");
       coinAcceptorListen(false);
       currentScreen = SCREEN_PAYMENT_METHOD;
       drawPaymentMethodScreen();
