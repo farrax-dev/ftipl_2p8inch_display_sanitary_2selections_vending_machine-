@@ -118,6 +118,14 @@
 // hardcoded LOW so a future module swap doesn't need a code change to match.
 #define CFG_IR_SENSOR_ACTIVE_LOW true
 
+// After a motor finishes its CFG_MOTOR_RUN_MS run, how much longer
+// (Core_11_Dispense.ino) keeps watching the drop sensor for the beam break
+// before giving up and calling that unit a failed dispense. A product can
+// take a moment to actually fall clear of the coil after the motor stops, so
+// this has to be long enough to cover that, not just the motor's own spin
+// time. 4000-6000 is the expected range; tune per chute geometry.
+#define CFG_DROP_SENSOR_BUFFER_MS  5000
+
 // ---------- Selling ----------
 // Maximum items in one purchase. Setting this to 1 with a single enabled
 // product turns on quick-vend: the cart is hidden and tapping the product

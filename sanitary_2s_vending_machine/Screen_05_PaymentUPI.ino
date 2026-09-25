@@ -221,6 +221,11 @@ void drawUPIStatusLine(int y) {
 }
 
 bool upiVendPending = false;
+// Set once dispenseCart() returns, from its drop-sensor verification —
+// separate from upiVendPending because the payment itself already succeeded
+// (money moved) by the time this is known, so the screen keeps saying
+// "Payment Successful!" either way and only the closing line changes.
+bool upiDispenseFailed = false;
 
 void drawUPISuccessScreen() {
   drawGradientBackground();
@@ -237,10 +242,15 @@ void drawUPISuccessScreen() {
   centerText(buf, 140);
 
   tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
   if (upiVendPending) {
+    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
     centerText("Preparing your item...", 165);
+  } else if (upiDispenseFailed) {
+    tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
+    centerText("Dispense failed - contact support", 165);
+    drawProceedButton("Done");
   } else {
+    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
     centerText("Please collect your item", 165);
     drawProceedButton("Done");
   }
@@ -289,6 +299,7 @@ void drawUPICurrentStage() {
 
 void drawPaymentUPIScreen() {
   upiStage = UPI_STAGE_INIT;
+  upiDispenseFailed = false;
   initiateUPIPayment();
   drawUPICurrentStage();
 }
@@ -317,7 +328,7 @@ void handlePaymentUPIScreen() {
           drawUPISuccessScreen();
           delay(UPI_SUCCESS_HOLD_MS);
 
-          dispenseCart("UPI", false);
+          upiDispenseFailed = !dispenseCart("UPI", false);
 
           upiVendPending = false;
           drawUPICurrentStage();

@@ -320,16 +320,25 @@ void handlePaymentCashScreen() {
     cashStatusColor = COL_SUCCESS;
 
     if (cashAmountDue <= 0) {
-      dispenseCart("Cash", false);
+      bool dispensedOk = dispenseCart("Cash", false);
 
       drawGradientBackground();
       tft.setTextSize(3);
-      tft.setTextColor(COL_SUCCESS, COL_BG_BOTTOM);
-      centerText("Payment", 70);
-      centerText("Successful!", 100);
-      tft.setTextSize(1);
-      tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-      centerText("Please collect your item", 140);
+      if (dispensedOk) {
+        tft.setTextColor(COL_SUCCESS, COL_BG_BOTTOM);
+        centerText("Product", 70);
+        centerText("Dispensed!", 100);
+        tft.setTextSize(1);
+        tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+        centerText("Please collect your item", 140);
+      } else {
+        tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
+        centerText("Dispense", 70);
+        centerText("Failed", 100);
+        tft.setTextSize(1);
+        tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+        centerText("Please contact support", 140);
+      }
       delay(2500);
 
       resetCart();
@@ -442,16 +451,24 @@ void handlePaymentRFIDScreen() {
 
     if (cardIdx >= 0 && !overLimit) {
       int qty = cartTotalQty();
-      dispenseCart("RFID", true);  // freeVend — see Core_11_Dispense.ino
+      bool dispensedOk = dispenseCart("RFID", true);  // freeVend — see Core_11_Dispense.ino
       addRFIDCardUsage(cardIdx, qty);
 
       drawGradientBackground();
       tft.setTextSize(3);
-      tft.setTextColor(COL_SUCCESS, COL_BG_BOTTOM);
-      centerText("Card Accepted", 70);
-      tft.setTextSize(1);
-      tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-      centerText("Please collect your item", 110);
+      if (dispensedOk) {
+        tft.setTextColor(COL_SUCCESS, COL_BG_BOTTOM);
+        centerText("Card Accepted", 70);
+        tft.setTextSize(1);
+        tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+        centerText("Please collect your item", 110);
+      } else {
+        tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
+        centerText("Dispense Failed", 70);
+        tft.setTextSize(1);
+        tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+        centerText("Please contact support", 110);
+      }
       delay(2000);
 
       resetCart();
