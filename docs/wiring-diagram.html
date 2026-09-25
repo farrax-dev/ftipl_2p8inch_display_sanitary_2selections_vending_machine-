@@ -266,6 +266,15 @@
             <!-- DIP SWITCH A: GPIO33 <-> coin pulse-in / future M6 -->
             <line x1="260" y1="297" x2="330" y2="297" stroke="var(--net-coin)" stroke-width="2"/>
             <circle cx="260" cy="297" r="2.8" fill="var(--net-coin)"/>
+
+            <!-- pull-up resistor: coin pulse line (GPIO33) to 3V3, external 10k -->
+            <line x1="295" y1="297" x2="295" y2="278" stroke="var(--net-coin)" stroke-width="1.6"/>
+            <circle cx="295" cy="297" r="2.4" fill="var(--net-coin)"/>
+            <rect x="284" y="252" width="22" height="26" rx="3" fill="var(--surface)" stroke="var(--ink)" stroke-opacity=".55"/>
+            <text x="295" y="269" text-anchor="middle" font-size="8" fill="var(--ink-dim)">10k</text>
+            <line x1="295" y1="252" x2="295" y2="232" stroke="var(--net-power)" stroke-width="1.6"/>
+            <circle cx="295" cy="232" r="2.4" fill="var(--net-power)"/>
+            <text x="295" y="224" text-anchor="middle" fill="var(--net-power)" font-size="8.5">3V3</text>
             <rect x="330" y="282" width="66" height="30" rx="5" fill="var(--surface)" stroke="var(--net-switch)" stroke-width="1.6"/>
             <text x="363" y="300" text-anchor="middle" font-weight="700" font-size="10.5" fill="var(--net-switch)">SW&#160;A</text>
             <line x1="396" y1="297" x2="440" y2="297" stroke="var(--net-coin)" stroke-width="2"/>
@@ -345,9 +354,9 @@
             <circle cx="1150" cy="280" r="2.8" fill="var(--net-power)"/><circle cx="1170" cy="280" r="2.8" fill="var(--net-power)"/>
             <circle cx="1150" cy="298" r="2.8" fill="var(--net-gnd)"/><circle cx="1170" cy="298" r="2.8" fill="var(--net-gnd)"/>
             <rect x="1170" y="256" width="110" height="80" rx="8" fill="var(--surface-2)" stroke="var(--net-power)" stroke-dasharray="4 3"/>
-            <text x="1225" y="277" text-anchor="middle" fill="var(--ink)" font-size="10" font-weight="600">DEDICATED</text>
+            <text x="1225" y="277" text-anchor="middle" fill="var(--ink)" font-size="10" font-weight="600">EXTERNAL</text>
             <text x="1225" y="291" text-anchor="middle" fill="var(--ink)" font-size="10" font-weight="600">SUPPLY</text>
-            <text x="1225" y="307" text-anchor="middle" fill="var(--ink-dim)" font-size="9.5">3.7&#8211;4.4V, &#8805;2A</text>
+            <text x="1225" y="307" text-anchor="middle" fill="var(--ink-dim)" font-size="9.5">5V or 12V</text>
             <text x="1225" y="322" text-anchor="middle" fill="var(--ink-dim)" font-size="8.5">never ESP32 5V pin</text>
 
             <!-- ===== RFID MODULE BLOCK (disabled) ===== -->
@@ -359,20 +368,28 @@
             <text x="1045" y="443" text-anchor="middle" fill="var(--net-off)" font-size="8.5">CFG_PAYMENT_RFID_AVAILABLE = false</text>
 
             <g stroke-width="2" fill="none">
-              <line x1="720" y1="405" x2="940" y2="405" stroke="var(--net-power)"/>
               <line x1="720" y1="423" x2="940" y2="423" stroke="var(--net-gnd)"/>
               <line x1="720" y1="441" x2="940" y2="441" stroke="var(--net-rfid)" stroke-width="3"/>
               <line x1="720" y1="459" x2="940" y2="459" stroke="var(--net-rfid)" stroke-width="3"/>
             </g>
-            <circle cx="720" cy="405" r="2.8" fill="var(--net-power)"/><circle cx="940" cy="405" r="2.8" fill="var(--net-power)"/>
             <circle cx="720" cy="423" r="2.8" fill="var(--net-gnd)"/><circle cx="940" cy="423" r="2.8" fill="var(--net-gnd)"/>
             <circle cx="720" cy="441" r="2.8" fill="var(--net-rfid)"/><circle cx="940" cy="441" r="2.8" fill="var(--net-rfid)"/>
             <circle cx="720" cy="459" r="2.8" fill="var(--net-rfid)"/><circle cx="940" cy="459" r="2.8" fill="var(--net-rfid)"/>
 
-            <text x="830" y="398" text-anchor="middle" fill="var(--net-power)" font-size="9.5">3V3</text>
-            <text x="830" y="416" text-anchor="middle" fill="var(--net-gnd)" font-size="9.5">GND</text>
+            <text x="830" y="416" text-anchor="middle" fill="var(--net-gnd)" font-size="9.5">GND (common)</text>
             <text x="830" y="435" text-anchor="middle" fill="var(--net-rfid)" font-size="9.5">GPIO22 &#8594; RXD</text>
             <text x="830" y="453" text-anchor="middle" fill="var(--net-rfid)" font-size="9.5">GPIO34 &#8592; TXD</text>
+
+            <!-- RFID dedicated 5V supply — not from ESP32 3V3, same pattern as the LTE modem's own dedicated supply below -->
+            <line x1="1150" y1="395" x2="1170" y2="395" stroke="var(--net-power)" stroke-width="2"/>
+            <line x1="1150" y1="413" x2="1170" y2="413" stroke="var(--net-gnd)" stroke-width="2"/>
+            <circle cx="1150" cy="395" r="2.8" fill="var(--net-power)"/><circle cx="1170" cy="395" r="2.8" fill="var(--net-power)"/>
+            <circle cx="1150" cy="413" r="2.8" fill="var(--net-gnd)"/><circle cx="1170" cy="413" r="2.8" fill="var(--net-gnd)"/>
+            <rect x="1170" y="371" width="110" height="80" rx="8" fill="var(--surface-2)" stroke="var(--net-power)" stroke-dasharray="4 3"/>
+            <text x="1225" y="393" text-anchor="middle" fill="var(--ink)" font-size="10" font-weight="600">EXTERNAL</text>
+            <text x="1225" y="407" text-anchor="middle" fill="var(--ink)" font-size="10" font-weight="600">5V SUPPLY</text>
+            <text x="1225" y="423" text-anchor="middle" fill="var(--ink-dim)" font-size="9.5">not ESP32 3V3</text>
+            <text x="1225" y="438" text-anchor="middle" fill="var(--ink-dim)" font-size="8.5">module is rated 3.0&#8211;5.5V</text>
 
             <!-- ===== PRODUCT-DROP IR SENSOR BLOCK ===== -->
             <rect x="940" y="480" width="210" height="100" rx="10" fill="var(--surface-2)" stroke="var(--ink)" stroke-opacity=".55"/>
@@ -390,6 +407,14 @@
             <circle cx="720" cy="485" r="2.8" fill="var(--net-power)"/><circle cx="940" cy="485" r="2.8" fill="var(--net-power)"/>
             <circle cx="720" cy="500" r="2.8" fill="var(--net-gnd)"/><circle cx="940" cy="500" r="2.8" fill="var(--net-gnd)"/>
             <circle cx="720" cy="515" r="2.8" fill="var(--net-sensor)"/><circle cx="940" cy="515" r="2.8" fill="var(--net-sensor)"/>
+
+            <!-- pull-up resistor: IR sensor OUT (GPIO35) to the block's own 3V3 line above, external 10k, required -->
+            <circle cx="890" cy="515" r="2.4" fill="var(--net-sensor)"/>
+            <line x1="890" y1="515" x2="890" y2="510" stroke="var(--net-sensor)" stroke-width="1.6"/>
+            <rect x="879" y="490" width="22" height="20" rx="3" fill="var(--surface)" stroke="var(--ink)" stroke-opacity=".55"/>
+            <text x="890" y="503" text-anchor="middle" font-size="8" fill="var(--ink-dim)">10k</text>
+            <line x1="890" y1="490" x2="890" y2="485" stroke="var(--net-power)" stroke-width="1.6"/>
+            <circle cx="890" cy="485" r="2.4" fill="var(--net-power)"/>
 
             <text x="830" y="479" text-anchor="middle" fill="var(--net-power)" font-size="9.5">3V3</text>
             <text x="830" y="494" text-anchor="middle" fill="var(--net-gnd)" font-size="9.5">GND</text>
@@ -493,7 +518,7 @@
             </g>
           </svg>
 
-          <figcaption>All grounds — ESP32, display, coin subsystem, RTC module, LTE modem, RFID reader, the drop sensor, motor driver and its external supplies — tie to one common return. The motor driver and LTE modem are the two blocks that must <em>not</em> draw their power from the ESP32's own 5V/3V3 rails; the RFID reader and coin-power relay are fine straight off 3V3.</figcaption>
+          <figcaption>All grounds — ESP32, display, coin subsystem, RTC module, LTE modem, RFID reader, the drop sensor, motor driver and its external supplies — tie to one common return. The motor driver, LTE modem and RFID reader are the three blocks that must <em>not</em> draw their power from the ESP32's own 5V/3V3 rails — the LTE modem needs a dedicated 5V or 12V external supply, and the RFID reader a dedicated external 5V supply; the coin-power relay is fine straight off 3V3. The coin acceptor's pulse line (GPIO33) and the product-drop IR sensor (GPIO35) both carry an external 10k&#8486; pull-up to 3V3, shown at their signal lines.</figcaption>
         </figure>
 
         <div class="legend" aria-label="Wire color key">
@@ -592,8 +617,8 @@
           <tbody>
             <tr><td>TX &#8594; module RXD</td><td class="gpio">GPIO22</td><td class="note"></td></tr>
             <tr><td>RX &#8592; module TXD</td><td class="gpio">GPIO34</td><td class="note">input-only pin</td></tr>
-            <tr><td>VCC</td><td class="gpio">3V3</td><td class="note">module is rated 3.0&#8211;5.5V</td></tr>
-            <tr><td>GND</td><td class="gpio">GND</td><td class="note">common return</td></tr>
+            <tr><td>VCC</td><td class="gpio">5V (ext.)</td><td class="note">dedicated external 5V supply, <strong>not</strong> the ESP32 3V3 rail — module is rated 3.0&#8211;5.5V</td></tr>
+            <tr><td>GND</td><td class="gpio">GND</td><td class="note">common return, shared with the ESP32/system ground</td></tr>
             <tr><td>Baud</td><td class="gpio">19200</td><td class="note">8N1, <strong>inverted</strong> line levels — the reader idles LOW (RS232), not HIGH.</td></tr>
           </tbody>
         </table>
@@ -623,7 +648,7 @@
             <tr><td>TX2 &#8594; RXD</td><td class="gpio">GPIO17</td><td class="note"></td></tr>
             <tr><td>RX2 &#8592; TXD</td><td class="gpio">GPIO16</td><td class="note"></td></tr>
             <tr><td>Baud</td><td class="gpio">115200</td><td class="note">8N1</td></tr>
-            <tr><td>Power</td><td class="gpio">&#8212;</td><td class="note">dedicated 3.7&#8211;4.4V, &#8805;2A burst — not the ESP32 5V pin</td></tr>
+            <tr><td>Power</td><td class="gpio">&#8212;</td><td class="note">dedicated external supply, 5V or 12V — not the ESP32 5V pin</td></tr>
           </tbody>
         </table>
         <p class="tfoot-note">Fully wired and implemented but <code>CFG_LTE_ENABLED&nbsp;=&nbsp;false</code> — the modem UART is never even brought up at boot, and the WiFi/4G admin toggle is greyed out. Flip the flag and reflash any time a SIM/modem is fitted and connectivity is wanted; no rewiring needed.</p>
@@ -643,9 +668,9 @@
           <tbody>
 
             <tr class="grp"><td colspan="5">Power &amp; system</td></tr>
-            <tr><td class="gpio">3V3</td><td class="dir">out</td><td>Power</td><td>Display VCC + LED &middot; RFID VCC &middot; DS3231 VCC &middot; coin pull-up</td><td class="note">On-board regulator. Logic rail for all peripheral modules. Not for the modem or the motors.</td></tr>
-            <tr><td class="gpio">5V / VIN</td><td class="dir">in</td><td>Power</td><td>USB, or a 5V supply feeding the ESP32 itself</td><td class="note">Never the source for the LTE modem or the motor rail &mdash; both exceed what this pin can pass.</td></tr>
-            <tr><td class="gpio">GND &#215;3</td><td class="dir">&#8212;</td><td>Ground</td><td>Every module, plus both external supplies</td><td class="note">One common return. The motor supply and the modem supply must share it or the UART and pulse signals have no reference.</td></tr>
+            <tr><td class="gpio">3V3</td><td class="dir">out</td><td>Power</td><td>Display VCC + LED &middot; DS3231 VCC &middot; coin pull-up &middot; IR sensor pull-up</td><td class="note">On-board regulator. Logic rail for the display, RTC and both pull-ups. Not for the modem, the RFID reader or the motors.</td></tr>
+            <tr><td class="gpio">5V / VIN</td><td class="dir">in</td><td>Power</td><td>USB, or a 5V supply feeding the ESP32 itself</td><td class="note">Never the source for the LTE modem, the RFID reader or the motor rail &mdash; all three need their own external supply.</td></tr>
+            <tr><td class="gpio">GND &#215;3</td><td class="dir">&#8212;</td><td>Ground</td><td>Every module, plus all three external supplies</td><td class="note">One common return. The motor, modem and RFID supplies must all share it or their signals have no reference.</td></tr>
             <tr><td class="gpio">EN</td><td class="dir">in</td><td>Reset</td><td>Nothing (or a reset button)</td><td class="note">Pulling it low resets the board. Keep adjacent wiring clear &mdash; a stray connection here held the board in permanent reset once during RFID wiring.</td></tr>
 
             <tr class="grp"><td colspan="5">Display &amp; touch &mdash; shared VSPI, 8&#8239;MHz, rotation&nbsp;1 (320&#215;240 landscape)</td></tr>
