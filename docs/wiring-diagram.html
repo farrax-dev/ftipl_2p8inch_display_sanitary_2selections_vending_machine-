@@ -9,7 +9,7 @@
     --net-power:#C4401F; --net-gnd:#16232E; --net-spi:#2A5FBF;
     --net-tftctl:#0E8E80; --net-touch:#7C3FC4; --net-motor:#BE7710;
     --net-coin:#3F8F2A; --net-lte:#B23A7E; --net-i2c:#B08A1E; --net-rfid:#4A4FC7;
-    --net-switch:#0E6FA8; --net-off:#8A6D1F;
+    --net-switch:#0E6FA8; --net-off:#8A6D1F; --net-sensor:#C23B6B;
     --shadow: 0 1px 2px rgba(22,35,46,.06), 0 8px 24px rgba(22,35,46,.06);
   }
   @media (prefers-color-scheme: dark){
@@ -20,7 +20,7 @@
       --net-power:#E0603F; --net-gnd:#C9D6E2; --net-spi:#6D9BF0;
       --net-tftctl:#3FC4B4; --net-touch:#B587F5; --net-motor:#E3A03C;
       --net-coin:#6FC456; --net-lte:#EA7DBC; --net-i2c:#E0C24E; --net-rfid:#8C90F0;
-      --net-switch:#5FB6EA; --net-off:#E0C24E;
+      --net-switch:#5FB6EA; --net-off:#E0C24E; --net-sensor:#F07BA8;
       --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.35);
     }
   }
@@ -31,7 +31,7 @@
     --net-power:#E0603F; --net-gnd:#C9D6E2; --net-spi:#6D9BF0;
     --net-tftctl:#3FC4B4; --net-touch:#B587F5; --net-motor:#E3A03C;
     --net-coin:#6FC456; --net-lte:#EA7DBC; --net-i2c:#E0C24E; --net-rfid:#8C90F0;
-    --net-switch:#5FB6EA; --net-off:#E0C24E;
+    --net-switch:#5FB6EA; --net-off:#E0C24E; --net-sensor:#F07BA8;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 28px rgba(0,0,0,.35);
   }
 
@@ -173,20 +173,20 @@
   <div class="titleblock">
     <div class="cell"><span class="k">Title</span><span class="v">ESP32 Controller Wiring Reference</span></div>
     <div class="cell"><span class="k">Project</span><span class="v">Sanitary Napkin Vending Machine (2-selection)</span></div>
-    <div class="cell"><span class="k">Date</span><span class="v">2026-09-23</span></div>
+    <div class="cell"><span class="k">Date</span><span class="v">2026-09-25</span></div>
   </div>
 
   <header>
     <p class="eyebrow">FTIPL Vending Machine &middot; Firmware-Sourced Reference</p>
     <h1>ESP32 Controller Wiring</h1>
-    <p class="dek">Every net below is read directly from this firmware's pin constants — <code>Config.h</code>, <code>Core_04_Hardware.ino</code>, <code>Screen_06_PaymentOther.ino</code>, <code>Core_13_LTEModem.ino</code>, <code>Core_18_RTC.ino</code>, <code>Core_19_RFID.ino</code>, <code>Core_20_DropSensor.ino</code> — not a generic ESP32 pinout. Reflects the 2-motor sanitary-napkin build (<code>CFG_MOTOR_COUNT&nbsp;=&nbsp;2</code>): only M1/M2 are populated, M3/M4 stay reserved and unwired, and GPIO32/GPIO33 are each behind their own external dip switch rather than fixed to one job. The RFID reader and the LTE modem are fully wired and implemented in firmware but currently switched <strong>off</strong> in software (<code>CFG_PAYMENT_RFID_AVAILABLE&nbsp;=&nbsp;false</code>, <code>CFG_LTE_ENABLED&nbsp;=&nbsp;false</code>) — the code path exists, nothing was removed, so both re-enable with a flag flip and a reflash, no rewiring. Every ESP32 pin, including the unused and unusable ones, is accounted for in <a href="#pinmap">the complete pin map</a>.</p>
+    <p class="dek">Every net below is read directly from this firmware's pin constants — <code>Config.h</code>, <code>Core_04_Hardware.ino</code>, <code>Screen_06_PaymentOther.ino</code>, <code>Core_13_LTEModem.ino</code>, <code>Core_18_RTC.ino</code>, <code>Core_19_RFID.ino</code>, <code>Core_20_DropSensor.ino</code>, <code>Core_11_Dispense.ino</code> — not a generic ESP32 pinout. Reflects the 2-motor sanitary-napkin build (<code>CFG_MOTOR_COUNT&nbsp;=&nbsp;2</code>): only M1/M2 are populated, M3/M4 stay reserved and unwired, and GPIO32/GPIO33 are each behind their own external dip switch rather than fixed to one job. The RFID reader and the LTE modem are fully wired and implemented in firmware but currently switched <strong>off</strong> in software (<code>CFG_PAYMENT_RFID_AVAILABLE&nbsp;=&nbsp;false</code>, <code>CFG_LTE_ENABLED&nbsp;=&nbsp;false</code>) — the code path exists, nothing was removed, so both re-enable with a flag flip and a reflash, no rewiring. Every ESP32 pin, including the unused and unusable ones, is accounted for in <a href="#pinmap">the complete pin map</a>.</p>
   </header>
 
   <section>
     <div class="figure-card">
       <div class="diagram-row">
         <figure>
-          <svg viewBox="0 0 1300 960" role="img" aria-label="Wiring diagram: ESP32 DevKit at center, connected above to the ILI9341 display and XPT2046 touch controller over a shared SPI bus. On the left, GPIO33 and GPIO32 each pass through their own two-position dip switch before reaching the coin acceptor's pulse input and its power relay respectively; the alternate, currently unused throw of each switch is shown dashed, reserved for a future sixth motor and a future fifth motor. Below the coin blocks sits a battery-backed DS3231 RTC module on I2C. On the right, a 4G/LTE modem on UART2 and a YHY5225 RFID reader on a second UART are both fully wired but shown with a DISABLED badge, since both are switched off in firmware. Below the ESP32, a six-terminal motor driver board has only M1 and M2 populated, switching those two motors from a separate 12 to 24 volt supply; GPIO26 and GPIO27 are shown as short reserved stubs that are not wired to any driver channel in this build, and the M5/M6 terminals are shown dashed, tied back to the same dip switches as the coin blocks.">
+          <svg viewBox="0 0 1300 960" role="img" aria-label="Wiring diagram: ESP32 DevKit at center, connected above to the ILI9341 display and XPT2046 touch controller over a shared SPI bus. On the left, GPIO33 and GPIO32 each pass through their own two-position dip switch before reaching the coin acceptor's pulse input and its power relay respectively; the alternate, currently unused throw of each switch is shown dashed, reserved for a future sixth motor and a future fifth motor. Below the coin blocks sits a battery-backed DS3231 RTC module on I2C. On the right, a 4G/LTE modem on UART2 and a YHY5225 RFID reader on a second UART are both fully wired but shown with a DISABLED badge, since both are switched off in firmware; below the RFID reader, a product-drop IR sensor on GPIO35 is wired and live, its output verified against every dispensed unit. Below the ESP32, a six-terminal motor driver board has only M1 and M2 populated, switching those two motors from a separate 12 to 24 volt supply; GPIO26 and GPIO27 are shown as short reserved stubs that are not wired to any driver channel in this build, and the M5/M6 terminals are shown dashed, tied back to the same dip switches as the coin blocks.">
 
             <defs>
               <marker id="dot" markerWidth="6" markerHeight="6" refX="3" refY="3">
@@ -374,6 +374,27 @@
             <text x="830" y="435" text-anchor="middle" fill="var(--net-rfid)" font-size="9.5">GPIO22 &#8594; RXD</text>
             <text x="830" y="453" text-anchor="middle" fill="var(--net-rfid)" font-size="9.5">GPIO34 &#8592; TXD</text>
 
+            <!-- ===== PRODUCT-DROP IR SENSOR BLOCK ===== -->
+            <rect x="940" y="480" width="210" height="100" rx="10" fill="var(--surface-2)" stroke="var(--ink)" stroke-opacity=".55"/>
+            <text x="1045" y="503" text-anchor="middle" font-family="Barlow Condensed" font-weight="700" font-size="13.5" fill="var(--ink)">PRODUCT-DROP IR SENSOR</text>
+            <text x="1045" y="519" text-anchor="middle" fill="var(--ink-dim)" font-size="9.5">digital out &#183; idles HIGH</text>
+            <text x="1045" y="534" text-anchor="middle" fill="var(--ink-dim)" font-size="9">LOW&#160;=&#160;beam cut</text>
+            <text x="1045" y="548" text-anchor="middle" fill="var(--ink-dim)" font-size="9">ext. 10k&#8486; pull-up to 3V3 (required)</text>
+            <text x="1045" y="565" text-anchor="middle" fill="var(--net-sensor)" font-size="9" font-weight="600">verifies every dispense (Core_11)</text>
+
+            <g stroke-width="2" fill="none">
+              <line x1="720" y1="485" x2="940" y2="485" stroke="var(--net-power)"/>
+              <line x1="720" y1="500" x2="940" y2="500" stroke="var(--net-gnd)"/>
+              <line x1="720" y1="515" x2="940" y2="515" stroke="var(--net-sensor)" stroke-width="3"/>
+            </g>
+            <circle cx="720" cy="485" r="2.8" fill="var(--net-power)"/><circle cx="940" cy="485" r="2.8" fill="var(--net-power)"/>
+            <circle cx="720" cy="500" r="2.8" fill="var(--net-gnd)"/><circle cx="940" cy="500" r="2.8" fill="var(--net-gnd)"/>
+            <circle cx="720" cy="515" r="2.8" fill="var(--net-sensor)"/><circle cx="940" cy="515" r="2.8" fill="var(--net-sensor)"/>
+
+            <text x="830" y="479" text-anchor="middle" fill="var(--net-power)" font-size="9.5">3V3</text>
+            <text x="830" y="494" text-anchor="middle" fill="var(--net-gnd)" font-size="9.5">GND</text>
+            <text x="830" y="509" text-anchor="middle" fill="var(--net-sensor)" font-size="9.5">GPIO35 &#8592; OUT</text>
+
             <!-- ===== ESP32 to MOTOR DRIVER (2 active channels; GPIO26/27 are short, ====== -->
             <!-- ===== dashed, unterminated stubs — neither reaches the board)        ====== -->
             <g stroke-width="2" fill="none">
@@ -472,7 +493,7 @@
             </g>
           </svg>
 
-          <figcaption>All grounds — ESP32, display, coin subsystem, RTC module, LTE modem, RFID reader, motor driver and its external supplies — tie to one common return. The motor driver and LTE modem are the two blocks that must <em>not</em> draw their power from the ESP32's own 5V/3V3 rails; the RFID reader and coin-power relay are fine straight off 3V3.</figcaption>
+          <figcaption>All grounds — ESP32, display, coin subsystem, RTC module, LTE modem, RFID reader, the drop sensor, motor driver and its external supplies — tie to one common return. The motor driver and LTE modem are the two blocks that must <em>not</em> draw their power from the ESP32's own 5V/3V3 rails; the RFID reader and coin-power relay are fine straight off 3V3.</figcaption>
         </figure>
 
         <div class="legend" aria-label="Wire color key">
@@ -487,6 +508,7 @@
           <div class="row"><span class="swatch" style="background:var(--net-i2c)"></span><span class="lbl">I2C bus (SDA/SCL)</span></div>
           <div class="row"><span class="swatch" style="background:var(--net-lte)"></span><span class="lbl">LTE UART2 (TX/RX)</span></div>
           <div class="row"><span class="swatch" style="background:var(--net-rfid)"></span><span class="lbl">RFID UART1 (TX/RX)</span></div>
+          <div class="row"><span class="swatch" style="background:var(--net-sensor)"></span><span class="lbl">Drop sensor output</span></div>
           <div class="row"><span class="swatch dash" style="color:var(--net-power)"></span><span class="lbl">Dedicated external supply</span></div>
           <div class="row"><span class="swatch dash" style="color:var(--net-switch)"></span><span class="lbl">Dip switch's inactive throw</span></div>
           <div class="row"><span style="width:22px;height:14px;border:1.4px solid var(--net-off);border-radius:3px;flex:none;"></span><span class="lbl">Wired, disabled in firmware</span></div>
@@ -531,6 +553,21 @@
           </tbody>
         </table>
         <p class="tfoot-note"><code>CFG_MOTOR_COUNT&nbsp;=&nbsp;2</code> — <code>initMotorPins()</code> only ever touches the first two entries of <code>MOTOR_PIN_POOL</code>, so GPIO26/27/32/33 are never configured as outputs by firmware at this count; nothing collides if they're left completely unwired. Raising the count to 5 or 6 needs the matching dip switch(es) moved to their motor throw first (GPIO32 at 5, GPIO33 as well at 6), and a reflash either way — see <code>COIN_POWER_PIN_FREE</code>/<code>COIN_PULSE_PIN_FREE</code> in Screen_06_PaymentOther.ino for exactly how firmware backs off the coin subsystem as those pins get claimed.</p>
+      </div>
+
+      <div class="tblock">
+        <h3><span class="dot" style="background:var(--net-sensor)"></span>Product-drop IR sensor</h3>
+        <table>
+          <thead><tr><th>Signal</th><th>ESP32</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>OUT</td><td class="gpio">GPIO35</td><td class="note">input-only, no internal pull-up</td></tr>
+            <tr><td>Pull-up</td><td class="gpio">3V3</td><td class="note">external 10k&#8486; &mdash; <strong>required</strong>, unlike GPIO33's coin pulse-in there is no internal pull-up to fall back on here at all</td></tr>
+            <tr><td>VCC</td><td class="gpio">3V3</td><td class="note"></td></tr>
+            <tr><td>GND</td><td class="gpio">GND</td><td class="note">common return</td></tr>
+            <tr><td>Polarity</td><td class="gpio">active-low</td><td class="note">idles HIGH, reads LOW while the beam is cut &mdash; <code>CFG_IR_SENSOR_ACTIVE_LOW&nbsp;=&nbsp;true</code></td></tr>
+          </tbody>
+        </table>
+        <p class="tfoot-note">Wired and live: every unit dispensed is checked against this pin (<code>dispenseProduct()</code>, Core_11_Dispense.ino). The motor always runs its full <code>CFG_MOTOR_RUN_MS</code> first — an early or noisy trigger never cuts it short — then the beam is watched for up to <code>CFG_DROP_SENSOR_BUFFER_MS</code> more (Config.h, default 5000&#8239;ms) before that unit is called a failed dispense. Debounced 30&#8239;ms in <code>pollDropSensor()</code>, Core_20_DropSensor.ino.</p>
       </div>
 
       <div class="tblock">
@@ -636,7 +673,7 @@
             <tr><td class="gpio">GPIO22</td><td class="dir">out</td><td>UART1</td><td>YHY5225 reader <strong>RXD</strong> &mdash; <span style="color:var(--net-off)">disabled</span></td><td class="note">19200 8N1, <strong>inverted</strong> line levels. UART is still brought up at boot; only the payment option/admin screens are hidden.</td></tr>
             <tr class="dual"><td class="gpio">GPIO33</td><td class="dir">in</td><td>Dip SW A</td><td>Throw A: coin acceptor pulse &middot; Throw B: 6th motor driver</td><td class="note">RISING-edge interrupt, 5&#8239;ms debounce. Internal pull-up available; a 10k&#8486; external one is fitted and may stay. Physically routed through an external dip switch.</td></tr>
             <tr><td class="gpio">GPIO34</td><td class="dir">in only</td><td>UART1</td><td>YHY5225 reader <strong>TXD</strong> &mdash; <span style="color:var(--net-off)">disabled</span></td><td class="note">Input-only pin: no output driver and no internal pull-up. Fine here &mdash; a UART receive line never needs either.</td></tr>
-            <tr><td class="gpio">GPIO35</td><td class="dir">in only</td><td>Sensor</td><td>Product-drop IR sensor, digital out</td><td class="note">Planned, not yet wired on the bench. Confirmed polarity: idles HIGH, reads LOW when the beam is cut (<code>CFG_IR_SENSOR_ACTIVE_LOW&nbsp;=&nbsp;true</code>, Config.h). <strong>External 10k&#8486; pull-up to 3V3 required</strong> &mdash; GPIO35 has no internal pull-up at all, and this pin family already has a documented floating-input failure on this project (COIN_PIN, before its pull-up was fitted). See Core_20_DropSensor.ino.</td></tr>
+            <tr><td class="gpio">GPIO35</td><td class="dir">in only</td><td>Sensor</td><td>Product-drop IR sensor, digital out</td><td class="note">Wired and live: every dispensed unit is checked against this pin (<code>Core_11_Dispense.ino</code>) &mdash; the motor always completes its full <code>CFG_MOTOR_RUN_MS</code> regardless of the sensor (an early or noisy trigger never cuts the motor short), then the beam is watched for up to <code>CFG_DROP_SENSOR_BUFFER_MS</code> more (Config.h, default 5000&#8239;ms) before that unit is called a failed dispense. Confirmed polarity: idles HIGH, reads LOW when the beam is cut (<code>CFG_IR_SENSOR_ACTIVE_LOW&nbsp;=&nbsp;true</code>, Config.h). <strong>External 10k&#8486; pull-up to 3V3 required</strong> &mdash; GPIO35 has no internal pull-up at all, and this pin family already has a documented floating-input failure on this project (COIN_PIN, before its pull-up was fitted); an unfitted pull-up here reads as phantom drops, not missed ones. See Core_20_DropSensor.ino / Core_11_Dispense.ino.</td></tr>
 
             <tr class="grp"><td colspan="5">USB console &mdash; in use, do not repurpose</td></tr>
             <tr><td class="gpio">GPIO1 (TX0)</td><td class="dir">out</td><td>UART0</td><td>USB&#8211;serial bridge</td><td class="note">115200 debug console (<code>Serial</code>). Also carries the boot log.</td></tr>
@@ -654,7 +691,7 @@
           </tbody>
         </table>
         </div>
-        <p class="tfoot-note"><strong>20 GPIOs wired to peripherals (2 of them dip-switched dual-role), 2 more on the USB console, 3 spare, 7 unusable.</strong> GPIO26/27 are counted as "wired to peripherals" in the sense that they're reserved motor-pool slots, but nothing is physically connected to them in this build; GPIO35 is counted the same way &mdash; claimed by the planned IR drop sensor, not yet actually wired on the bench. Physical header positions differ between 30-pin and 38-pin DevKit variants, so this table is ordered by function and GPIO number rather than by position on the strip &mdash; match the silkscreen labels on the board in front of you, not a pin count.</p>
+        <p class="tfoot-note"><strong>20 GPIOs wired to peripherals (2 of them dip-switched dual-role), 2 more on the USB console, 3 spare, 7 unusable.</strong> GPIO26/27 are counted as "wired to peripherals" in the sense that they're reserved motor-pool slots, but nothing is physically connected to them in this build; GPIO35 is wired and live &mdash; the product-drop IR sensor every dispense is now verified against (<code>Core_11_Dispense.ino</code>). Physical header positions differ between 30-pin and 38-pin DevKit variants, so this table is ordered by function and GPIO number rather than by position on the strip &mdash; match the silkscreen labels on the board in front of you, not a pin count.</p>
       </div>
     </div>
   </section>

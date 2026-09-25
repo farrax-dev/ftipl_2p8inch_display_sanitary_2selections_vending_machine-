@@ -10,18 +10,28 @@ bool runMotorPulseVerified(int m, unsigned long motorMs) {
   motorWrite(m, true);
 
   bool detected = false;
+  bool motorStopped = false;
   unsigned long startMs = millis();
   unsigned long windowMs = motorMs + CFG_DROP_SENSOR_BUFFER_MS;
-  bool motorStopped = false;
+
   while (millis() - startMs < windowMs) {
+    // The motor always runs its full defined time no matter when the sensor
+    // fires — an early detection (or a noise spike on the sensor line) must
+    // never cut the motor short. For a coil/spiral dispenser especially,
+    // stopping mid-rotation can leave the mechanism out of position and jam
+    // the next dispense.
     if (!motorStopped && millis() - startMs >= motorMs) {
       motorWrite(m, false);
       motorStopped = true;
     }
-    if (pollDropSensor()) {
-      detected = true;
-      break;
-    }
+
+    if (pollDropSensor()) detected = true;
+
+    // Only once the motor has actually stopped is a confirmed drop a reason
+    // to stop waiting early — otherwise keep polling through the rest of the
+    // buffer window in case the drop hasn't happened yet.
+    if (motorStopped && detected) break;
+
     delay(5);
   }
   motorWrite(m, false);
