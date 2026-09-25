@@ -106,6 +106,9 @@ void loop() {
     case SCREEN_ADMIN_RFID_CARD_EDIT:
       handleAdminRFIDCardEditScreen();
       break;
+    case SCREEN_ADMIN_DATETIME:
+      handleAdminDateTimeScreen();
+      break;
   }
 
   maintainWiFiIndicator();

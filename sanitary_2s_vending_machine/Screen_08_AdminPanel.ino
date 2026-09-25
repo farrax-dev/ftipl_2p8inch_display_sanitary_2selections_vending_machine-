@@ -84,7 +84,7 @@ void handleAdminPanelScreen() {
       }
 
       if (pointInRect(sx, sy, PANEL_CLK_X, PANEL_CLK_Y, PANEL_CLK_W, PANEL_CLK_H)) {
-        openTextEntry(TE_SET_DATETIME);
+        openAdminDateTimeScreen();
         return;
       }
 

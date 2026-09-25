@@ -73,12 +73,8 @@ enum TextEntryTarget {
   TE_PRODUCT_NAME,
   TE_WIFI_SSID,
   TE_WIFI_PASS,
-  TE_UPI_BASE_URL,
-  TE_UPI_PROVIDER_ID,
-  TE_UPI_MERCHANT_ID,
-  TE_UPI_SALT_KEY,
-  TE_UPI_STORE_ID,
-  TE_UPI_TERMINAL_ID,
+  TE_UPI_MERCHANT_ID,  // the only PhonePe field the admin screen can edit —
+                        // see Screen_12_AdminUPIConfig.ino
   TE_MACHINE_ID,
   TE_MACHINE_NAME,
   TE_GMAIL_USER,
@@ -88,7 +84,6 @@ enum TextEntryTarget {
   TE_NIGHTLY_2,
   TE_RFID_CARD_MANUAL,
   TE_RFID_CARD_NAME,
-  TE_SET_DATETIME,
   TE_ADMIN_PIN
 };
 
@@ -126,7 +121,8 @@ enum AppScreen {
   SCREEN_ADMIN_LTE,
   SCREEN_ADMIN_REPORT,
   SCREEN_ADMIN_RFID_CARDS,
-  SCREEN_ADMIN_RFID_CARD_EDIT
+  SCREEN_ADMIN_RFID_CARD_EDIT,
+  SCREEN_ADMIN_DATETIME
 };
 
 // Sizing comes from Config.h so a new machine needs no edits here. Both are
@@ -161,7 +157,6 @@ int wrapFontHeight(int lines, const GFXfont* font);
 const GFXfont* productNameFont(int nameBoxW, int cardH, int priceSize, int &outLines, int &outBitmapSize);
 bool rtcReadTime(struct tm &out);
 void rtcWriteTime(const struct tm &t);
-bool parseDateTimeEntry(const char* buf, int &d, int &mo, int &y, int &h, int &mi);
 String computePhonePeChecksum(const String &base64Body, const String &endpointPath);
 void upiQRDisplay(esp_qrcode_handle_t qr);
 void getMotorBtnRect(int m, int &x, int &y, int &w, int &h);

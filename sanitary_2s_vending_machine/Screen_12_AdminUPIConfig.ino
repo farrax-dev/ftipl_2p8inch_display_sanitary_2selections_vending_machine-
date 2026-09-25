@@ -1,9 +1,15 @@
 // =====================================================
 //             ADMIN UPI CONFIGURATION SCREEN
 // =====================================================
+// Merchant ID is the only field here a technician can change on-screen; the
+// rest of the PhonePe account (URL, provider ID, salt key/index, store and
+// terminal ID) is fixed to Config.h and shown read-only for reference —
+// change it there and reflash instead. See Config.h's UPI section and
+// Core_09_Storage.ino's UPI block for why.
 const int UPI_ROW_H = 20;
 const int UPI_ROW_Y0 = 38;
 const int UPI_ROW_GAP = 2;
+const int UPI_MERCHANT_ROW = 2;
 
 int upiRowY(int r) {
   return UPI_ROW_Y0 + r * (UPI_ROW_H + UPI_ROW_GAP);
@@ -14,6 +20,9 @@ void drawAdminUPIScreen() {
 
   drawScreenTitle("UPI Configuration");
 
+  char idxBuf[6];
+  snprintf(idxBuf, sizeof(idxBuf), "%d", phonepeSaltIndex);
+
   struct UPIRowDef {
     const char* label;
     const char* val;
@@ -22,48 +31,33 @@ void drawAdminUPIScreen() {
     {"Prov", phonepeProviderId},
     {"Merch", phonepeMerchantId},
     {"Salt", phonepeSaltKey},
-    {"Idx", ""}, // Salt index handled separately
+    {"Idx", idxBuf},
     {"Store", phonepeStoreId},
     {"Term", phonepeTerminalId}
   };
 
   for (int r = 0; r < 7; r++) {
     int y = upiRowY(r);
+    bool editable = (r == UPI_MERCHANT_ROW);
+
     tft.setTextSize(1);
     tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
     tft.setCursor(10, y + 6);
     tft.print(rows[r].label);
 
-    if (r == 4) { // Salt Index Stepper
-      drawCardShadow(180, y, 22, 20, 4);
-      tft.fillRoundRect(180, y, 22, 20, 4, COL_ACCENT);
-      tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-      tft.setTextSize(2);
-      centerTextInBox("-", y + 3, 180, 22);
+    // drawCardShadow()+fillRoundRect rather than the old fillRect — a
+    // sharp-cornered fill under the rounded border left corner artifacts.
+    // The read-only rows take the full width freed by having no Edit
+    // button, so a longer value (like the base URL) shows more of itself.
+    int fieldW = editable ? 198 : 254;
+    drawCardShadow(52, y, fieldW, 20, 4);
+    tft.fillRoundRect(52, y, fieldW, 20, 4, COL_CARD);
+    tft.drawRoundRect(52, y, fieldW, 20, 4, COL_CARD_BRD);
+    tft.setTextColor(editable ? COL_TEXT : COL_TEXT_DIM, COL_CARD);
+    tft.setCursor(56, y + 6);
+    tft.printf(editable ? "%.26s" : "%.35s", rows[r].val);
 
-      // Rounded to match the flanking -/+ buttons; no shadow, read-only figure.
-      tft.fillRoundRect(206, y, 42, 20, 4, COL_CARD);
-      tft.setTextColor(COL_TEXT, COL_CARD);
-      char idxBuf[6];
-      snprintf(idxBuf, sizeof(idxBuf), "%d", phonepeSaltIndex);
-      tft.setTextSize(1);
-      centerTextInBox(idxBuf, y + 6, 206, 42);
-
-      drawCardShadow(252, y, 22, 20, 4);
-      tft.fillRoundRect(252, y, 22, 20, 4, COL_ACCENT);
-      tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-      tft.setTextSize(2);
-      centerTextInBox("+", y + 3, 252, 22);
-    } else { // Standard Text Field
-      // drawCardShadow()+fillRoundRect rather than the old fillRect — a
-      // sharp-cornered fill under the rounded border left corner artifacts.
-      drawCardShadow(52, y, 198, 20, 4);
-      tft.fillRoundRect(52, y, 198, 20, 4, COL_CARD);
-      tft.drawRoundRect(52, y, 198, 20, 4, COL_CARD_BRD);
-      tft.setTextColor(COL_TEXT, COL_CARD);
-      tft.setCursor(56, y + 6);
-      tft.printf("%.26s", rows[r].val);
-
+    if (editable) {
       drawCardShadow(254, y, 56, 20, 4);
       tft.fillRoundRect(254, y, 56, 20, 4, COL_ACCENT);
       tft.setTextColor(COL_BG_TOP, COL_ACCENT);
@@ -88,28 +82,10 @@ void handleAdminUPIScreen() {
         return;
       }
 
-      if (pointInRect(sx, sy, 254, upiRowY(0), 56, 20)) { openTextEntry(TE_UPI_BASE_URL); return; }
-      if (pointInRect(sx, sy, 254, upiRowY(1), 56, 20)) { openTextEntry(TE_UPI_PROVIDER_ID); return; }
-      if (pointInRect(sx, sy, 254, upiRowY(2), 56, 20)) { openTextEntry(TE_UPI_MERCHANT_ID); return; }
-      if (pointInRect(sx, sy, 254, upiRowY(3), 56, 20)) { openTextEntry(TE_UPI_SALT_KEY); return; }
-
-      // Salt Index -
-      if (pointInRect(sx, sy, 180, upiRowY(4), 22, 20)) {
-        if (phonepeSaltIndex > 1) phonepeSaltIndex--;
-        saveUPISettings();
-        drawAdminUPIScreen();
+      if (pointInRect(sx, sy, 254, upiRowY(UPI_MERCHANT_ROW), 56, 20)) {
+        openTextEntry(TE_UPI_MERCHANT_ID);
         return;
       }
-      // Salt Index +
-      if (pointInRect(sx, sy, 252, upiRowY(4), 22, 20)) {
-        if (phonepeSaltIndex < 99) phonepeSaltIndex++;
-        saveUPISettings();
-        drawAdminUPIScreen();
-        return;
-      }
-
-      if (pointInRect(sx, sy, 254, upiRowY(5), 56, 20)) { openTextEntry(TE_UPI_STORE_ID); return; }
-      if (pointInRect(sx, sy, 254, upiRowY(6), 56, 20)) { openTextEntry(TE_UPI_TERMINAL_ID); return; }
     }
   }
 }

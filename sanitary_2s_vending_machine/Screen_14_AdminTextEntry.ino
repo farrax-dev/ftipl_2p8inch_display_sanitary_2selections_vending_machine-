@@ -57,44 +57,6 @@ void getKeyRect(int row, int keyIdx, int &x, int &y, int &w, int &h) {
   h = KB_ROW_H;
 }
 
-// Shared by commitTextEntry()'s TE_SET_DATETIME case and the 12h/24h toggle
-// below. Accepts DD/MM/YYYY HH:MM in either convention: a trailing AM/PM
-// (any case) means h is 1-12 and gets converted to 24-hour on return; no
-// suffix at all means h is already 0-23. Returns false (fields untouched)
-// on anything that doesn't parse or fall in range.
-bool parseDateTimeEntry(const char* buf, int &d, int &mo, int &y, int &h, int &mi) {
-  char ampm[4] = "";
-  int fields = sscanf(buf, "%d/%d/%d %d:%d %3s", &d, &mo, &y, &h, &mi, ampm);
-  bool is12Hour = (fields == 6) &&
-                  (strcasecmp(ampm, "AM") == 0 || strcasecmp(ampm, "PM") == 0);
-
-  bool ok = fields >= 5 &&
-            y >= 2020 && y <= 2099 && mo >= 1 && mo <= 12 && d >= 1 && d <= 31 &&
-            mi >= 0 && mi <= 59 &&
-            (is12Hour ? (h >= 1 && h <= 12) : (h >= 0 && h <= 23));
-  if (!ok) return false;
-
-  if (is12Hour) {
-    bool isPM = strcasecmp(ampm, "PM") == 0;
-    if (isPM && h != 12) h += 12;
-    if (!isPM && h == 12) h = 0;
-  }
-  return true;
-}
-
-// Renders D/M/Y/24-hour-h/mi back into the same field, in whichever
-// convention as24Hour asks for. Used when the 12h/24h toggle is tapped so
-// the buffer visibly reflects the new preference immediately.
-void formatDateTimeEntry(char* buf, size_t bufSize, int d, int mo, int y, int h, int mi, bool as24Hour) {
-  if (as24Hour) {
-    snprintf(buf, bufSize, "%02d/%02d/%04d %02d:%02d", d, mo, y, h, mi);
-  } else {
-    int h12 = h % 12;
-    if (h12 == 0) h12 = 12;
-    snprintf(buf, bufSize, "%02d/%02d/%04d %02d:%02d %s", d, mo, y, h12, mi, (h < 12) ? "AM" : "PM");
-  }
-}
-
 void openTextEntry(TextEntryTarget target) {
   textEntryTarget = target;
   textEntryShow = false;
@@ -116,48 +78,11 @@ void openTextEntry(TextEntryTarget target) {
       textEntryReturnScreen = SCREEN_ADMIN_WIFI;
       kbLayer = KB_LAYER_LOWER;
       break;
-    case TE_UPI_BASE_URL:
-      strncpy(textEntryBuffer, phonepeBaseUrl, sizeof(textEntryBuffer));
-      textEntryMaxLen = sizeof(phonepeBaseUrl) - 1;
-      textEntryMask = false;
-      textEntryTitle = "UPI Base URL";
-      textEntryReturnScreen = SCREEN_ADMIN_UPI;
-      kbLayer = KB_LAYER_LOWER;
-      break;
-    case TE_UPI_PROVIDER_ID:
-      strncpy(textEntryBuffer, phonepeProviderId, sizeof(textEntryBuffer));
-      textEntryMaxLen = sizeof(phonepeProviderId) - 1;
-      textEntryMask = false;
-      textEntryTitle = "UPI Provider ID";
-      textEntryReturnScreen = SCREEN_ADMIN_UPI;
-      break;
     case TE_UPI_MERCHANT_ID:
       strncpy(textEntryBuffer, phonepeMerchantId, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(phonepeMerchantId) - 1;
       textEntryMask = false;
       textEntryTitle = "UPI Merchant ID";
-      textEntryReturnScreen = SCREEN_ADMIN_UPI;
-      break;
-    case TE_UPI_SALT_KEY:
-      strncpy(textEntryBuffer, phonepeSaltKey, sizeof(textEntryBuffer));
-      textEntryMaxLen = sizeof(phonepeSaltKey) - 1;
-      textEntryMask = false;
-      textEntryTitle = "UPI Salt Key";
-      textEntryReturnScreen = SCREEN_ADMIN_UPI;
-      kbLayer = KB_LAYER_LOWER;
-      break;
-    case TE_UPI_STORE_ID:
-      strncpy(textEntryBuffer, phonepeStoreId, sizeof(textEntryBuffer));
-      textEntryMaxLen = sizeof(phonepeStoreId) - 1;
-      textEntryMask = false;
-      textEntryTitle = "UPI Store ID";
-      textEntryReturnScreen = SCREEN_ADMIN_UPI;
-      break;
-    case TE_UPI_TERMINAL_ID:
-      strncpy(textEntryBuffer, phonepeTerminalId, sizeof(textEntryBuffer));
-      textEntryMaxLen = sizeof(phonepeTerminalId) - 1;
-      textEntryMask = false;
-      textEntryTitle = "UPI Terminal ID";
       textEntryReturnScreen = SCREEN_ADMIN_UPI;
       break;
     case TE_MACHINE_ID:
@@ -240,33 +165,6 @@ void openTextEntry(TextEntryTarget target) {
       textEntryTitle = "Card Holder Name";
       textEntryReturnScreen = SCREEN_ADMIN_RFID_CARD_EDIT;
       break;
-    // Pre-filled with the current clock reading (whichever source set it —
-    // network or the onboard RTC) as DD/MM/YYYY, in whichever of 12h/24h is
-    // currently the display preference (the "12h"/"24h" chip on this same
-    // screen), so a technician who just wants to nudge the minutes isn't
-    // also translating formats. The AM/PM suffix, when present, can simply
-    // be deleted to enter a 24-hour value instead regardless of that
-    // preference — see parseDateTimeEntry(). Symbol layer has the digits
-    // and "/"/":" separators; "AM"/"PM" needs a tap to the "ABC" layer,
-    // same as typing any other letters here.
-    case TE_SET_DATETIME: {
-      struct tm ti;
-      if (timeSynced && getLocalTime(&ti, 10)) {
-        if (clock24Hour) {
-          strftime(textEntryBuffer, sizeof(textEntryBuffer), "%d/%m/%Y %H:%M", &ti);
-        } else {
-          strftime(textEntryBuffer, sizeof(textEntryBuffer), "%d/%m/%Y %I:%M %p", &ti);
-        }
-      } else {
-        textEntryBuffer[0] = '\0';
-      }
-      textEntryMaxLen = 20;  // "DD/MM/YYYY HH:MM PM"
-      textEntryMask = false;
-      textEntryTitle = "Date & Time";
-      textEntryReturnScreen = SCREEN_ADMIN_PANEL;
-      kbLayer = KB_LAYER_SYM;
-      break;
-    }
     // Pre-filled with the current PIN, same as WiFi/Gmail passwords above —
     // masked either way, and Show still works to check it before saving.
     // Digits only in practice: the login pad (Screen_07_AdminLogin.ino) can
@@ -377,16 +275,6 @@ void drawAdminTextEntryScreen() {
     tft.drawRoundRect(TE_SHOW_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H, 5, COL_CARD_BRD);
     tft.setTextColor(textEntryShow ? COL_BG_TOP : COL_TEXT, showFill);
     centerTextInBox(textEntryShow ? "Hide" : "Show", TE_BTN_Y + 7, TE_SHOW_X, TE_BTN_W);
-  } else if (textEntryTarget == TE_SET_DATETIME) {
-    // Same slot Show/Hide would use — free here since this field isn't
-    // masked. Shows the currently-active display convention; tapping it
-    // flips clock24Hour (Core_06_Network.ino) and re-renders the field
-    // below to match, so the effect is visible immediately.
-    drawCardShadow(TE_SHOW_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H, 5);
-    tft.fillRoundRect(TE_SHOW_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H, 5, COL_ACCENT);
-    tft.drawRoundRect(TE_SHOW_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H, 5, COL_CARD_BRD);
-    tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-    centerTextInBox(clock24Hour ? "24h" : "12h", TE_BTN_Y + 7, TE_SHOW_X, TE_BTN_W);
   }
 
   drawCardShadow(TE_DONE_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H, 5);
@@ -449,34 +337,9 @@ void commitTextEntry() {
       wifiPass[sizeof(wifiPass) - 1] = '\0';
       saveWiFiCredentials();
       break;
-    case TE_UPI_BASE_URL:
-      strncpy(phonepeBaseUrl, textEntryBuffer, sizeof(phonepeBaseUrl));
-      phonepeBaseUrl[sizeof(phonepeBaseUrl) - 1] = '\0';
-      saveUPISettings();
-      break;
-    case TE_UPI_PROVIDER_ID:
-      strncpy(phonepeProviderId, textEntryBuffer, sizeof(phonepeProviderId));
-      phonepeProviderId[sizeof(phonepeProviderId) - 1] = '\0';
-      saveUPISettings();
-      break;
     case TE_UPI_MERCHANT_ID:
       strncpy(phonepeMerchantId, textEntryBuffer, sizeof(phonepeMerchantId));
       phonepeMerchantId[sizeof(phonepeMerchantId) - 1] = '\0';
-      saveUPISettings();
-      break;
-    case TE_UPI_SALT_KEY:
-      strncpy(phonepeSaltKey, textEntryBuffer, sizeof(phonepeSaltKey));
-      phonepeSaltKey[sizeof(phonepeSaltKey) - 1] = '\0';
-      saveUPISettings();
-      break;
-    case TE_UPI_STORE_ID:
-      strncpy(phonepeStoreId, textEntryBuffer, sizeof(phonepeStoreId));
-      phonepeStoreId[sizeof(phonepeStoreId) - 1] = '\0';
-      saveUPISettings();
-      break;
-    case TE_UPI_TERMINAL_ID:
-      strncpy(phonepeTerminalId, textEntryBuffer, sizeof(phonepeTerminalId));
-      phonepeTerminalId[sizeof(phonepeTerminalId) - 1] = '\0';
       saveUPISettings();
       break;
     case TE_MACHINE_ID:
@@ -537,37 +400,6 @@ void commitTextEntry() {
     case TE_RFID_CARD_NAME:
       setRFIDCardName(rfidEditingCard, textEntryBuffer);
       break;
-    // Manually setting the clock is the same trust tier as the onboard RTC
-    // fallback (Core_18_RTC.ino) — it marks the clock usable (timeSynced)
-    // but NOT network-verified (timeSyncedFromNetwork stays as it was), so a
-    // real WiFi/LTE sync can still arrive later and correct it. Also written
-    // straight to the RTC so it survives a power cycle with no connectivity
-    // at all, which is the exact situation this control exists for.
-    case TE_SET_DATETIME: {
-      int d, mo, y, h, mi;
-      if (!parseDateTimeEntry(textEntryBuffer, d, mo, y, h, mi)) {
-        Serial.printf("Clock: ignoring invalid date/time [%s]\n", textEntryBuffer);
-        return;   // leave the running clock alone
-      }
-
-      struct tm t;
-      memset(&t, 0, sizeof(t));
-      t.tm_year = y - 1900;
-      t.tm_mon  = mo - 1;
-      t.tm_mday = d;
-      t.tm_hour = h;
-      t.tm_min  = mi;
-      t.tm_sec  = 0;
-
-      setenv("TZ", "IST-5:30", 1);
-      tzset();
-      time_t epoch = mktime(&t);
-      struct timeval tv = { epoch, 0 };
-      settimeofday(&tv, nullptr);
-      timeSynced = true;
-      rtcWriteTime(t);
-      break;
-    }
     // Rejected (old PIN kept, same "ignore and log" precedent as the nightly
     // times and the clock above) unless it's 4-8 digits — nothing else can
     // ever be typed back in on the login screen's numeric pad, so accepting
@@ -609,21 +441,6 @@ void handleAdminTextEntryScreen() {
       }
       if (textEntryMask && pointInRect(sx, sy, TE_SHOW_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H)) {
         textEntryShow = !textEntryShow;
-        drawAdminTextEntryScreen();
-        return;
-      }
-      if (textEntryTarget == TE_SET_DATETIME &&
-          pointInRect(sx, sy, TE_SHOW_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H)) {
-        clock24Hour = !clock24Hour;
-        saveClock24Hour();
-        // Re-render whatever's currently typed into the new convention so
-        // the toggle's effect is visible right away; if it doesn't parse
-        // (mid-edit, cleared, etc.) just leave the text as-is — the
-        // preference itself is still saved either way.
-        int d, mo, y, h, mi;
-        if (parseDateTimeEntry(textEntryBuffer, d, mo, y, h, mi)) {
-          formatDateTimeEntry(textEntryBuffer, sizeof(textEntryBuffer), d, mo, y, h, mi, clock24Hour);
-        }
         drawAdminTextEntryScreen();
         return;
       }

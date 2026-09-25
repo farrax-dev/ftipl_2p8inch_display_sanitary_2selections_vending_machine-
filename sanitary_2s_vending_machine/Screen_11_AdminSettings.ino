@@ -205,7 +205,10 @@ void handleAdminSettingsScreen() {
         return;
       }
       if (pointInRect(sx, sy, 238, 46, 28, 28)) {
-        if (maxCartQty < 99) maxCartQty++;
+        // Capped at Config.h's seed, not an arbitrary 99 — CFG_MAX_CART_QTY
+        // is the ceiling a technician flashed for this machine, and the
+        // admin screen shouldn't be able to exceed what was commissioned.
+        if (maxCartQty < CFG_MAX_CART_QTY) maxCartQty++;
         saveMaxCartQty();
         drawAdminSettingsScreen();
         return;

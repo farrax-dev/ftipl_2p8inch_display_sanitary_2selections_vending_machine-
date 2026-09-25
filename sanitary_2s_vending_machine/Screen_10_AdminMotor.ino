@@ -229,7 +229,10 @@ void handleAdminMotorStockScreen() {
           return;
         }
         if (pointInRect(sx, sy, plusX, btnY, btnSize, btnSize)) {
-          if (motorStock[m] < 99) motorStock[m]++;
+          // Capped at STOCK_MAX (CFG_STOCK_MAX from Config.h), not an
+          // arbitrary 99 — that's the ceiling a technician flashed for this
+          // machine's chute/hopper capacity.
+          if (motorStock[m] < STOCK_MAX) motorStock[m]++;
           saveMotorStockSlot(m);
           // Re-arms the low-stock alert for a motor that's just been
           // refilled, without mailing anything mid-refill.

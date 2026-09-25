@@ -403,13 +403,11 @@ void loadPersistedProductData() {
     prefs.putInt("lowthr", CFG_LOW_STOCK_LEVEL);
     prefs.putInt("maxcartqty", CFG_MAX_CART_QTY);
     prefs.putInt("lteon", CFG_LTE_ENABLED ? 1 : 0);
-    prefs.putString("upibaseurl", CFG_UPI_BASE_URL);
-    prefs.putString("upiproviderid", CFG_UPI_PROVIDER_ID);
+    // Merchant ID alone is admin-editable (Screen_12_AdminUPIConfig.ino), so
+    // it alone gets the seed-then-owned NVS treatment. Every other UPI field
+    // is fixed to Config.h below in loadPersistedProductData() and never
+    // stored, so there's nothing to seed here for them.
     prefs.putString("upimerchantid", CFG_UPI_MERCHANT_ID);
-    prefs.putString("upisaltkey", CFG_UPI_SALT_KEY);
-    prefs.putInt("upisaltidx", CFG_UPI_SALT_INDEX);
-    prefs.putString("upistoreid", CFG_UPI_STORE_ID);
-    prefs.putString("upiterminalid", CFG_UPI_TERMINAL_ID);
     prefs.putULong("cfgfp", fp);
   }
 
@@ -457,14 +455,23 @@ void loadPersistedProductData() {
   prefs.getString("wifissid", CFG_WIFI_SSID).toCharArray(wifiSSID, sizeof(wifiSSID));
   prefs.getString("wifipass", CFG_WIFI_PASSWORD).toCharArray(wifiPass, sizeof(wifiPass));
 
-  // Load UPI configurations with standard fallback defaults
-  prefs.getString("upibaseurl", DEFAULT_PHONEPE_BASE_URL).toCharArray(phonepeBaseUrl, sizeof(phonepeBaseUrl));
-  prefs.getString("upiproviderid", DEFAULT_PHONEPE_PROVIDER_ID).toCharArray(phonepeProviderId, sizeof(phonepeProviderId));
+  // UPI: Merchant ID is the one field Admin > UPI Configuration can change,
+  // so it alone comes from NVS (seed-then-owned, same as everything else in
+  // this file). Every other PhonePe field is fixed to Config.h — no admin
+  // override exists for them, so they're just assigned straight from the
+  // CFG_ constants rather than round-tripped through Preferences.
   prefs.getString("upimerchantid", DEFAULT_PHONEPE_MERCHANT_ID).toCharArray(phonepeMerchantId, sizeof(phonepeMerchantId));
-  prefs.getString("upisaltkey", DEFAULT_PHONEPE_SALT_KEY).toCharArray(phonepeSaltKey, sizeof(phonepeSaltKey));
-  phonepeSaltIndex = prefs.getInt("upisaltidx", DEFAULT_PHONEPE_SALT_INDEX);
-  prefs.getString("upistoreid", DEFAULT_PHONEPE_STORE_ID).toCharArray(phonepeStoreId, sizeof(phonepeStoreId));
-  prefs.getString("upiterminalid", DEFAULT_PHONEPE_TERMINAL_ID).toCharArray(phonepeTerminalId, sizeof(phonepeTerminalId));
+  strncpy(phonepeBaseUrl, DEFAULT_PHONEPE_BASE_URL, sizeof(phonepeBaseUrl) - 1);
+  phonepeBaseUrl[sizeof(phonepeBaseUrl) - 1] = '\0';
+  strncpy(phonepeProviderId, DEFAULT_PHONEPE_PROVIDER_ID, sizeof(phonepeProviderId) - 1);
+  phonepeProviderId[sizeof(phonepeProviderId) - 1] = '\0';
+  strncpy(phonepeSaltKey, DEFAULT_PHONEPE_SALT_KEY, sizeof(phonepeSaltKey) - 1);
+  phonepeSaltKey[sizeof(phonepeSaltKey) - 1] = '\0';
+  phonepeSaltIndex = DEFAULT_PHONEPE_SALT_INDEX;
+  strncpy(phonepeStoreId, DEFAULT_PHONEPE_STORE_ID, sizeof(phonepeStoreId) - 1);
+  phonepeStoreId[sizeof(phonepeStoreId) - 1] = '\0';
+  strncpy(phonepeTerminalId, DEFAULT_PHONEPE_TERMINAL_ID, sizeof(phonepeTerminalId) - 1);
+  phonepeTerminalId[sizeof(phonepeTerminalId) - 1] = '\0';
 
   for (int m = 0; m < MAX_MOTORS; m++) {
     char keyMStock[9];
@@ -502,14 +509,10 @@ void saveWiFiCredentials() {
   prefs.putString("wifipass", wifiPass);
 }
 
+// Merchant ID only — see loadPersistedProductData()'s UPI block above for
+// why the rest of the PhonePe fields never reach here.
 void saveUPISettings() {
-  prefs.putString("upibaseurl", phonepeBaseUrl);
-  prefs.putString("upiproviderid", phonepeProviderId);
   prefs.putString("upimerchantid", phonepeMerchantId);
-  prefs.putString("upisaltkey", phonepeSaltKey);
-  prefs.putInt("upisaltidx", phonepeSaltIndex);
-  prefs.putString("upistoreid", phonepeStoreId);
-  prefs.putString("upiterminalid", phonepeTerminalId);
 }
 
 void savePriceSlot(int i) {
