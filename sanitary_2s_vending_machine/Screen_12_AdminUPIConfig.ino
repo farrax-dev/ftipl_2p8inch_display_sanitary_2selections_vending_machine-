@@ -1,69 +1,46 @@
 // =====================================================
 //             ADMIN UPI CONFIGURATION SCREEN
 // =====================================================
-// Merchant ID is the only field here a technician can change on-screen; the
-// rest of the PhonePe account (URL, provider ID, salt key/index, store and
-// terminal ID) is fixed to Config.h and shown read-only for reference —
-// change it there and reflash instead. See Config.h's UPI section and
-// Core_09_Storage.ino's UPI block for why.
-const int UPI_ROW_H = 20;
-const int UPI_ROW_Y0 = 38;
-const int UPI_ROW_GAP = 2;
-const int UPI_MERCHANT_ROW = 2;
-
-int upiRowY(int r) {
-  return UPI_ROW_Y0 + r * (UPI_ROW_H + UPI_ROW_GAP);
-}
+// Merchant ID is the only PhonePe field visible OR editable here. The rest
+// of the account (base URL, provider ID, salt key/index, store and terminal
+// ID) is fixed to Config.h and deliberately isn't shown on this screen at
+// all, not even read-only — those values live on a machine that sits in a
+// public place, so there's no reason to display them there. Change them in
+// Config.h and reflash instead. See Config.h's UPI section and
+// Core_09_Storage.ino's UPI block for how they're kept out of NVS too.
+const int UPI_ROW_X = 20, UPI_ROW_W = 280, UPI_ROW_H = 26;
+const int UPI_ROW_Y = 70;
+const int UPI_EDIT_W = 60;
+const int UPI_FIELD_W = UPI_ROW_W - UPI_EDIT_W - 6;
+const int UPI_EDIT_X = UPI_ROW_X + UPI_ROW_W - UPI_EDIT_W;
 
 void drawAdminUPIScreen() {
   drawGradientBackground();
-
   drawScreenTitle("UPI Configuration");
 
-  char idxBuf[6];
-  snprintf(idxBuf, sizeof(idxBuf), "%d", phonepeSaltIndex);
+  tft.setTextSize(1);
+  tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
+  tft.setCursor(UPI_ROW_X, UPI_ROW_Y - 14);
+  tft.print("Merchant ID");
 
-  struct UPIRowDef {
-    const char* label;
-    const char* val;
-  } rows[7] = {
-    {"URL", phonepeBaseUrl},
-    {"Prov", phonepeProviderId},
-    {"Merch", phonepeMerchantId},
-    {"Salt", phonepeSaltKey},
-    {"Idx", idxBuf},
-    {"Store", phonepeStoreId},
-    {"Term", phonepeTerminalId}
-  };
+  drawCardShadow(UPI_ROW_X, UPI_ROW_Y, UPI_FIELD_W, UPI_ROW_H, 5);
+  tft.fillRoundRect(UPI_ROW_X, UPI_ROW_Y, UPI_FIELD_W, UPI_ROW_H, 5, COL_CARD);
+  tft.drawRoundRect(UPI_ROW_X, UPI_ROW_Y, UPI_FIELD_W, UPI_ROW_H, 5, COL_CARD_BRD);
+  tft.setTextColor(COL_TEXT, COL_CARD);
+  tft.setCursor(UPI_ROW_X + 8, UPI_ROW_Y + 9);
+  tft.printf("%.30s", phonepeMerchantId);
 
-  for (int r = 0; r < 7; r++) {
-    int y = upiRowY(r);
-    bool editable = (r == UPI_MERCHANT_ROW);
+  drawCardShadow(UPI_EDIT_X, UPI_ROW_Y, UPI_EDIT_W, UPI_ROW_H, 5);
+  tft.fillRoundRect(UPI_EDIT_X, UPI_ROW_Y, UPI_EDIT_W, UPI_ROW_H, 5, COL_ACCENT);
+  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+  centerTextInBox("Edit", UPI_ROW_Y + 9, UPI_EDIT_X, UPI_EDIT_W);
 
-    tft.setTextSize(1);
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-    tft.setCursor(10, y + 6);
-    tft.print(rows[r].label);
-
-    // drawCardShadow()+fillRoundRect rather than the old fillRect — a
-    // sharp-cornered fill under the rounded border left corner artifacts.
-    // The read-only rows take the full width freed by having no Edit
-    // button, so a longer value (like the base URL) shows more of itself.
-    int fieldW = editable ? 198 : 254;
-    drawCardShadow(52, y, fieldW, 20, 4);
-    tft.fillRoundRect(52, y, fieldW, 20, 4, COL_CARD);
-    tft.drawRoundRect(52, y, fieldW, 20, 4, COL_CARD_BRD);
-    tft.setTextColor(editable ? COL_TEXT : COL_TEXT_DIM, COL_CARD);
-    tft.setCursor(56, y + 6);
-    tft.printf(editable ? "%.26s" : "%.35s", rows[r].val);
-
-    if (editable) {
-      drawCardShadow(254, y, 56, 20, 4);
-      tft.fillRoundRect(254, y, 56, 20, 4, COL_ACCENT);
-      tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-      centerTextInBox("Edit", y + 6, 254, 56);
-    }
-  }
+  tft.setTextSize(1);
+  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+  wrapTextInBox(
+    "Every other PhonePe setting (URL, provider, salt, store/terminal ID) "
+    "is fixed in Config.h and not shown here. Edit it there and reflash.",
+    UPI_ROW_X, UPI_ROW_W, UPI_ROW_Y + UPI_ROW_H + 16, 1, true);
 
   drawBackButton("< Back");
 }
@@ -82,7 +59,7 @@ void handleAdminUPIScreen() {
         return;
       }
 
-      if (pointInRect(sx, sy, 254, upiRowY(UPI_MERCHANT_ROW), 56, 20)) {
+      if (pointInRect(sx, sy, UPI_EDIT_X, UPI_ROW_Y, UPI_EDIT_W, UPI_ROW_H)) {
         openTextEntry(TE_UPI_MERCHANT_ID);
         return;
       }

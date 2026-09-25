@@ -5,7 +5,9 @@ const int WIFI_ICON_X = 296, WIFI_ICON_Y = 2;
 const int WIFI_ICON_W = 24,  WIFI_ICON_H = 16;
 const unsigned long WIFI_POLL_INTERVAL_MS = 1500;
 
-bool indicatorDirty = true;
+// indicatorDirty lives in Core_02_AppState.ino — see the comment there for
+// why (Core_06_Network.ino's setWifiEnabled() needs to set it too, and loads
+// before this tab in the concatenated build).
 unsigned long lastWiFiPoll = 0;
 int  lastDrawnBars = -99;
 bool lastDrawnConnected = false;

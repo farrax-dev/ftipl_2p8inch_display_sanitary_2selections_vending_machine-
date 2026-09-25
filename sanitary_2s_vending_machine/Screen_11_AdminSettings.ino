@@ -165,11 +165,11 @@ void drawAdminSettingsScreen() {
   tft.setTextColor(COL_TEXT, COL_CARD);
   centerTextInBox("Back", BTN_Y + 9, SET_BTN_BACK_X, SET_BTN_BACK_W);
 
-  uint16_t wifiFill = wifiEnabled ? COL_ACCENT : COL_CARD;
+  uint16_t wifiFill = CFG_WIFI_ENABLED ? COL_ACCENT : COL_CARD;
   drawCardShadow(SET_BTN_WIFI_X, BTN_Y, SET_BTN_WIFI_W, BTN_H, 8);
   tft.fillRoundRect(SET_BTN_WIFI_X, BTN_Y, SET_BTN_WIFI_W, BTN_H, 8, wifiFill);
-  if (!wifiEnabled) tft.drawRoundRect(SET_BTN_WIFI_X, BTN_Y, SET_BTN_WIFI_W, BTN_H, 8, COL_CARD_BRD);
-  tft.setTextColor(wifiEnabled ? COL_BG_TOP : COL_TEXT_DIM, wifiFill);
+  if (!CFG_WIFI_ENABLED) tft.drawRoundRect(SET_BTN_WIFI_X, BTN_Y, SET_BTN_WIFI_W, BTN_H, 8, COL_CARD_BRD);
+  tft.setTextColor(CFG_WIFI_ENABLED ? COL_BG_TOP : COL_TEXT_DIM, wifiFill);
   centerTextInBox("WiFi", BTN_Y + 9, SET_BTN_WIFI_X, SET_BTN_WIFI_W);
 
   drawCardShadow(SET_BTN_UPI_X, BTN_Y, SET_BTN_UPI_W, BTN_H, 8);
@@ -267,7 +267,7 @@ void handleAdminSettingsScreen() {
         return;
       }
 
-      if (wifiEnabled && pointInRect(sx, sy, SET_BTN_WIFI_X, BTN_Y, SET_BTN_WIFI_W, BTN_H)) {
+      if (CFG_WIFI_ENABLED && pointInRect(sx, sy, SET_BTN_WIFI_X, BTN_Y, SET_BTN_WIFI_W, BTN_H)) {
         currentScreen = SCREEN_ADMIN_WIFI;
         drawAdminWiFiScreen();
         return;

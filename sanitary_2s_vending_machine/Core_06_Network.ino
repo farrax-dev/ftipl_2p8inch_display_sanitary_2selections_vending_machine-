@@ -33,6 +33,42 @@ bool timeSyncedFromNetwork = false;
 unsigned long lastNtpCheck = 0;
 const unsigned long NTP_CHECK_INTERVAL_MS = 2000;
 
+// WiFi Setup's on/off toggle (Screen_13_AdminWiFi.ino) calls this, not the
+// variable directly — same "a plain assignment would forget something"
+// reasoning as setLteEnabled() (Core_13_LTEModem.ino). Placed here, after
+// ntpConfigured is declared above, rather than next to connectWiFiIfNeeded()
+// where it'd more naturally sit — this function uses that variable, and
+// Arduino only auto-forward-declares functions, never variables, even
+// within the same tab.
+//
+//   * Turning OFF stops loop() from calling maintainNTP() on its very next
+//     tick (that's just the flag), but the radio itself would otherwise stay
+//     associated and the status icon would go on reporting a connection
+//     nothing is maintaining any more. WiFi.disconnect(true) plus
+//     WIFI_OFF drops the association and powers the radio down, same as
+//     switching a modem off should stop actually transmitting.
+//   * Turning ON attempts a connection immediately rather than waiting for
+//     the next time something happens to call connectWiFiIfNeeded() — feels
+//     instant, same as LTE zeroing its retry timer on its own switch-on.
+//
+// requestedOn is ANDed with CFG_WIFI_ENABLED so this can never turn WiFi on
+// for a unit with no radio meant to be used at all — the hardware ceiling
+// always wins, same as loadPersistedProductData() enforces it on every boot.
+void setWifiEnabled(bool requestedOn) {
+  wifiEnabled = requestedOn && CFG_WIFI_ENABLED;
+  saveWifiEnabled();  // Core_09_Storage.ino
+
+  if (!wifiEnabled) {
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+    ntpConfigured = false;
+  } else {
+    connectWiFiIfNeeded();
+    ntpConfigured = false;   // re-run SNTP against whatever it just connected to
+  }
+  indicatorDirty = true;  // Core_02_AppState.ino — redraw the status icon now
+}
+
 // Display preference only — doesn't affect how a date/time is typed on the
 // Admin > Clock screen, which accepts either convention regardless. Default
 // false (12-hour + AM/PM) matches this machine's historical display.

@@ -166,6 +166,14 @@ void saveClock24Hour() {
   prefs.putInt("clock24h", clock24Hour ? 1 : 0);
 }
 
+// ---------- WiFi on/off (Admin > WiFi Setup) ----------
+// setWifiEnabled() (Core_06_Network.ino) is what actually calls this — see
+// saveLteEnabled() just below for why the live-state side of a toggle isn't
+// handled in this storage-only file.
+void saveWifiEnabled() {
+  prefs.putInt("wifion", wifiEnabled ? 1 : 0);
+}
+
 // ---------- LTE on/off (Admin > 4G/LTE Setup) ----------
 // setLteEnabled() (Core_13_LTEModem.ino) is what actually calls this — it
 // also updates the live connection state, which has no business living in
@@ -402,6 +410,7 @@ void loadPersistedProductData() {
     prefs.putInt("lowon", CFG_LOW_STOCK_ALERT ? 1 : 0);
     prefs.putInt("lowthr", CFG_LOW_STOCK_LEVEL);
     prefs.putInt("maxcartqty", CFG_MAX_CART_QTY);
+    prefs.putInt("wifion", CFG_WIFI_ENABLED ? 1 : 0);
     prefs.putInt("lteon", CFG_LTE_ENABLED ? 1 : 0);
     // Merchant ID alone is admin-editable (Screen_12_AdminUPIConfig.ino), so
     // it alone gets the seed-then-owned NVS treatment. Every other UPI field
@@ -425,9 +434,13 @@ void loadPersistedProductData() {
   clock24Hour = prefs.getInt("clock24h", 0) != 0;
 
   // Force-ANDed with the compile-time switch, the same way paymentEnabled[]
-  // is force-ANDed with PAYMENT_AVAILABLE[] above — a build with no modem
-  // fitted at all must never re-enable itself from a stale NVS value, e.g.
-  // one carried over from an earlier Config.h that did have LTE on.
+  // is force-ANDed with PAYMENT_AVAILABLE[] above — a build with no WiFi
+  // radio meant to be used at all must never re-enable itself from a stale
+  // NVS value, e.g. one carried over from an earlier Config.h that did have
+  // WiFi on.
+  wifiEnabled = CFG_WIFI_ENABLED && (prefs.getInt("wifion", 1) != 0);
+
+  // Same reasoning, LTE's modem instead of WiFi's radio.
   lteEnabled = CFG_LTE_ENABLED && (prefs.getInt("lteon", 1) != 0);
 
   loadRFIDCards();

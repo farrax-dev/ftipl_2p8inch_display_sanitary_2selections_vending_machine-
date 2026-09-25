@@ -19,7 +19,7 @@ void drawAdminWiFiScreen() {
 
   drawScreenTitle("WiFi Setup");
 
-  bool connected = (WiFi.status() == WL_CONNECTED);
+  bool connected = wifiEnabled && (WiFi.status() == WL_CONNECTED);
 
   tft.setTextSize(1);
   tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
@@ -48,9 +48,17 @@ void drawAdminWiFiScreen() {
   }
   drawWiFiFieldButton(WF_PASS_BTN_Y, "Edit");
 
-  tft.setTextColor(connected ? COL_SUCCESS : COL_DANGER, COL_BG_BOTTOM);
   tft.setCursor(20, 90);
-  tft.print(connected ? "Status: Connected" : "Status: Not connected");
+  if (!wifiEnabled) {
+    // Neutral colour, not COL_DANGER — this is a deliberate choice the admin
+    // just made, not a fault. Same priority LTE Setup gives its own "Turned
+    // off" line (Screen_16_AdminLTE.ino).
+    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    tft.print("Status: Turned off");
+  } else {
+    tft.setTextColor(connected ? COL_SUCCESS : COL_DANGER, COL_BG_BOTTOM);
+    tft.print(connected ? "Status: Connected" : "Status: Not connected");
+  }
 
   tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
   tft.setCursor(180, 90);
@@ -95,7 +103,11 @@ void drawAdminWiFiScreen() {
   tft.setTextSize(1);
   tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
   tft.setCursor(20, 166);
-  if (strlen(wifiSSID) == 0) {
+  // !wifiEnabled takes priority over everything else here — same reasoning
+  // as the status line above, and as LTE Setup's own test-result line.
+  if (!wifiEnabled) {
+    tft.print("Ping result: WiFi is turned off");
+  } else if (strlen(wifiSSID) == 0) {
     tft.print("Set a network name to get started.");
   } else if (!wifiPingAttempted) {
     tft.print("Ping result: (not tested yet)");
@@ -108,6 +120,19 @@ void drawAdminWiFiScreen() {
   }
 
   drawBackButton("< Back");
+
+  // Shares the bottom bar with "< Back" — the BTN_PROCEED slot every other
+  // screen uses for its one primary action was sitting empty here (Connect/
+  // Ping already have their own row above). Styled like the Settings
+  // screen's own WiFi/4G chips (Screen_11_AdminSettings.ino), same as LTE
+  // Setup's on/off toggle (Screen_16_AdminLTE.ino).
+  uint16_t toggleFill = wifiEnabled ? COL_ACCENT : COL_CARD;
+  drawCardShadow(BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H, 8);
+  tft.fillRoundRect(BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H, 8, toggleFill);
+  if (!wifiEnabled) tft.drawRoundRect(BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H, 8, COL_CARD_BRD);
+  tft.setTextSize(2);
+  tft.setTextColor(wifiEnabled ? COL_BG_TOP : COL_TEXT_DIM, toggleFill);
+  centerTextInBox(wifiEnabled ? "WiFi: On" : "WiFi: Off", BTN_Y + 9, BTN_PROCEED_X, BTN_PROCEED_W);
 }
 
 void handleAdminWiFiScreen() {
@@ -127,17 +152,26 @@ void handleAdminWiFiScreen() {
         return;
       }
       if (pointInRect(sx, sy, WF_CONNECT_X, WF_CONNECT_Y, WF_CONNECT_W, WF_CONNECT_H)) {
-        if (strlen(wifiSSID) == 0) return;
-        WiFi.disconnect(true);
-        delay(100);
-        connectWiFiIfNeeded();
-        ntpConfigured = false;   // re-run SNTP against the new connection
-        wifiPingAttempted = false;
+        // Guarded the same way LTE Setup's Test button guards on lteEnabled
+        // — connectWiFiIfNeeded() would already refuse instantly while off,
+        // but this skips the pointless disconnect/reconnect cycle too.
+        if (wifiEnabled && strlen(wifiSSID) > 0) {
+          WiFi.disconnect(true);
+          delay(100);
+          connectWiFiIfNeeded();
+          ntpConfigured = false;   // re-run SNTP against the new connection
+          wifiPingAttempted = false;
+        }
         drawAdminWiFiScreen();
         return;
       }
       if (pointInRect(sx, sy, WF_PING_X, WF_PING_Y, WF_PING_W, WF_PING_H)) {
-        pingGoogleTest();
+        if (wifiEnabled) pingGoogleTest();
+        drawAdminWiFiScreen();
+        return;
+      }
+      if (pointInRect(sx, sy, BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H)) {
+        setWifiEnabled(!wifiEnabled);  // Core_06_Network.ino
         drawAdminWiFiScreen();
         return;
       }

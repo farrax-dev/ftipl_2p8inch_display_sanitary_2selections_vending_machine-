@@ -34,12 +34,21 @@ int rfidCardsPage = 0;
 // is tapped.
 int rfidEditingCard = -1;
 
-// Master radio switches from Config.h. Declared here (not in
-// Core_06_Network.ino / Core_13_LTEModem.ino, where they'd more naturally
-// live) because Core_12_Main.ino's setup()/loop() reference both, and
-// Core_12 loads before Core_13 in the concatenated build — the same
-// define-before-use rule the comment above exists for.
-const bool wifiEnabled = CFG_WIFI_ENABLED;
+// Whether the firmware currently tries to use the WiFi radio — separate from
+// CFG_WIFI_ENABLED, which says whether the radio is physically meant to be
+// used on this build at all. Same split as lteEnabled below: that macro
+// alone still gates whether Admin > Settings' "WiFi" button is reachable
+// (Screen_11_AdminSettings.ino), and this is what the WiFi Setup screen's
+// own on/off toggle actually flips (setWifiEnabled(), Core_06_Network.ino).
+// A *seed* value here, like everything else Config.h hands out —
+// loadPersistedProductData() overwrites it from NVS on every boot, always
+// ANDed with CFG_WIFI_ENABLED.
+//
+// Declared here (not in Core_06_Network.ino, where it'd more naturally live,
+// same as lteEnabled below) because Core_12_Main.ino's setup()/loop()
+// reference both, and Core_12 loads before Core_13 in the concatenated
+// build — the same define-before-use rule the comment above exists for.
+bool wifiEnabled = CFG_WIFI_ENABLED;
 
 // Whether the firmware currently tries to use the cellular radio — separate
 // from CFG_LTE_ENABLED, which says whether a modem is physically fitted at
@@ -56,3 +65,12 @@ const bool wifiEnabled = CFG_WIFI_ENABLED;
 // ANDs it with CFG_LTE_ENABLED, so a unit with no modem fitted stays off no
 // matter what was last stored.
 bool lteEnabled = CFG_LTE_ENABLED;
+
+// Set true whenever the status-bar WiFi/4G icon (Core_07_WiFiIndicator.ino)
+// needs to redraw regardless of its own poll interval — a screen change, a
+// radio toggled on/off, anything that could make the glyph stale before its
+// next timed check. Declared here rather than in Core_07 (where it'd more
+// naturally live) for the same cross-tab reason as wifiEnabled/lteEnabled
+// above: Core_06_Network.ino's setWifiEnabled() sets it, and Core_06 loads
+// before Core_07 in the concatenated build.
+bool indicatorDirty = true;
