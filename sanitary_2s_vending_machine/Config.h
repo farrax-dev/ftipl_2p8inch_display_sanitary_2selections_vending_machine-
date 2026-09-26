@@ -39,6 +39,44 @@
 #define CFG_TITLE_LINE_2       "NAPKIN"
 #define CFG_TITLE_SUBTITLE     "VENDING MACHINE"
 
+// ---------- Color theme ----------
+// Every screen in the app draws through one shared set of color macros
+// (Core_03_Theme.ino) instead of raw display constants, so the whole UI's
+// look comes from picking one number here. This is a Config.h-only choice,
+// same as CFG_IR_SENSOR_PRESENT — it's a factory/branding decision, not a
+// day-to-day setting, so there is deliberately no admin-screen equivalent.
+// Changing it needs a reflash, same as changing the welcome title.
+//
+// All 20 themes share the same light, card-based, gradient-background look
+// this app was designed around (near-white top fading to a saturated
+// bottom, pale cards, a vivid accent for buttons/highlights, dark text) —
+// only the hue family changes. 0 (Blossom) is the original theme this
+// machine shipped with and stays the default.
+//
+//   0  = Blossom          (pink / rose)            - original default
+//   1  = Ocean Blue        (sky blue)
+//   2  = Mint Fresh         (teal-green)
+//   3  = Lavender Dream      (purple)
+//   4  = Sunset Orange        (warm orange)
+//   5  = Ruby Red               (red)
+//   6  = Emerald Forest          (deep green)
+//   7  = Golden Amber              (amber / gold)
+//   8  = Mocha Coffee                (brown / tan)
+//   9  = Slate Charcoal                (cool neutral gray-blue)
+//   10 = Aqua Cyan                       (cyan)
+//   11 = Royal Indigo                      (indigo)
+//   12 = Peach Coral                         (coral)
+//   13 = Wine Burgundy                         (burgundy)
+//   14 = Midnight Navy                           (navy)
+//   15 = Turquoise                                 (turquoise)
+//   16 = Crimson                                     (crimson)
+//   17 = Steel Blue                                    (steel blue)
+//   18 = Sage Green                                      (sage green)
+//   19 = Plum Purple                                       (plum)
+//
+// See Core_03_Theme.ino for the exact hex values of each.
+#define CFG_COLOR_THEME 0
+
 // ---------- Identity ----------
 // Where this particular unit is. Shown in the small line under the Welcome
 // card, and in every report email subject beside the ID, e.g.
