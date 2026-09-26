@@ -228,6 +228,11 @@ void handleWelcomeScreen() {
     // blocks for up to ~90s, which would be unacceptable mid-purchase but is
     // harmless while the machine is sitting waiting for a customer.
     maintainReportSchedule();
+
+    // Same idle-only reasoning, though this one wouldn't actually block: the
+    // RFID monthly usage reset (Core_09_Storage.ino) just checked here for
+    // consistency with the rest of this machine's scheduled maintenance.
+    maintainRFIDResetSchedule();
   }
 
   if (isRealTouch()) {

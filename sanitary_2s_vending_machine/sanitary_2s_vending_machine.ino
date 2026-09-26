@@ -122,7 +122,8 @@ enum AppScreen {
   SCREEN_ADMIN_REPORT,
   SCREEN_ADMIN_RFID_CARDS,
   SCREEN_ADMIN_RFID_CARD_EDIT,
-  SCREEN_ADMIN_DATETIME
+  SCREEN_ADMIN_DATETIME,
+  SCREEN_ADMIN_RFID_RESET
 };
 
 // Sizing comes from Config.h so a new machine needs no edits here. Both are

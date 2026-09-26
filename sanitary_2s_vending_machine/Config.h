@@ -153,7 +153,7 @@
 // back without touching any other code.
 #define CFG_PAYMENT_UPI_AVAILABLE     true
 #define CFG_PAYMENT_CASH_AVAILABLE    true
-#define CFG_PAYMENT_RFID_AVAILABLE    false
+#define CFG_PAYMENT_RFID_AVAILABLE    true
 
 // ---------- Connectivity ----------
 // Master switches for the two radios. false fully disables the hardware —

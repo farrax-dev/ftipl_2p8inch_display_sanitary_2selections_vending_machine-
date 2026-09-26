@@ -33,9 +33,12 @@ const int MID_ROW_Y = 167, MID_ROW_H = 20;
 const int MACHID_ROW_X = 20,  MACHID_ROW_W = 168;
 const int ADMINPIN_ROW_X = 196, ADMINPIN_ROW_W = 104;  // 8px gap from MACHID_ROW
 
-// Small chip inside the RFID row, left of its ON/OFF toggle — opens card
-// registration. Only drawn/hit-tested for that one row.
+// Small chips inside the RFID row, left of its ON/OFF toggle — "Cards" opens
+// card registration, "Reset" opens the automatic monthly usage-reset
+// schedule (Screen_21_AdminRFIDReset.ino). Only drawn/hit-tested for that one
+// row.
 const int RFID_CARDS_CHIP_W = 46, RFID_CARDS_CHIP_H = 16;
+const int RFID_RESET_CHIP_W = 46;
 
 // Custom 5-button layout at bottom of Settings screen
 const int SET_BTN_BACK_X = 8,   SET_BTN_BACK_W = 57;
@@ -93,15 +96,21 @@ void drawAdminSettingsScreen() {
     int toggleX = PAY_ROW_X + PAY_ROW_W - toggleW - 6;
     int toggleY = y + (PAY_ROW_H - toggleH) / 2;
 
-    // RFID gets a "Cards" shortcut to registration, sitting just left of its
-    // own toggle — there's nowhere else on this packed screen to put a
-    // sixth nav button, and it only needs to exist on this one row.
+    // RFID gets "Cards" (registration) and "Reset" (automatic monthly usage
+    // reset) shortcuts, sitting just left of its own toggle — there's nowhere
+    // else on this packed screen to put extra nav buttons, and they only
+    // need to exist on this one row.
     if (p == PAY_IDX_RFID) {
-      int chipX = toggleX - RFID_CARDS_CHIP_W - 6;
+      int cardsChipX = toggleX - RFID_CARDS_CHIP_W - 6;
       int chipY = y + (PAY_ROW_H - RFID_CARDS_CHIP_H) / 2;
-      tft.fillRoundRect(chipX, chipY, RFID_CARDS_CHIP_W, RFID_CARDS_CHIP_H, 4, COL_ACCENT);
+      tft.fillRoundRect(cardsChipX, chipY, RFID_CARDS_CHIP_W, RFID_CARDS_CHIP_H, 4, COL_ACCENT);
       tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-      centerTextInBox("Cards", chipY + 4, chipX, RFID_CARDS_CHIP_W);
+      centerTextInBox("Cards", chipY + 4, cardsChipX, RFID_CARDS_CHIP_W);
+
+      int resetChipX = cardsChipX - RFID_RESET_CHIP_W - 6;
+      tft.fillRoundRect(resetChipX, chipY, RFID_RESET_CHIP_W, RFID_CARDS_CHIP_H, 4, COL_ACCENT);
+      tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+      centerTextInBox("Reset", chipY + 4, resetChipX, RFID_RESET_CHIP_W);
     }
 
     uint16_t toggleColor = paymentEnabled[p] ? COL_ACCENT : COL_BG_TOP;
@@ -224,12 +233,19 @@ void handleAdminSettingsScreen() {
         if (p == PAY_IDX_RFID) {
           int toggleW = 50;
           int toggleX = PAY_ROW_X + PAY_ROW_W - toggleW - 6;
-          int chipX = toggleX - RFID_CARDS_CHIP_W - 6;
+          int cardsChipX = toggleX - RFID_CARDS_CHIP_W - 6;
           int chipY = y + (PAY_ROW_H - RFID_CARDS_CHIP_H) / 2;
-          if (pointInRect(sx, sy, chipX, chipY, RFID_CARDS_CHIP_W, RFID_CARDS_CHIP_H)) {
+          if (pointInRect(sx, sy, cardsChipX, chipY, RFID_CARDS_CHIP_W, RFID_CARDS_CHIP_H)) {
             currentScreen = SCREEN_ADMIN_RFID_CARDS;
             rfidCardsPage = 0;
             drawAdminRFIDCardsScreen();
+            return;
+          }
+
+          int resetChipX = cardsChipX - RFID_RESET_CHIP_W - 6;
+          if (pointInRect(sx, sy, resetChipX, chipY, RFID_RESET_CHIP_W, RFID_CARDS_CHIP_H)) {
+            currentScreen = SCREEN_ADMIN_RFID_RESET;
+            drawAdminRFIDResetScreen();
             return;
           }
         }

@@ -191,9 +191,10 @@ void saveLteEnabled() {
 // Each card also carries an admin-set name (for telling cards apart on the
 // list) and an optional withdrawal limit — the total units that card may
 // dispense before it's refused. withdrawLimit == 0 means unlimited.
-// withdrawUsed only ever goes up here; Screen_19_AdminRFIDCardEdit.ino's
-// "Reset Usage" button is the only way to zero it — there's no time-based
-// reset yet.
+// withdrawUsed only ever goes up here; it's zeroed either by
+// Screen_19_AdminRFIDCardEdit.ino's per-card "Reset Usage" button, or
+// automatically for every card at once by the monthly schedule further down
+// this file (rfidResetEnabled et al. / maintainRFIDResetSchedule()).
 const int MAX_RFID_CARDS = 50;
 const int RFID_NAME_MAXLEN = 16;
 
@@ -310,6 +311,76 @@ void addRFIDCardUsage(int i, int qty) {
   if (i < 0 || i >= rfidCardCount) return;
   rfidCards[i].withdrawUsed += qty;
   saveRFIDCardSlot(i);
+}
+
+// ---------- Automatic monthly usage reset ----------
+// withdrawUsed only ever went up before this — Screen_19_AdminRFIDCardEdit.ino's
+// per-card "Reset Usage" button was the only way to zero it. This adds a
+// machine-wide schedule (Screen_21_AdminRFIDReset.ino) that zeroes every
+// registered card's usage on one configured day of the month, at one
+// configured time — e.g. "reset on the 1st at 01:00" for a monthly quota.
+// Capped to day 1-28 so it always falls inside every month, including
+// February.
+bool rfidResetEnabled = false;
+int  rfidResetDay = 1;     // 1-28
+int  rfidResetHour = 1;    // 0-23
+int  rfidResetMinute = 0;  // 0-59
+
+// YYYYMM of the last month this actually fired, so a reboot or a machine left
+// on past the target minute can't refire it twice in the same month — same
+// "already done" marker shape as nightlySentDate (Core_16_ReportSchedule.ino).
+// 0 means "never".
+uint32_t rfidResetFiredMonth = 0;
+
+void saveRFIDResetSchedule() {
+  prefs.putInt("rfidrston", rfidResetEnabled ? 1 : 0);
+  prefs.putInt("rfidrstday", rfidResetDay);
+  prefs.putInt("rfidrsthr", rfidResetHour);
+  prefs.putInt("rfidrstmin", rfidResetMinute);
+}
+
+void saveRFIDResetFired() {
+  prefs.putULong("rfidrstfired", rfidResetFiredMonth);
+}
+
+void loadRFIDResetSchedule() {
+  rfidResetEnabled = prefs.getInt("rfidrston", 0) != 0;
+  rfidResetDay     = prefs.getInt("rfidrstday", 1);
+  rfidResetHour    = prefs.getInt("rfidrsthr", 1);
+  rfidResetMinute  = prefs.getInt("rfidrstmin", 0);
+  if (rfidResetDay < 1 || rfidResetDay > 28) rfidResetDay = 1;
+  if (rfidResetHour < 0 || rfidResetHour > 23) rfidResetHour = 1;
+  if (rfidResetMinute < 0 || rfidResetMinute > 59) rfidResetMinute = 0;
+  rfidResetFiredMonth = (uint32_t)prefs.getULong("rfidrstfired", 0);
+}
+
+// Called once a second from the idle Welcome screen, same call site and
+// cadence as maintainReportSchedule() (Core_16_ReportSchedule.ino). Fires at
+// most once per calendar month: on rfidResetDay, once the clock reaches
+// rfidResetHour:rfidResetMinute, every registered card's withdrawUsed is
+// zeroed and the month is marked done. Uses ">=" on the time rather than an
+// exact match, so a reset still happens if the machine was off or busy at
+// the exact minute — same reasoning as the nightly email slots.
+void maintainRFIDResetSchedule() {
+  if (!rfidResetEnabled || rfidCardCount == 0) return;
+
+  uint32_t today = todayDateNum();   // Core_14_SalesLog.ino; 0 if clock not synced
+  if (today == 0) return;
+
+  uint32_t yyyymm = today / 100;
+  int dayOfMonth = (int)(today % 100);
+  if (dayOfMonth != rfidResetDay) return;
+  if (yyyymm == rfidResetFiredMonth) return;   // already run this month
+
+  int nowMin = currentMinutesOfDay();          // Core_16_ReportSchedule.ino
+  if (nowMin < 0 || nowMin < rfidResetHour * 60 + rfidResetMinute) return;
+
+  for (int i = 0; i < rfidCardCount; i++) resetRFIDCardUsage(i);
+
+  rfidResetFiredMonth = yyyymm;
+  saveRFIDResetFired();
+  Serial.printf("RFID: monthly usage reset fired for %d card(s) (day %d, %02d:%02d)\n",
+                rfidCardCount, rfidResetDay, rfidResetHour, rfidResetMinute);
 }
 
 // Status line on Screen_18_AdminRFIDCards.ino ("Card added" / "Already
@@ -448,6 +519,7 @@ void loadPersistedProductData() {
   lteEnabled = CFG_LTE_ENABLED && (prefs.getInt("lteon", 1) != 0);
 
   loadRFIDCards();
+  loadRFIDResetSchedule();
 
   for (int d = 0; d < COIN_DENOM_COUNT; d++) {
     char key[12];

@@ -109,6 +109,9 @@ void loop() {
     case SCREEN_ADMIN_DATETIME:
       handleAdminDateTimeScreen();
       break;
+    case SCREEN_ADMIN_RFID_RESET:
+      handleAdminRFIDResetScreen();
+      break;
   }
 
   maintainWiFiIndicator();
