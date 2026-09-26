@@ -101,10 +101,6 @@ void drawAdminUPIScreen() {
 
   tft.setTextSize(1);
   tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-  wrapTextInBox(
-    "Base URL, provider, salt and terminal ID are fixed in Config.h "
-    "and not shown here. Edit it there and reflash.",
-    UPI_ROW_X, UPI_ROW_W, y2 + UPI_ROW_H + 10, 1, true);
 
   drawBackButton("< Back");
 }
