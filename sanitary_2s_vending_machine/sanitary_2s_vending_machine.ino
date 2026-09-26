@@ -73,8 +73,8 @@ enum TextEntryTarget {
   TE_PRODUCT_NAME,
   TE_WIFI_SSID,
   TE_WIFI_PASS,
-  TE_UPI_MERCHANT_ID,  // the only PhonePe field the admin screen can edit —
-                        // see Screen_12_AdminUPIConfig.ino
+  TE_UPI_MERCHANT_ID,  // the two PhonePe fields the admin screen can edit —
+  TE_UPI_STORE_ID,     // see Screen_12_AdminUPIConfig.ino
   TE_MACHINE_ID,
   TE_MACHINE_NAME,
   TE_GMAIL_USER,

@@ -105,7 +105,7 @@ void handleAdminLTEScreen() {
           tft.setTextSize(2);
           tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
           centerText("Testing 4G connection...", 100);
-          centerText("(this can take up to 15-20s)", 130);
+          centerText("(this can take 20+ s)", 130);
           pingGoogleTestLTE();
         }
         drawAdminLTEScreen();

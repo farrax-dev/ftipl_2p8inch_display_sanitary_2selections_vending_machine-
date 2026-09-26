@@ -94,7 +94,7 @@ void initiateUPIPayment() {
   innerDoc["transactionId"] = upiTransactionId;
   innerDoc["merchantOrderId"] = upiTransactionId;
   innerDoc["amount"] = orderTotal * 100;
-  innerDoc["expiresIn"] = UPI_QR_EXPIRES_IN_SEC;
+  innerDoc["expiresIn"] = upiTimeoutMs / 1000;
   innerDoc["storeId"] = phonepeStoreId;
   innerDoc["terminalId"] = phonepeTerminalId;
   String innerJson;
@@ -211,7 +211,7 @@ void drawUPIWaitingScreen() {
 
 void drawUPIStatusLine(int y) {
   tft.fillRect(0, y - 2, tft.width(), 16, COL_BG_BOTTOM);
-  int remainingSec = (int)((UPI_TIMEOUT_MS - (millis() - upiStartTime)) / 1000);
+  int remainingSec = (int)((upiTimeoutMs - (millis() - upiStartTime)) / 1000);
   if (remainingSec < 0) remainingSec = 0;
   tft.setTextSize(1);
   tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
@@ -306,7 +306,7 @@ void drawPaymentUPIScreen() {
 
 void handlePaymentUPIScreen() {
   if (upiStage == UPI_STAGE_WAITING) {
-    if (millis() - upiStartTime > UPI_TIMEOUT_MS) {
+    if (millis() - upiStartTime > upiTimeoutMs) {
       upiStage = UPI_STAGE_TIMEOUT;
       drawUPICurrentStage();
     } else {

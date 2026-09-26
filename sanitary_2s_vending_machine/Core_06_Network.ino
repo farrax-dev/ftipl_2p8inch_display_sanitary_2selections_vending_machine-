@@ -141,8 +141,16 @@ int  phonepeSaltIndex      = 1;
 char phonepeStoreId[32]    = "";
 char phonepeTerminalId[32] = "";
 
-const int UPI_QR_EXPIRES_IN_SEC = 180;
-const unsigned long UPI_TIMEOUT_MS = 120000;
+// Admin-configurable (Screen_12_AdminUPIConfig.ino), seed-then-owned same as
+// maxCartQty (Core_09_Storage.ino) — CFG_UPI_TIMEOUT_MIN seeds it on a board
+// that's never had it set, and the admin screen owns it from there. Kept in
+// ms since that's what Screen_05_PaymentUPI.ino's countdown consumes; the QR
+// itself is asked to stay valid for exactly this long too (initiateUPIPayment()
+// sends it as "expiresIn"), so the two can never drift apart the way a fixed
+// UPI_QR_EXPIRES_IN_SEC would once this became adjustable.
+unsigned long upiTimeoutMs = (unsigned long)CFG_UPI_TIMEOUT_MIN * 60000UL;
+const unsigned long UPI_TIMEOUT_MIN_MS = 60000;    // 1 minute floor
+const unsigned long UPI_TIMEOUT_MAX_MS = 600000;   // 10 minute ceiling
 const unsigned long UPI_POLL_INTERVAL_MS = 4000;
 // A status check over the modem takes 10-25s by itself, so a 4-second gap on
 // that path just queues requests back to back with no idle time for the UI.

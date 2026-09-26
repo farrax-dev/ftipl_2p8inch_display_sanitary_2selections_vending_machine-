@@ -85,6 +85,13 @@ void openTextEntry(TextEntryTarget target) {
       textEntryTitle = "UPI Merchant ID";
       textEntryReturnScreen = SCREEN_ADMIN_UPI;
       break;
+    case TE_UPI_STORE_ID:
+      strncpy(textEntryBuffer, phonepeStoreId, sizeof(textEntryBuffer));
+      textEntryMaxLen = sizeof(phonepeStoreId) - 1;
+      textEntryMask = false;
+      textEntryTitle = "UPI Store ID";
+      textEntryReturnScreen = SCREEN_ADMIN_UPI;
+      break;
     case TE_MACHINE_ID:
       strncpy(textEntryBuffer, machineId, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(machineId) - 1;
@@ -340,6 +347,11 @@ void commitTextEntry() {
     case TE_UPI_MERCHANT_ID:
       strncpy(phonepeMerchantId, textEntryBuffer, sizeof(phonepeMerchantId));
       phonepeMerchantId[sizeof(phonepeMerchantId) - 1] = '\0';
+      saveUPISettings();
+      break;
+    case TE_UPI_STORE_ID:
+      strncpy(phonepeStoreId, textEntryBuffer, sizeof(phonepeStoreId));
+      phonepeStoreId[sizeof(phonepeStoreId) - 1] = '\0';
       saveUPISettings();
       break;
     case TE_MACHINE_ID:

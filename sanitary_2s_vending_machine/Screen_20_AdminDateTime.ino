@@ -7,9 +7,12 @@
 // (until Config.h took it over) the UPI salt index. Nothing to mistype, and
 // no keyboard layer to switch to for the "/"/":" separators or "AM"/"PM".
 //
-// Always edits in 24-hour; the 12h/24h chip here only flips clock24Hour
-// (Core_06_Network.ino), which purely controls how the result is *displayed*
-// elsewhere (the Welcome screen clock) — same split that existed before.
+// dtEditHour always STORES the true 24-hour value (0-23), which is what
+// commitAdminDateTime() writes out. The 12h/24h chip (Core_06_Network.ino's
+// clock24Hour) only changes how that value is *displayed and stepped* here:
+// in 12h mode the Hour field shows 1-12 with an AM/PM chip instead of 0-23,
+// so the stepper can never be walked past 12 the way it used to be able to
+// when the range check didn't know about clock24Hour at all.
 const int DT_ROW_X = 14, DT_ROW_W = 292, DT_ROW_H = 26;
 const int DT_ROW_Y0 = 38, DT_ROW_GAP = 4;
 const int DT_FIELD_COUNT = 5;
@@ -18,6 +21,13 @@ const int DT_BTN_W = 24, DT_VAL_W = 60;
 const int DT_PLUS_X  = DT_ROW_X + DT_ROW_W - 8 - DT_BTN_W;
 const int DT_VAL_X   = DT_PLUS_X - 6 - DT_VAL_W;
 const int DT_MINUS_X = DT_VAL_X - 6 - DT_BTN_W;
+
+// AM/PM chip, Hour row only, in the space between its label and the -/value/+
+// stepper — only drawn/hit-tested when clock24Hour is off. Tapping it flips
+// the real 24-hour value by 12 hours, same as stepping the Hour field twelve
+// times but in one tap.
+const int DT_AMPM_W = 44;
+const int DT_AMPM_X = DT_MINUS_X - 6 - DT_AMPM_W;
 
 // Custom 3-button bottom bar (Cancel / 12h-24h / Save) rather than the usual
 // Back+Proceed pair — this screen needs a third control and the standard bar
@@ -37,12 +47,20 @@ int dtRowY(int row) {
   return DT_ROW_Y0 + row * (DT_ROW_H + DT_ROW_GAP);
 }
 
+// Hour field only: converts the stored 24-hour value to what a 12-hour clock
+// shows (1-12), so the on-screen figure and the +/- range agree with the
+// AM/PM chip instead of just counting on past 12.
+int dtHour12() {
+  int h = dtEditHour % 12;
+  return (h == 0) ? 12 : h;
+}
+
 int dtFieldValue(int field) {
   switch (field) {
     case 0: return dtEditDay;
     case 1: return dtEditMonth;
     case 2: return dtEditYear;
-    case 3: return dtEditHour;
+    case 3: return clock24Hour ? dtEditHour : dtHour12();
     default: return dtEditMinute;
   }
 }
@@ -53,12 +71,22 @@ void dtFieldRange(int field, int &lo, int &hi) {
                                            // same latitude a typed date always had
     case 1: lo = 1;    hi = 12;   break;
     case 2: lo = 2024; hi = 2099; break;
-    case 3: lo = 0;    hi = 23;   break;
+    case 3: lo = clock24Hour ? 0 : 1; hi = clock24Hour ? 23 : 12; break;
     default: lo = 0;   hi = 59;   break;
   }
 }
 
 void dtStepField(int field, int delta) {
+  // In 12h mode the field being stepped (1-12) isn't what's stored (0-23), so
+  // clamping the displayed value would either stick at 12 or wrap straight to
+  // 1 with no way to cross into the next half of the day. Stepping the real
+  // 24-hour value by the same delta instead lets AM/PM flip naturally at the
+  // 12-hour boundary, same as a real clock's hour hand.
+  if (field == 3 && !clock24Hour) {
+    dtEditHour = ((dtEditHour + delta) % 24 + 24) % 24;
+    return;
+  }
+
   int lo, hi;
   dtFieldRange(field, lo, hi);
   int v = dtFieldValue(field) + delta;
@@ -154,6 +182,17 @@ void drawAdminDateTimeScreen() {
     tft.setTextColor(COL_BG_TOP, COL_ACCENT);
     tft.setTextSize(2);
     centerTextInBox("+", textY, DT_PLUS_X, DT_BTN_W);
+
+    // AM/PM chip, Hour row only, 12h mode only — tells the two halves of the
+    // day apart now that the value above tops out at 12 instead of 23, and
+    // doubles as a one-tap way to jump 12 hours instead of stepping there.
+    if (f == 3 && !clock24Hour) {
+      drawCardShadow(DT_AMPM_X, ctrlY, DT_AMPM_W, ctrlH, 4);
+      tft.fillRoundRect(DT_AMPM_X, ctrlY, DT_AMPM_W, ctrlH, 4, COL_ACCENT);
+      tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+      tft.setTextSize(1);
+      centerTextInBox(dtEditHour >= 12 ? "PM" : "AM", ctrlY + (ctrlH - 8) / 2, DT_AMPM_X, DT_AMPM_W);
+    }
   }
 
   drawCard(DT_BAR_BACK_X, BTN_Y, DT_BAR_BACK_W, BTN_H, 8);
@@ -161,8 +200,9 @@ void drawAdminDateTimeScreen() {
   tft.setTextColor(COL_TEXT, COL_CARD);
   centerTextInBox("Cancel", BTN_Y + 9, DT_BAR_BACK_X, DT_BAR_BACK_W);
 
-  // Display-only preference (Core_06_Network.ino) — doesn't affect any of
-  // the steppers above, which always edit in 24-hour.
+  // Core_06_Network.ino's clock24Hour, toggled here — also reshapes the Hour
+  // stepper above (1-12 + AM/PM chip vs. 0-23) rather than being purely
+  // cosmetic for the Welcome screen clock the way it used to be.
   drawCardShadow(DT_BAR_12H_X, BTN_Y, DT_BAR_12H_W, BTN_H, 8);
   tft.fillRoundRect(DT_BAR_12H_X, BTN_Y, DT_BAR_12H_W, BTN_H, 8, COL_ACCENT);
   tft.setTextColor(COL_BG_TOP, COL_ACCENT);
@@ -205,6 +245,12 @@ void handleAdminDateTimeScreen() {
   for (int f = 0; f < DT_FIELD_COUNT; f++) {
     int y = dtRowY(f);
     int ctrlY = y + 3, ctrlH = DT_ROW_H - 6;
+
+    if (f == 3 && !clock24Hour && pointInRect(sx, sy, DT_AMPM_X, ctrlY, DT_AMPM_W, ctrlH)) {
+      dtEditHour = (dtEditHour + 12) % 24;
+      drawAdminDateTimeScreen();
+      return;
+    }
 
     if (pointInRect(sx, sy, DT_MINUS_X, ctrlY, DT_BTN_W, ctrlH)) {
       dtStepField(f, -1);

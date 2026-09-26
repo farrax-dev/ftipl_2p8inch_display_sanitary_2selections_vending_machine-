@@ -372,7 +372,8 @@ uint32_t configFingerprint() {
                CFG_REPORT_TO + CFG_NIGHTLY_TIME_1 + CFG_NIGHTLY_TIME_2 +
                CFG_UPI_BASE_URL + CFG_UPI_PROVIDER_ID + CFG_UPI_MERCHANT_ID +
                CFG_UPI_SALT_KEY + CFG_UPI_STORE_ID + CFG_UPI_TERMINAL_ID +
-               String(CFG_UPI_SALT_INDEX) + String(CFG_MAX_CART_QTY) +
+               String(CFG_UPI_SALT_INDEX) + String(CFG_UPI_TIMEOUT_MIN) +
+               String(CFG_MAX_CART_QTY) +
                String(CFG_LOW_STOCK_LEVEL) + String(CFG_LOW_STOCK_ALERT ? 1 : 0) +
                String(CFG_MOTOR_COUNT) + String(CFG_PRODUCT_COUNT);
 
@@ -412,11 +413,14 @@ void loadPersistedProductData() {
     prefs.putInt("maxcartqty", CFG_MAX_CART_QTY);
     prefs.putInt("wifion", CFG_WIFI_ENABLED ? 1 : 0);
     prefs.putInt("lteon", CFG_LTE_ENABLED ? 1 : 0);
-    // Merchant ID alone is admin-editable (Screen_12_AdminUPIConfig.ino), so
-    // it alone gets the seed-then-owned NVS treatment. Every other UPI field
-    // is fixed to Config.h below in loadPersistedProductData() and never
-    // stored, so there's nothing to seed here for them.
+    // Merchant ID, Store ID and the payment timeout are admin-editable
+    // (Screen_12_AdminUPIConfig.ino), so those alone get the seed-then-owned
+    // NVS treatment. Every other UPI field is fixed to Config.h below in
+    // loadPersistedProductData() and never stored, so there's nothing to seed
+    // here for them.
     prefs.putString("upimerchantid", CFG_UPI_MERCHANT_ID);
+    prefs.putString("upistoreid", CFG_UPI_STORE_ID);
+    prefs.putULong("upitimeoutms", (unsigned long)CFG_UPI_TIMEOUT_MIN * 60000UL);
     prefs.putULong("cfgfp", fp);
   }
 
@@ -468,12 +472,14 @@ void loadPersistedProductData() {
   prefs.getString("wifissid", CFG_WIFI_SSID).toCharArray(wifiSSID, sizeof(wifiSSID));
   prefs.getString("wifipass", CFG_WIFI_PASSWORD).toCharArray(wifiPass, sizeof(wifiPass));
 
-  // UPI: Merchant ID is the one field Admin > UPI Configuration can change,
-  // so it alone comes from NVS (seed-then-owned, same as everything else in
-  // this file). Every other PhonePe field is fixed to Config.h — no admin
-  // override exists for them, so they're just assigned straight from the
-  // CFG_ constants rather than round-tripped through Preferences.
+  // UPI: Merchant ID, Store ID and the payment timeout are the fields
+  // Admin > UPI Configuration can change, so those alone come from NVS
+  // (seed-then-owned, same as everything else in this file). Every other
+  // PhonePe field is fixed to Config.h — no admin override exists for them,
+  // so they're just assigned straight from the CFG_ constants rather than
+  // round-tripped through Preferences.
   prefs.getString("upimerchantid", DEFAULT_PHONEPE_MERCHANT_ID).toCharArray(phonepeMerchantId, sizeof(phonepeMerchantId));
+  prefs.getString("upistoreid", DEFAULT_PHONEPE_STORE_ID).toCharArray(phonepeStoreId, sizeof(phonepeStoreId));
   strncpy(phonepeBaseUrl, DEFAULT_PHONEPE_BASE_URL, sizeof(phonepeBaseUrl) - 1);
   phonepeBaseUrl[sizeof(phonepeBaseUrl) - 1] = '\0';
   strncpy(phonepeProviderId, DEFAULT_PHONEPE_PROVIDER_ID, sizeof(phonepeProviderId) - 1);
@@ -481,10 +487,15 @@ void loadPersistedProductData() {
   strncpy(phonepeSaltKey, DEFAULT_PHONEPE_SALT_KEY, sizeof(phonepeSaltKey) - 1);
   phonepeSaltKey[sizeof(phonepeSaltKey) - 1] = '\0';
   phonepeSaltIndex = DEFAULT_PHONEPE_SALT_INDEX;
-  strncpy(phonepeStoreId, DEFAULT_PHONEPE_STORE_ID, sizeof(phonepeStoreId) - 1);
-  phonepeStoreId[sizeof(phonepeStoreId) - 1] = '\0';
   strncpy(phonepeTerminalId, DEFAULT_PHONEPE_TERMINAL_ID, sizeof(phonepeTerminalId) - 1);
   phonepeTerminalId[sizeof(phonepeTerminalId) - 1] = '\0';
+
+  upiTimeoutMs = prefs.getULong("upitimeoutms", (unsigned long)CFG_UPI_TIMEOUT_MIN * 60000UL);
+  // Defensive clamp, not a normal path: guards against a value left over from
+  // an older build that allowed a wider range than the 1-10 minute one the
+  // admin screen enforces today.
+  if (upiTimeoutMs < UPI_TIMEOUT_MIN_MS) upiTimeoutMs = UPI_TIMEOUT_MIN_MS;
+  if (upiTimeoutMs > UPI_TIMEOUT_MAX_MS) upiTimeoutMs = UPI_TIMEOUT_MAX_MS;
 
   for (int m = 0; m < MAX_MOTORS; m++) {
     char keyMStock[9];
@@ -522,10 +533,13 @@ void saveWiFiCredentials() {
   prefs.putString("wifipass", wifiPass);
 }
 
-// Merchant ID only — see loadPersistedProductData()'s UPI block above for
-// why the rest of the PhonePe fields never reach here.
+// Merchant ID, Store ID and the payment timeout only — see
+// loadPersistedProductData()'s UPI block above for why the rest of the
+// PhonePe fields never reach here.
 void saveUPISettings() {
   prefs.putString("upimerchantid", phonepeMerchantId);
+  prefs.putString("upistoreid", phonepeStoreId);
+  prefs.putULong("upitimeoutms", upiTimeoutMs);
 }
 
 void savePriceSlot(int i) {

@@ -221,4 +221,11 @@
 #define CFG_UPI_STORE_ID       "teststore1"
 #define CFG_UPI_TERMINAL_ID    "testterminal1"
 
+// How long the QR payment screen waits for PhonePe to report a completed
+// payment before giving up (Screen_05_PaymentUPI.ino). Minutes, not ms — this
+// is only the seed value; Admin > UPI Configuration owns it from there on
+// (same seed-then-owned relationship as CFG_MAX_CART_QTY above), capped at
+// 10 minutes on that screen.
+#define CFG_UPI_TIMEOUT_MIN    2
+
 #endif  // CONFIG_H
