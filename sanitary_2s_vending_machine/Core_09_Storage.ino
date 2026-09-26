@@ -152,10 +152,28 @@ bool isRFIDOnlyMachine() {
   return getEnabledPaymentMethods(idx) == 1 && idx[0] == PAY_IDX_RFID;
 }
 
-// ---------- Product price visibility (RFID-only machines) ----------
-// A registered-card machine doesn't charge anything, so the price line on
-// the Select screen can be more confusing than useful. Off by default
-// everywhere else.
+// ---------- Machine-wide free vend (Admin > Settings > "Free Vend") ----------
+// CFG_FREE_VEND_MODE (Config.h) is only the seed, same as everything else
+// in that file. When on, the customer never sees a payment method at all —
+// Screen_02_Select.ino's quickVendSelect() and Screen_03_CartReview.ino's
+// Pay button both check this and call runFreeVendCheckout()
+// (Core_11_Dispense.ino) instead of ever moving to SCREEN_PAYMENT_METHOD.
+//
+// Deliberately separate from paymentEnabled[]/PAYMENT_AVAILABLE[]: turning
+// every payment method off there would show a dead-end "No payment methods
+// available" screen, not skip straight to dispensing. This flag is the one
+// that actually means "nothing is ever charged, for anyone."
+bool freeVendMode = CFG_FREE_VEND_MODE;
+
+void saveFreeVendMode() {
+  prefs.putInt("freevend", freeVendMode ? 1 : 0);
+}
+
+// ---------- Product price visibility (RFID-only / free-vend machines) ----------
+// A machine that never charges anything doesn't need the price line on the
+// Select screen — it can be more confusing than useful. Off by default
+// everywhere else. Shown as an admin toggle whenever isRFIDOnlyMachine() or
+// freeVendMode is true (Screen_11_AdminSettings.ino).
 bool hideProductPrices = false;
 
 void saveHideProductPrices() {
@@ -446,7 +464,8 @@ uint32_t configFingerprint() {
                String(CFG_UPI_SALT_INDEX) + String(CFG_UPI_TIMEOUT_MIN) +
                String(CFG_MAX_CART_QTY) +
                String(CFG_LOW_STOCK_LEVEL) + String(CFG_LOW_STOCK_ALERT ? 1 : 0) +
-               String(CFG_MOTOR_COUNT) + String(CFG_PRODUCT_COUNT);
+               String(CFG_MOTOR_COUNT) + String(CFG_PRODUCT_COUNT) +
+               String(CFG_FREE_VEND_MODE ? 1 : 0);
 
   uint32_t h = 2166136261u;
   for (size_t i = 0; i < all.length(); i++) {
@@ -484,6 +503,7 @@ void loadPersistedProductData() {
     prefs.putInt("maxcartqty", CFG_MAX_CART_QTY);
     prefs.putInt("wifion", CFG_WIFI_ENABLED ? 1 : 0);
     prefs.putInt("lteon", CFG_LTE_ENABLED ? 1 : 0);
+    prefs.putInt("freevend", CFG_FREE_VEND_MODE ? 1 : 0);
     // Merchant ID, Store ID and the payment timeout are admin-editable
     // (Screen_12_AdminUPIConfig.ino), so those alone get the seed-then-owned
     // NVS treatment. Every other UPI field is fixed to Config.h below in
@@ -505,6 +525,7 @@ void loadPersistedProductData() {
     paymentEnabled[p] = PAYMENT_AVAILABLE[p] && (prefs.getInt(key, 1) != 0);
   }
 
+  freeVendMode = prefs.getInt("freevend", CFG_FREE_VEND_MODE ? 1 : 0) != 0;
   hideProductPrices = prefs.getInt("hideprices", 0) != 0;
   clock24Hour = prefs.getInt("clock24h", 0) != 0;
 

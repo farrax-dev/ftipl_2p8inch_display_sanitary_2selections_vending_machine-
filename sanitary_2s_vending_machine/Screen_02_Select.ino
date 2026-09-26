@@ -82,7 +82,7 @@ void drawSelectScreen() {
   // So quick-vend with multiple products draws no Proceed button at all —
   // every card is already the complete action, nothing left to proceed to.
   if (isQuickVend() && count == 1) {
-    drawProceedButton("Proceed >");
+    drawProceedButton(freeVendMode ? "Get Free >" : "Proceed >");
   } else if (!isQuickVend()) {
     int items = cartItemCount();
     char cartLabel[16];
@@ -323,6 +323,12 @@ void quickVendSelect(int i, int x, int y, int w, int h) {
   // be set here instead, since that screen is skipped entirely for a
   // single item.
   orderTotal = cartTotal();
+  if (freeVendMode) {
+    // Free-vend machines never show a payment method at all — skip straight
+    // to dispensing (Core_11_Dispense.ino's runFreeVendCheckout()).
+    runFreeVendCheckout();
+    return;
+  }
   currentScreen = SCREEN_PAYMENT_METHOD;
   drawPaymentMethodScreen();
 }

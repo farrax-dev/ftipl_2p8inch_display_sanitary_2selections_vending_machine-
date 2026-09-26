@@ -5,7 +5,24 @@
 // is polled rather than just checked once at the end. Returns whether a drop
 // was seen (pollDropSensor()'s clear->detected transition) anywhere in that
 // window.
+//
+// CFG_IR_SENSOR_PRESENT (Config.h) is checked first: with no sensor fitted
+// there is nothing to poll for, so this just runs the motor for its plain
+// dispense time and reports the unit as delivered — no
+// CFG_DROP_SENSOR_BUFFER_MS tacked on afterwards, no drop-sensor logic at
+// all. A build with no sensor module wired in has no way to tell a real
+// dispense from a jam either way, so it doesn't pretend to check.
 bool runMotorPulseVerified(int m, unsigned long motorMs) {
+  if (!CFG_IR_SENSOR_PRESENT) {
+    Serial.printf("motor M%d ON (GPIO %d) for %lums (no drop sensor fitted)\n",
+                  m + 1, MOTOR_PINS[m], motorMs);
+    motorWrite(m, true);
+    delay(motorMs);
+    motorWrite(m, false);
+    Serial.printf("motor M%d OFF (drop check skipped - no sensor)\n", m + 1);
+    return true;
+  }
+
   Serial.printf("motor M%d ON (GPIO %d) for %lums\n", m + 1, MOTOR_PINS[m], motorMs);
   motorWrite(m, true);
 
@@ -129,4 +146,43 @@ bool dispenseCart(const char* paymentMethod, bool freeVend) {
                 allDetected ? "all units confirmed" : "ONE OR MORE UNITS NOT CONFIRMED");
 
   return allDetected;
+}
+
+// Machine-wide free vend (Admin > Settings > "Free Vend", Core_09_Storage.ino's
+// freeVendMode) — distinct from the RFID free-vend-by-registered-card feature
+// in Screen_06_PaymentOther.ino, which only waives payment for one tapped
+// card while everyone else still pays. This is the "nobody pays, ever" mode:
+// called directly from the two places a completed cart would otherwise move
+// to SCREEN_PAYMENT_METHOD (Screen_02_Select.ino's quickVendSelect() and
+// Screen_03_CartReview.ino's Pay button) whenever freeVendMode is on, so the
+// customer never sees a payment method screen at all.
+//
+// Mirrors the Cash/RFID success screens (Screen_06_PaymentOther.ino) rather
+// than introducing a new AppScreen state — dispenseCart() already blocks for
+// the whole dispense, so there is nothing for a separate screen state to do
+// that this synchronous sequence doesn't already cover.
+void runFreeVendCheckout() {
+  bool dispensedOk = dispenseCart("Free", true);  // freeVend — logged at Rs 0, see dispenseCart() above
+
+  drawGradientBackground();
+  tft.setTextSize(3);
+  if (dispensedOk) {
+    tft.setTextColor(COL_SUCCESS, COL_BG_BOTTOM);
+    centerText("Enjoy!", 80);
+    tft.setTextSize(1);
+    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    centerText("Please collect your item", 130);
+  } else {
+    tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
+    centerText("Dispense", 70);
+    centerText("Failed", 100);
+    tft.setTextSize(1);
+    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    centerText("Please contact support", 140);
+  }
+  delay(2000);
+
+  resetCart();
+  currentScreen = SCREEN_WELCOME;
+  drawWelcomeScreen();
 }

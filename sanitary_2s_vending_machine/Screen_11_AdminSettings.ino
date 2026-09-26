@@ -78,56 +78,86 @@ void drawAdminSettingsScreen() {
   snprintf(qbuf, sizeof(qbuf), "%d", maxCartQty);
   centerTextInBox(qbuf, 48, 183, 50);
 
-  // Payment method toggles — only the ones Config.h makes available
-  int payIdx[PAYMENT_COUNT];
-  int payCount = visiblePaymentRows(payIdx);
+  // Free Vend toggle — always the first payment-related row, row 0. When
+  // on, the machine never shows a payment method to the customer at all
+  // (Screen_02_Select.ino / Screen_03_CartReview.ino skip straight to
+  // Core_11_Dispense.ino's runFreeVendCheckout() instead of ever reaching
+  // SCREEN_PAYMENT_METHOD), so the individual payment method toggles below
+  // would have nothing left to control and are hidden rather than left on
+  // screen doing nothing.
+  int freeVendY = paymentRowY(0);
+  drawCard(PAY_ROW_X, freeVendY, PAY_ROW_W, PAY_ROW_H, 5);
+  tft.setTextSize(1);
+  tft.setTextColor(COL_TEXT, COL_CARD);
+  tft.setCursor(PAY_ROW_X + 8, freeVendY + 7);
+  tft.print("Free Vend");
 
-  for (int row = 0; row < payCount; row++) {
-    int p = payIdx[row];
-    int y = paymentRowY(row);
-    drawCard(PAY_ROW_X, y, PAY_ROW_W, PAY_ROW_H, 5);
-
-    tft.setTextSize(1);
-    tft.setTextColor(COL_TEXT, COL_CARD);
-    tft.setCursor(PAY_ROW_X + 8, y + 7);
-    tft.print(PAYMENT_NAMES[p]);
-
+  {
     int toggleW = 50, toggleH = 16;
     int toggleX = PAY_ROW_X + PAY_ROW_W - toggleW - 6;
-    int toggleY = y + (PAY_ROW_H - toggleH) / 2;
-
-    // RFID gets "Cards" (registration) and "Reset" (automatic monthly usage
-    // reset) shortcuts, sitting just left of its own toggle — there's nowhere
-    // else on this packed screen to put extra nav buttons, and they only
-    // need to exist on this one row.
-    if (p == PAY_IDX_RFID) {
-      int cardsChipX = toggleX - RFID_CARDS_CHIP_W - 6;
-      int chipY = y + (PAY_ROW_H - RFID_CARDS_CHIP_H) / 2;
-      tft.fillRoundRect(cardsChipX, chipY, RFID_CARDS_CHIP_W, RFID_CARDS_CHIP_H, 4, COL_ACCENT);
-      tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-      centerTextInBox("Cards", chipY + 4, cardsChipX, RFID_CARDS_CHIP_W);
-
-      int resetChipX = cardsChipX - RFID_RESET_CHIP_W - 6;
-      tft.fillRoundRect(resetChipX, chipY, RFID_RESET_CHIP_W, RFID_CARDS_CHIP_H, 4, COL_ACCENT);
-      tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-      centerTextInBox("Reset", chipY + 4, resetChipX, RFID_RESET_CHIP_W);
-    }
-
-    uint16_t toggleColor = paymentEnabled[p] ? COL_ACCENT : COL_BG_TOP;
+    int toggleY = freeVendY + (PAY_ROW_H - toggleH) / 2;
+    uint16_t toggleColor = freeVendMode ? COL_ACCENT : COL_BG_TOP;
     tft.fillRoundRect(toggleX, toggleY, toggleW, toggleH, 4, toggleColor);
-    tft.setTextColor(paymentEnabled[p] ? COL_BG_TOP : COL_TEXT_DIM, toggleColor);
-    centerTextInBox(paymentEnabled[p] ? "ON" : "OFF", toggleY + 4, toggleX, toggleW);
+    tft.setTextColor(freeVendMode ? COL_BG_TOP : COL_TEXT_DIM, toggleColor);
+    centerTextInBox(freeVendMode ? "ON" : "OFF", toggleY + 4, toggleX, toggleW);
   }
 
-  // "Show Prices" only matters once RFID is the only thing a customer can
-  // actually pay with — free-vend-by-badge doesn't need a price on screen.
-  // Guarded on room too, so a build with all three payment rows showing (and
-  // RFID somehow the only one currently switched on) never overflows into
-  // the Machine ID row below.
-  bool showPriceToggleRow = isRFIDOnlyMachine() &&
-                            (paymentRowY(payCount) + PAY_ROW_H + PAY_ROW_GAP <= MID_ROW_Y);
+  // Payment method toggles — only the ones Config.h makes available, and
+  // only while Free Vend is off (see the comment above).
+  int payIdx[PAYMENT_COUNT];
+  int payCount = 0;
+  if (!freeVendMode) {
+    payCount = visiblePaymentRows(payIdx);
+
+    for (int row = 0; row < payCount; row++) {
+      int p = payIdx[row];
+      int y = paymentRowY(row + 1);
+      drawCard(PAY_ROW_X, y, PAY_ROW_W, PAY_ROW_H, 5);
+
+      tft.setTextSize(1);
+      tft.setTextColor(COL_TEXT, COL_CARD);
+      tft.setCursor(PAY_ROW_X + 8, y + 7);
+      tft.print(PAYMENT_NAMES[p]);
+
+      int toggleW = 50, toggleH = 16;
+      int toggleX = PAY_ROW_X + PAY_ROW_W - toggleW - 6;
+      int toggleY = y + (PAY_ROW_H - toggleH) / 2;
+
+      // RFID gets "Cards" (registration) and "Reset" (automatic monthly usage
+      // reset) shortcuts, sitting just left of its own toggle — there's nowhere
+      // else on this packed screen to put extra nav buttons, and they only
+      // need to exist on this one row.
+      if (p == PAY_IDX_RFID) {
+        int cardsChipX = toggleX - RFID_CARDS_CHIP_W - 6;
+        int chipY = y + (PAY_ROW_H - RFID_CARDS_CHIP_H) / 2;
+        tft.fillRoundRect(cardsChipX, chipY, RFID_CARDS_CHIP_W, RFID_CARDS_CHIP_H, 4, COL_ACCENT);
+        tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+        centerTextInBox("Cards", chipY + 4, cardsChipX, RFID_CARDS_CHIP_W);
+
+        int resetChipX = cardsChipX - RFID_RESET_CHIP_W - 6;
+        tft.fillRoundRect(resetChipX, chipY, RFID_RESET_CHIP_W, RFID_CARDS_CHIP_H, 4, COL_ACCENT);
+        tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+        centerTextInBox("Reset", chipY + 4, resetChipX, RFID_RESET_CHIP_W);
+      }
+
+      uint16_t toggleColor = paymentEnabled[p] ? COL_ACCENT : COL_BG_TOP;
+      tft.fillRoundRect(toggleX, toggleY, toggleW, toggleH, 4, toggleColor);
+      tft.setTextColor(paymentEnabled[p] ? COL_BG_TOP : COL_TEXT_DIM, toggleColor);
+      centerTextInBox(paymentEnabled[p] ? "ON" : "OFF", toggleY + 4, toggleX, toggleW);
+    }
+  }
+
+  int settingsNextRow = 1 + payCount;
+
+  // "Show Prices" matters whenever a customer never actually pays anything —
+  // machine-wide Free Vend, or the older case of RFID being the only thing a
+  // customer can pay with (free-vend-by-badge doesn't need a price on screen
+  // either). Guarded on room too, so a build with every payment row showing
+  // never overflows into the Machine ID row below.
+  bool showPriceToggleRow = (freeVendMode || isRFIDOnlyMachine()) &&
+                            (paymentRowY(settingsNextRow) + PAY_ROW_H + PAY_ROW_GAP <= MID_ROW_Y);
   if (showPriceToggleRow) {
-    int y = paymentRowY(payCount);
+    int y = paymentRowY(settingsNextRow);
     drawCard(PAY_ROW_X, y, PAY_ROW_W, PAY_ROW_H, 5);
     tft.setTextSize(1);
     tft.setTextColor(COL_TEXT, COL_CARD);
@@ -223,44 +253,56 @@ void handleAdminSettingsScreen() {
         return;
       }
 
+      int freeVendY = paymentRowY(0);
+      if (pointInRect(sx, sy, PAY_ROW_X, freeVendY, PAY_ROW_W, PAY_ROW_H)) {
+        freeVendMode = !freeVendMode;
+        saveFreeVendMode();
+        drawAdminSettingsScreen();
+        return;
+      }
+
       int payIdx[PAYMENT_COUNT];
-      int payCount = visiblePaymentRows(payIdx);
+      int payCount = 0;
+      if (!freeVendMode) {
+        payCount = visiblePaymentRows(payIdx);
 
-      for (int row = 0; row < payCount; row++) {
-        int p = payIdx[row];
-        int y = paymentRowY(row);
+        for (int row = 0; row < payCount; row++) {
+          int p = payIdx[row];
+          int y = paymentRowY(row + 1);
 
-        if (p == PAY_IDX_RFID) {
-          int toggleW = 50;
-          int toggleX = PAY_ROW_X + PAY_ROW_W - toggleW - 6;
-          int cardsChipX = toggleX - RFID_CARDS_CHIP_W - 6;
-          int chipY = y + (PAY_ROW_H - RFID_CARDS_CHIP_H) / 2;
-          if (pointInRect(sx, sy, cardsChipX, chipY, RFID_CARDS_CHIP_W, RFID_CARDS_CHIP_H)) {
-            currentScreen = SCREEN_ADMIN_RFID_CARDS;
-            rfidCardsPage = 0;
-            drawAdminRFIDCardsScreen();
-            return;
+          if (p == PAY_IDX_RFID) {
+            int toggleW = 50;
+            int toggleX = PAY_ROW_X + PAY_ROW_W - toggleW - 6;
+            int cardsChipX = toggleX - RFID_CARDS_CHIP_W - 6;
+            int chipY = y + (PAY_ROW_H - RFID_CARDS_CHIP_H) / 2;
+            if (pointInRect(sx, sy, cardsChipX, chipY, RFID_CARDS_CHIP_W, RFID_CARDS_CHIP_H)) {
+              currentScreen = SCREEN_ADMIN_RFID_CARDS;
+              rfidCardsPage = 0;
+              drawAdminRFIDCardsScreen();
+              return;
+            }
+
+            int resetChipX = cardsChipX - RFID_RESET_CHIP_W - 6;
+            if (pointInRect(sx, sy, resetChipX, chipY, RFID_RESET_CHIP_W, RFID_CARDS_CHIP_H)) {
+              currentScreen = SCREEN_ADMIN_RFID_RESET;
+              drawAdminRFIDResetScreen();
+              return;
+            }
           }
 
-          int resetChipX = cardsChipX - RFID_RESET_CHIP_W - 6;
-          if (pointInRect(sx, sy, resetChipX, chipY, RFID_RESET_CHIP_W, RFID_CARDS_CHIP_H)) {
-            currentScreen = SCREEN_ADMIN_RFID_RESET;
-            drawAdminRFIDResetScreen();
+          if (pointInRect(sx, sy, PAY_ROW_X, y, PAY_ROW_W, PAY_ROW_H)) {
+            paymentEnabled[p] = !paymentEnabled[p];
+            savePaymentEnabled(p);
+            drawAdminSettingsScreen();
             return;
           }
-        }
-
-        if (pointInRect(sx, sy, PAY_ROW_X, y, PAY_ROW_W, PAY_ROW_H)) {
-          paymentEnabled[p] = !paymentEnabled[p];
-          savePaymentEnabled(p);
-          drawAdminSettingsScreen();
-          return;
         }
       }
 
-      bool showPriceToggleRow = isRFIDOnlyMachine() &&
-                                (paymentRowY(payCount) + PAY_ROW_H + PAY_ROW_GAP <= MID_ROW_Y);
-      if (showPriceToggleRow && pointInRect(sx, sy, PAY_ROW_X, paymentRowY(payCount), PAY_ROW_W, PAY_ROW_H)) {
+      int settingsNextRow = 1 + payCount;
+      bool showPriceToggleRow = (freeVendMode || isRFIDOnlyMachine()) &&
+                                (paymentRowY(settingsNextRow) + PAY_ROW_H + PAY_ROW_GAP <= MID_ROW_Y);
+      if (showPriceToggleRow && pointInRect(sx, sy, PAY_ROW_X, paymentRowY(settingsNextRow), PAY_ROW_W, PAY_ROW_H)) {
         hideProductPrices = !hideProductPrices;
         saveHideProductPrices();
         drawAdminSettingsScreen();

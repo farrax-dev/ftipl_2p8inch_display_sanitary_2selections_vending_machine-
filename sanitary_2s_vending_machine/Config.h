@@ -110,12 +110,32 @@
 // check it against your driver board before the first test.
 #define CFG_MOTOR_ACTIVE_HIGH  true
 
-// Product-drop IR sensor (Core_20_DropSensor.ino), GPIO35. Confirmed on the
-// actual module in hand: idles HIGH, reads LOW while the beam is cut (a
-// product passing/displaced). true here means exactly that polarity; only
-// flip it if the module is ever swapped for one that idles the other way —
-// same role as CFG_MOTOR_ACTIVE_HIGH above, kept as a flag rather than a
-// hardcoded LOW so a future module swap doesn't need a code change to match.
+// Whether a product-drop IR sensor is physically fitted at all. Config.h
+// only — deliberately no admin-screen toggle for this one, unlike almost
+// everything else in this file: it changes what a motor pulse *means*
+// (whether a dispense is verified at all), not a business setting a
+// technician should be able to flip on-site without opening the unit.
+//
+// true (a sensor is wired to GPIO35): dispensing behaves exactly as
+// documented below — every unit is watched for a beam-break and a missed
+// drop is reported as a possible jam/empty slot.
+//
+// false (no sensor fitted): runMotorPulseVerified() (Core_11_Dispense.ino)
+// skips the whole drop-watching window entirely — it just runs the motor for
+// its normal dispense time and reports that unit as delivered, with no
+// CFG_DROP_SENSOR_BUFFER_MS wait tacked on afterwards and no GPIO35 reads at
+// all (initDropSensor() never touches the pin). Use this for a build with no
+// sensor module wired into the chute; there is nothing for the firmware to
+// check, so it doesn't pretend to.
+#define CFG_IR_SENSOR_PRESENT      true
+
+// Product-drop IR sensor polarity (Core_20_DropSensor.ino), GPIO35. Only
+// meaningful when CFG_IR_SENSOR_PRESENT is true. Confirmed on the actual
+// module in hand: idles HIGH, reads LOW while the beam is cut (a product
+// passing/displaced). true here means exactly that polarity; only flip it if
+// the module is ever swapped for one that idles the other way — same role
+// as CFG_MOTOR_ACTIVE_HIGH above, kept as a flag rather than a hardcoded LOW
+// so a future module swap doesn't need a code change to match.
 #define CFG_IR_SENSOR_ACTIVE_LOW true
 
 // After a motor finishes its CFG_MOTOR_RUN_MS run, how much longer
@@ -123,7 +143,9 @@
 // before giving up and calling that unit a failed dispense. A product can
 // take a moment to actually fall clear of the coil after the motor stops, so
 // this has to be long enough to cover that, not just the motor's own spin
-// time. 4000-6000 is the expected range; tune per chute geometry.
+// time. 4000-6000 is the expected range; tune per chute geometry. Ignored
+// entirely when CFG_IR_SENSOR_PRESENT is false — there is no buffer to wait
+// out with nothing to poll.
 #define CFG_DROP_SENSOR_BUFFER_MS  5000
 
 // ---------- Selling ----------
@@ -154,6 +176,25 @@
 #define CFG_PAYMENT_UPI_AVAILABLE     true
 #define CFG_PAYMENT_CASH_AVAILABLE    true
 #define CFG_PAYMENT_RFID_AVAILABLE    true
+
+// Machine-wide free vend. true means every completed cart is dispensed for
+// free, with no payment method ever shown to the customer at all — the
+// Payment Method screen itself is skipped, not just "every method switched
+// off" (which would instead show a dead-end "No payment methods available"
+// screen). Meant for a promotional unit, a break-room machine, or a trial
+// deployment with no money involved.
+//
+// This is independent of CFG_PAYMENT_RFID_AVAILABLE's own free-vend-by-
+// registered-card feature above — that one still charges everyone else
+// normally and only waives payment for a specific tapped card; this one
+// takes payment out of the picture for every customer, machine-wide.
+//
+// Seed value only, like everything else in this file — Admin > Settings
+// owns it from the first flash onward via its "Free Vend" toggle, and that
+// screen also gains a "Show Prices" toggle whenever this is on, so an admin
+// can choose whether a price still shows for reference even though nothing
+// is charged.
+#define CFG_FREE_VEND_MODE     false
 
 // ---------- Connectivity ----------
 // Master switches for the two radios. false fully disables the hardware —

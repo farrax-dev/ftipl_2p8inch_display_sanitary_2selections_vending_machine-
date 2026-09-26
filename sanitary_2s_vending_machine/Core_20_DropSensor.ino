@@ -40,6 +40,7 @@ const unsigned long DROP_SENSOR_DEBOUNCE_MS = 30;
 // sketch file, ahead of every tab.
 
 void initDropSensor() {
+  if (!CFG_IR_SENSOR_PRESENT) return;  // no module wired in — leave GPIO35 untouched
   pinMode(IR_SENSOR_PIN, INPUT);
 }
 
@@ -68,6 +69,12 @@ unsigned long dropSensorLastEdgeMs = 0;
 // simply never returns true — that's the jam/empty-slot case a future
 // caller would want to notice.
 bool pollDropSensor() {
+  // Belt-and-suspenders: Core_11_Dispense.ino's runMotorPulseVerified() is
+  // the one place that actually decides whether to call this at all when no
+  // sensor is fitted, but a stray future caller should still get "no drop"
+  // rather than a floating/unread GPIO35 read.
+  if (!CFG_IR_SENSOR_PRESENT) return false;
+
   bool raw = dropSensorRawDetected();
   if (raw != dropSensorRawLast) {
     dropSensorRawLast = raw;

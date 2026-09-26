@@ -56,7 +56,7 @@ void drawCartReviewScreen() {
   }
 
   drawBackButton("< Back");
-  drawProceedButton("Pay >");
+  drawProceedButton(freeVendMode ? "Get Free >" : "Pay >");
 }
 
 // One name size for every row rather than per row, and never a size that
@@ -193,6 +193,12 @@ void onCartReviewTouched(int sx, int sy) {
   if (pointInRect(sx, sy, BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H)) {
     if (cartItemCount() == 0) return;
     orderTotal = cartTotal();
+    if (freeVendMode) {
+      // Free-vend machines never show a payment method at all — skip
+      // straight to dispensing (Core_11_Dispense.ino's runFreeVendCheckout()).
+      runFreeVendCheckout();
+      return;
+    }
     currentScreen = SCREEN_PAYMENT_METHOD;
     drawPaymentMethodScreen();
     return;
