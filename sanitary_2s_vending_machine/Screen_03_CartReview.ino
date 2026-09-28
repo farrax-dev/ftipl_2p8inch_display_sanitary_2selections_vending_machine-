@@ -32,11 +32,16 @@ void drawCartReviewScreen() {
   // one already shows its own quantity.
   drawScreenTitle("Your Cart", 110);
 
-  char totalBuf[16];
-  snprintf(totalBuf, sizeof(totalBuf), "Rs %d", cartTotal());
-  tft.setTextSize(2);
-  tft.setTextColor(COL_ACCENT, COL_BG_TOP);
-  rightText(totalBuf, headerRightX(), headerTextY(2));
+  // Matches the product cards' own showPrice gate (Screen_02_Select.ino) —
+  // a cart total is still a price, so it stays hidden under the same flag
+  // rather than being the one place on this screen that leaks it.
+  if (!hideProductPrices) {
+    char totalBuf[16];
+    snprintf(totalBuf, sizeof(totalBuf), "Rs %d", cartTotal());
+    tft.setTextSize(2);
+    tft.setTextColor(COL_ACCENT, COL_BG_TOP);
+    rightText(totalBuf, headerRightX(), headerTextY(2));
+  }
 
   int idx[MAX_PRODUCTS];
   int count = 0;
@@ -106,7 +111,7 @@ void drawCartRow(int i, int x, int y, int w, int h) {
   // the running total up in the header — the stepper beside it is already
   // showing the quantity, and "Rs15 x1 = Rs15" was restating that in the
   // least legible type on the screen.
-  bool twoLine = (h >= 44);
+  bool twoLine = (h >= 44) && !hideProductPrices;
 
   int nameSize = cartNameSize(textW, h);
   int nameMaxChars = textW / (6 * nameSize);

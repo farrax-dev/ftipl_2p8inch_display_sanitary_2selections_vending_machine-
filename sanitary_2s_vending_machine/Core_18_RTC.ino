@@ -39,8 +39,29 @@ uint8_t rtcBcdToDec(uint8_t bcd) { return (uint8_t)((bcd / 16) * 10 + (bcd % 16)
 uint8_t rtcDecToBcd(uint8_t dec) { return (uint8_t)((dec / 10) * 16 + (dec % 10)); }
 
 void initRTC() {
+  // Belt-and-suspenders: most DS3231 breakout boards carry their own 4.7k
+  // pull-ups, but enabling the ESP32's internal ones too costs nothing and
+  // covers a board that doesn't, or wiring long/noisy enough to need the
+  // extra help — either of which would otherwise look identical to "no RTC
+  // fitted" (rtcReadTime() NACKs the same way either way).
+  pinMode(RTC_SDA_PIN, INPUT_PULLUP);
+  pinMode(RTC_SCL_PIN, INPUT_PULLUP);
   Wire.begin(RTC_SDA_PIN, RTC_SCL_PIN);
   rtcModuleBootMs = millis();
+
+  // Probed immediately, not left to maintainRTCFallback()'s 8s grace delay —
+  // that delay exists to give WiFi/LTE a fair shot, it has nothing to do
+  // with whether the chip is even on the bus. Logging the presence check
+  // right here turns "no clock after reboot" from a guessing game between a
+  // firmware bug and a wiring/power problem into something visible on the
+  // very first line of the serial log.
+  Wire.beginTransmission(RTC_I2C_ADDR);
+  if (Wire.endTransmission() == 0) {
+    Serial.println("RTC: DS3231 found on I2C (SDA=GPIO14 / SCL=GPIO15)");
+  } else {
+    Serial.println("RTC: no ACK from DS3231 at 0x68 - check SDA=GPIO14/SCL=GPIO15 wiring, "
+                    "module power, and backup battery");
+  }
 }
 
 // Fills out with the RTC's current wall-clock time (whatever IST time was
@@ -75,9 +96,11 @@ bool rtcReadTime(struct tm &out) {
 }
 
 // Writes t (wall-clock IST, same as getLocalTime() returns) into the RTC's
-// seconds..year registers, always in 24-hour mode. Silently does nothing
-// useful if no RTC is fitted (the write just goes nowhere) — there's no
-// return value because there's no follow-up action to take either way.
+// seconds..year registers, always in 24-hour mode. Logs rather than silently
+// dropping a failed write — a NACK here (no RTC fitted, or a wiring fault)
+// used to look identical to a successful write that just never gets read
+// back, which is exactly the failure mode reported: set the clock, power
+// cycle, nothing comes back.
 void rtcWriteTime(const struct tm &t) {
   Wire.beginTransmission(RTC_I2C_ADDR);
   Wire.write((uint8_t)0x00);
@@ -88,7 +111,11 @@ void rtcWriteTime(const struct tm &t) {
   Wire.write(rtcDecToBcd((uint8_t)t.tm_mday));
   Wire.write(rtcDecToBcd((uint8_t)(t.tm_mon + 1)));
   Wire.write(rtcDecToBcd((uint8_t)(t.tm_year % 100)));
-  Wire.endTransmission();
+  if (Wire.endTransmission() != 0) {
+    Serial.println("RTC: write failed (no ACK) - time will NOT survive a power cycle");
+    return;
+  }
+  Serial.println("RTC: time written OK");
 }
 
 // Call every loop() tick, same as maintainNTP()/maintainLTEFallback(). Two
