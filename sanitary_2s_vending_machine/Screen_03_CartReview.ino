@@ -26,17 +26,15 @@ void drawCartReviewScreen() {
   drawGradientBackground();
 
   // The total moves up beside the title rather than sitting on its own line
-  // under it, the way the Select screen's cart counter does: one header row
-  // on every screen, and the 12px it frees goes to the item rows below. The
-  // item count went with it — the rows themselves are the count, and each
-  // one already shows its own quantity.
   drawScreenTitle("Your Cart", 110);
 
-  char totalBuf[16];
-  snprintf(totalBuf, sizeof(totalBuf), "Rs %d", cartTotal());
-  tft.setTextSize(2);
-  tft.setTextColor(COL_ACCENT, COL_BG_TOP);
-  rightText(totalBuf, headerRightX(), headerTextY(2));
+  if (!freeVendMode) {
+    char totalBuf[16];
+    snprintf(totalBuf, sizeof(totalBuf), "Rs %d", cartTotal());
+    tft.setTextSize(2);
+    tft.setTextColor(COL_ACCENT, COL_BG_TOP);
+    rightText(totalBuf, headerRightX(), headerTextY(2));
+  }
 
   int idx[MAX_PRODUCTS];
   int count = 0;
@@ -106,7 +104,7 @@ void drawCartRow(int i, int x, int y, int w, int h) {
   // the running total up in the header — the stepper beside it is already
   // showing the quantity, and "Rs15 x1 = Rs15" was restating that in the
   // least legible type on the screen.
-  bool twoLine = (h >= 44);
+  bool twoLine = (h >= 44) && !freeVendMode;
 
   int nameSize = cartNameSize(textW, h);
   int nameMaxChars = textW / (6 * nameSize);
