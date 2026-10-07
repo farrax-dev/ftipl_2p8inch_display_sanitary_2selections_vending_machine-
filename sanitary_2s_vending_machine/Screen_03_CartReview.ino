@@ -22,42 +22,40 @@ int cartRowY(int k, int rowH, int count) {
   return CART_AREA_Y + (CART_AREA_H - stackH) / 2 + k * (rowH + CART_ROW_GAP); 
 } 
  
-void drawCartReviewScreen() { 
-  drawGradientBackground(); 
- 
-  // The total moves up beside the title rather than sitting on its own line 
-  // under it, the way the Select screen's cart counter does: one header row 
-  // on every screen, and the 12px it frees goes to the item rows below. The 
-  // item count went with it — the rows themselves are the count, and each 
-  // one already shows its own quantity. 
-  drawScreenTitle("Your Cart", 110); 
- 
-  char totalBuf[16]; 
-  snprintf(totalBuf, sizeof(totalBuf), "Rs %d", cartTotal()); 
-  tft.setTextSize(2); 
-  tft.setTextColor(COL_ACCENT, COL_BG_TOP); 
-  rightText(totalBuf, headerRightX(), headerTextY(2)); 
- 
-  int idx[MAX_PRODUCTS]; 
-  int count = 0; 
-  for (int i = 0; i < MAX_PRODUCTS; i++) { 
-    if (cartQty[i] > 0) idx[count++] = i; 
-  } 
- 
-  if (count == 0) { 
-    tft.setTextSize(2); 
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM); 
-    centerText("Cart is empty", 110); 
-  } else { 
-    int rowH = cartRowH(count); 
-    for (int k = 0; k < count; k++) { 
-      drawCartRow(idx[k], CART_AREA_X, cartRowY(k, rowH, count), CART_AREA_W, rowH); 
-    } 
-  } 
- 
-  drawBackButton("< Back"); 
-  drawProceedButton(freeVendMode ? "Get Free >" : "Pay >"); 
-} 
+void drawCartReviewScreen() {
+  drawGradientBackground();
+
+  // The total moves up beside the title rather than sitting on its own line
+  drawScreenTitle("Your Cart", 110);
+
+  if (!freeVendMode) {
+    char totalBuf[16];
+    snprintf(totalBuf, sizeof(totalBuf), "Rs %d", cartTotal());
+    tft.setTextSize(2);
+    tft.setTextColor(COL_ACCENT, COL_BG_TOP);
+    rightText(totalBuf, headerRightX(), headerTextY(2));
+  }
+
+  int idx[MAX_PRODUCTS];
+  int count = 0;
+  for (int i = 0; i < MAX_PRODUCTS; i++) {
+    if (cartQty[i] > 0) idx[count++] = i;
+  }
+
+  if (count == 0) {
+    tft.setTextSize(2);
+    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    centerText("Cart is empty", 110);
+  } else {
+    int rowH = cartRowH(count);
+    for (int k = 0; k < count; k++) {
+      drawCartRow(idx[k], CART_AREA_X, cartRowY(k, rowH, count), CART_AREA_W, rowH);
+    }
+  }
+
+  drawBackButton("< Back");
+  drawProceedButton(freeVendMode ? "Get Free >" : "Pay >");
+}
  
 // One name size for every row rather than per row, and never a size that 
 // clips a name that a smaller one would have shown whole. Size 3 fits only 
@@ -106,7 +104,7 @@ void drawCartRow(int i, int x, int y, int w, int h) {
   // the running total up in the header — the stepper beside it is already 
   // showing the quantity, and "Rs15 x1 = Rs15" was restating that in the 
   // least legible type on the screen. 
-  bool twoLine = (h >= 44); 
+  bool twoLine = (h >= 44) && !freeVendMode;
  
   int nameSize = cartNameSize(textW, h); 
   int nameMaxChars = textW / (6 * nameSize); 
