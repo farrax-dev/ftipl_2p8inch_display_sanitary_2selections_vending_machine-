@@ -77,8 +77,15 @@ const unsigned long COIN_TRAIN_GAP_MS = 200;    // silence -> burst is complete
 const unsigned long COIN_TRAIN_MAX_MS = 3000;   // safety cap on a stuck line
 const unsigned long CASH_TIMEOUT_MS   = 90000;  // give up if nothing happens
 
+// The acceptor emits a false pulse while its electronics power up (it was
+// being counted as Rs 1 with no coin inserted). All pulses are ignored for
+// this long after the relay switches on. Increase it if a phantom Rs 1 still
+// appears; lower it (e.g. 500) if customers need to insert a coin sooner.
+const unsigned long COIN_POWER_SETTLE_MS = 1000;
+
 volatile uint32_t coinISRPulseCount = 0;
 volatile unsigned long coinISRLastPulseMs = 0;
+volatile unsigned long coinISRIgnoreUntilMs = 0;  // pulses before this time are power-up noise
 
 // Real coin pulses are 20-100ms wide, so anything arriving within 5ms of the
 // last edge is contact bounce or noise, never a second coin. Without this a
@@ -87,6 +94,7 @@ const unsigned long COIN_DEBOUNCE_MS = 5;
 
 void IRAM_ATTR coinPulseISR() {
   unsigned long now = millis();
+  if ((long)(now - coinISRIgnoreUntilMs) < 0) return;  // still settling after power-on
   if (now - coinISRLastPulseMs < COIN_DEBOUNCE_MS) return;
   coinISRLastPulseMs = now;
   coinISRPulseCount++;
@@ -127,6 +135,13 @@ void initCoinAcceptor() {
 // outside of the cash screen physically can't register.
 void coinAcceptorListen(bool on) {
   Serial.printf("coin acceptor: listening %s\n", on ? "ON" : "OFF");
+
+  if (on) {
+    // Start the settle window BEFORE power is applied, so the power-up
+    // glitch pulse is never counted.
+    coinISRIgnoreUntilMs = millis() + COIN_POWER_SETTLE_MS;
+  }
+
   coinAcceptorPower(on);
   if (!COIN_PULSE_PIN_FREE) return;  // GPIO33 is M6's driver output in this build
   if (on) attachInterrupt(digitalPinToInterrupt(COIN_PIN), coinPulseISR, FALLING);
@@ -171,6 +186,17 @@ int coinValueForPulseCount(int pulses) {
 // Coin). Either way the coin is already mechanically retained by the
 // acceptor — there's no path to return it, just to decline crediting it.
 int pollCoinAcceptor() {
+  // Still settling after power-on: throw away anything seen and report nothing
+  if ((long)(millis() - coinISRIgnoreUntilMs) < 0) {
+    noInterrupts();
+    coinISRPulseCount = 0;
+    interrupts();
+    coinLastSeenISRCount = 0;
+    coinPulseCount = 0;
+    coinBurstActive = false;
+    return 0;
+  }
+
   noInterrupts();
   uint32_t isrCount = coinISRPulseCount;
   unsigned long lastPulseMs = coinISRLastPulseMs;
@@ -396,6 +422,7 @@ void handlePaymentCashScreen() {
   }
 }
 
+
 // =====================================================
 //               RFID PAYMENT (registered-card free vend)
 // =====================================================
@@ -511,4 +538,3 @@ void handlePaymentRFIDScreen() {
     }
   }
 }
-
