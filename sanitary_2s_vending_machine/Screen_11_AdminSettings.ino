@@ -193,12 +193,14 @@ void drawAdminSettingsScreen() {
   tft.setTextColor(COL_ACCENT, COL_CARD);
   rightText("****", ADMINPIN_ROW_X + ADMINPIN_ROW_W - 6, MID_ROW_Y + 6);
 
-  // Bottom action bar. WiFi/4G grey out and stop navigating only when their
-  // hardware isn't fitted at all (CFG_WIFI_ENABLED / CFG_LTE_ENABLED) — never
-  // when the admin has merely switched the radio off from its own setup
-  // screen. Gating this on the runtime lteEnabled flag instead would lock a
-  // technician out of the one screen (4G/LTE Setup) that can turn it back on
-  // the moment they used it to turn LTE off.
+  // Bottom action bar. WiFi/UPI/Coin/4G all grey out and stop navigating only
+  // when their build-time availability flag says that payment method/radio
+  // isn't fitted at all (CFG_WIFI_ENABLED / CFG_PAYMENT_UPI_AVAILABLE /
+  // CFG_PAYMENT_CASH_AVAILABLE / CFG_LTE_ENABLED) — never when the admin has
+  // merely switched something off from its own setup screen or the ON/OFF
+  // toggle above. Gating on the runtime flags instead would lock a
+  // technician out of the one screen that can turn a thing back on the
+  // moment they used it to turn that thing off.
   drawCard(SET_BTN_BACK_X, BTN_Y, SET_BTN_BACK_W, BTN_H, 8);
   tft.setTextSize(2);
   tft.setTextColor(COL_TEXT, COL_CARD);
@@ -211,14 +213,18 @@ void drawAdminSettingsScreen() {
   tft.setTextColor(CFG_WIFI_ENABLED ? COL_BG_TOP : COL_TEXT_DIM, wifiFill);
   centerTextInBox("WiFi", BTN_Y + 9, SET_BTN_WIFI_X, SET_BTN_WIFI_W);
 
+  uint16_t upiFill = CFG_PAYMENT_UPI_AVAILABLE ? COL_ACCENT : COL_CARD;
   drawCardShadow(SET_BTN_UPI_X, BTN_Y, SET_BTN_UPI_W, BTN_H, 8);
-  tft.fillRoundRect(SET_BTN_UPI_X, BTN_Y, SET_BTN_UPI_W, BTN_H, 8, COL_ACCENT);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+  tft.fillRoundRect(SET_BTN_UPI_X, BTN_Y, SET_BTN_UPI_W, BTN_H, 8, upiFill);
+  if (!CFG_PAYMENT_UPI_AVAILABLE) tft.drawRoundRect(SET_BTN_UPI_X, BTN_Y, SET_BTN_UPI_W, BTN_H, 8, COL_CARD_BRD);
+  tft.setTextColor(CFG_PAYMENT_UPI_AVAILABLE ? COL_BG_TOP : COL_TEXT_DIM, upiFill);
   centerTextInBox("UPI", BTN_Y + 9, SET_BTN_UPI_X, SET_BTN_UPI_W);
 
+  uint16_t coinFill = CFG_PAYMENT_CASH_AVAILABLE ? COL_ACCENT : COL_CARD;
   drawCardShadow(SET_BTN_COIN_X, BTN_Y, SET_BTN_COIN_W, BTN_H, 8);
-  tft.fillRoundRect(SET_BTN_COIN_X, BTN_Y, SET_BTN_COIN_W, BTN_H, 8, COL_ACCENT);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+  tft.fillRoundRect(SET_BTN_COIN_X, BTN_Y, SET_BTN_COIN_W, BTN_H, 8, coinFill);
+  if (!CFG_PAYMENT_CASH_AVAILABLE) tft.drawRoundRect(SET_BTN_COIN_X, BTN_Y, SET_BTN_COIN_W, BTN_H, 8, COL_CARD_BRD);
+  tft.setTextColor(CFG_PAYMENT_CASH_AVAILABLE ? COL_BG_TOP : COL_TEXT_DIM, coinFill);
   centerTextInBox("Coin", BTN_Y + 9, SET_BTN_COIN_X, SET_BTN_COIN_W);
 
   uint16_t lteFill = CFG_LTE_ENABLED ? COL_ACCENT : COL_CARD;
@@ -331,13 +337,13 @@ void handleAdminSettingsScreen() {
         return;
       }
 
-      if (pointInRect(sx, sy, SET_BTN_UPI_X, BTN_Y, SET_BTN_UPI_W, BTN_H)) {
+      if (CFG_PAYMENT_UPI_AVAILABLE && pointInRect(sx, sy, SET_BTN_UPI_X, BTN_Y, SET_BTN_UPI_W, BTN_H)) {
         currentScreen = SCREEN_ADMIN_UPI;
         drawAdminUPIScreen();
         return;
       }
 
-      if (pointInRect(sx, sy, SET_BTN_COIN_X, BTN_Y, SET_BTN_COIN_W, BTN_H)) {
+      if (CFG_PAYMENT_CASH_AVAILABLE && pointInRect(sx, sy, SET_BTN_COIN_X, BTN_Y, SET_BTN_COIN_W, BTN_H)) {
         currentScreen = SCREEN_ADMIN_COIN;
         drawAdminCoinScreen();
         return;

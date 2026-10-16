@@ -211,7 +211,7 @@
 // now) but left available here, not deleted — flip back to true and reflash
 // to bring the Screen_18/19 admin card screens and the RFID payment option
 // back without touching any other code.
-#define CFG_PAYMENT_UPI_AVAILABLE     true
+#define CFG_PAYMENT_UPI_AVAILABLE     false
 #define CFG_PAYMENT_CASH_AVAILABLE    true
 #define CFG_PAYMENT_RFID_AVAILABLE    true
 
@@ -255,7 +255,7 @@
 // LTE is off for this build — no modem should be initialised or retried —
 // but nothing about the modem code is removed. Flip this back to true and
 // reflash any time a SIM/modem is fitted and connectivity is wanted again.
-#define CFG_WIFI_ENABLED       true
+#define CFG_WIFI_ENABLED       false
 #define CFG_LTE_ENABLED        false
 
 // Site WiFi. Leave blank for a cellular-only machine. Ignored entirely when
@@ -306,5 +306,20 @@
 // (same seed-then-owned relationship as CFG_MAX_CART_QTY above), capped at
 // 10 minutes on that screen.
 #define CFG_UPI_TIMEOUT_MIN    2
+
+// ---------- Cash / RFID payment timeouts ----------
+// Unlike CFG_UPI_TIMEOUT_MIN above, these two have no admin-screen override —
+// change here and reflash. Seconds, not ms.
+
+// How long the Cash screen (Screen_06_PaymentOther.ino) waits with no coin
+// activity before giving up and returning to Welcome. Reset on every coin
+// accepted, so this is really an idle timeout, not a hard ceiling on the
+// whole transaction.
+#define CFG_CASH_TIMEOUT_SEC   90
+
+// How long the "Tap RFID Card" screen (Screen_06_PaymentOther.ino) waits for
+// a card before giving up and returning to Welcome. Reset on every tap
+// attempt, including a rejected one.
+#define CFG_RFID_TIMEOUT_SEC   60
 
 #endif  // CONFIG_H

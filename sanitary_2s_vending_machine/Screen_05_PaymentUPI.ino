@@ -256,20 +256,21 @@ void drawUPISuccessScreen() {
   }
 }
 
+// No buttons — same "say what happened, then go home" shape as the cash and
+// RFID timeout screens, rather than leaving the customer on a Retry/Back
+// choice. handlePaymentUPIScreen() holds this on screen briefly and returns
+// to Welcome on its own.
 void drawUPITimeoutScreen() {
   drawGradientBackground();
 
-  tft.setTextSize(2);
+  tft.setTextSize(3);
   tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
-  centerText("Payment Timed Out", 70);
+  centerText("Payment", 70);
+  centerText("Timed Out", 100);
 
   tft.setTextSize(1);
   tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-  centerText("No payment was received in time.", 105);
-  centerText("You can try again or go back.", 122);
-
-  drawBackButton("< Back");
-  drawProceedButton("Retry");
+  centerText("No payment was received in time.", 140);
 }
 
 void drawUPIErrorScreen() {
@@ -308,7 +309,12 @@ void handlePaymentUPIScreen() {
   if (upiStage == UPI_STAGE_WAITING) {
     if (millis() - upiStartTime > upiTimeoutMs) {
       upiStage = UPI_STAGE_TIMEOUT;
-      drawUPICurrentStage();
+      drawUPITimeoutScreen();
+      delay(2000);
+      resetCart();
+      currentScreen = SCREEN_WELCOME;
+      drawWelcomeScreen();
+      return;
     } else {
       if (millis() - upiLastStatusLineUpdate > 1000) {
         upiLastStatusLineUpdate = millis();
@@ -364,7 +370,7 @@ void handlePaymentUPIScreen() {
           currentScreen = SCREEN_WELCOME;
           drawWelcomeScreen();
         }
-      } else if (upiStage == UPI_STAGE_TIMEOUT || upiStage == UPI_STAGE_ERROR) {
+      } else if (upiStage == UPI_STAGE_ERROR) {
         if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
           currentScreen = SCREEN_PAYMENT_METHOD;
           drawPaymentMethodScreen();

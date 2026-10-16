@@ -75,7 +75,7 @@ const bool COIN_PULSE_PIN_FREE = (MAX_MOTORS < 6);
 
 const unsigned long COIN_TRAIN_GAP_MS = 200;    // silence -> burst is complete
 const unsigned long COIN_TRAIN_MAX_MS = 3000;   // safety cap on a stuck line
-const unsigned long CASH_TIMEOUT_MS   = 90000;  // give up if nothing happens
+const unsigned long CASH_TIMEOUT_MS   = (unsigned long)CFG_CASH_TIMEOUT_SEC * 1000UL;  // give up if nothing happens
 
 volatile uint32_t coinISRPulseCount = 0;
 volatile unsigned long coinISRLastPulseMs = 0;
@@ -141,6 +141,7 @@ uint32_t coinLastSeenISRCount = 0;
 int cashAmountDue = 0;
 bool cashAnyCoinAccepted = false;
 unsigned long cashEnteredTime = 0;
+unsigned long cashLastTimeoutLineUpdate = 0;
 char cashStatusMsg[32] = "";
 uint16_t cashStatusColor = COL_TEXT_DIM;
 
@@ -260,6 +261,22 @@ void drawAcceptedCoinsLine() {
   centerText(buf, 122);
 }
 
+// CASH_TIMEOUT_MS is otherwise invisible to the customer — unlike the UPI
+// screen's own "(Ns)" countdown, nothing here used to show how long an
+// idle coin acceptor had left before the screen gave up and sent them back
+// to Welcome. Sits in the gap between the status line (ends y=168) and the
+// button bar (BTN_Y=190).
+void drawCashTimeoutLine() {
+  tft.fillRect(0, 172, tft.width(), 14, COL_BG_BOTTOM);
+  int remainingSec = (int)((CASH_TIMEOUT_MS - (millis() - cashEnteredTime)) / 1000);
+  if (remainingSec < 0) remainingSec = 0;
+  tft.setTextSize(1);
+  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+  char buf[24];
+  snprintf(buf, sizeof(buf), "Time left: %ds", remainingSec);
+  centerText(buf, 176);
+}
+
 void drawCashStatusLine() {
   // Size 2 instead of 1 — this is the one line that reports what just
   // happened to the coin you dropped in, so it earns more presence than an
@@ -293,6 +310,7 @@ void drawPaymentCashScreen() {
   cashStatusMsg[0] = '\0';
   cashStatusColor = COL_TEXT_DIM;
   cashEnteredTime = millis();
+  cashLastTimeoutLineUpdate = millis();
   resetCoinAcceptorState();
   coinAcceptorListen(true);
 
@@ -306,11 +324,17 @@ void drawPaymentCashScreen() {
   tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
   centerText("No change given - pay exact amount", 136);
   drawCashStatusLine();
+  drawCashTimeoutLine();
   drawCashBackButtonArea();
 }
 
 void handlePaymentCashScreen() {
   int credited = pollCoinAcceptor();
+
+  if (millis() - cashLastTimeoutLineUpdate > 1000) {
+    cashLastTimeoutLineUpdate = millis();
+    drawCashTimeoutLine();
+  }
 
   if (credited > 0) {
     cashAmountDue -= credited;
@@ -377,8 +401,24 @@ void handlePaymentCashScreen() {
     Serial.printf("coin acceptor: cash screen timed out, Rs %d of Rs %d still due\n",
                   cashAmountDue, orderTotal);
     coinAcceptorListen(false);
-    currentScreen = SCREEN_PAYMENT_METHOD;
-    drawPaymentMethodScreen();
+
+    // Same "say what happened, then go home" shape as a successful dispense
+    // above — any coins already credited are forfeited either way (no
+    // hardware refund path), so there's nothing left for the customer to do
+    // here but see why the screen is clearing.
+    drawGradientBackground();
+    tft.setTextSize(3);
+    tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
+    centerText("Payment", 70);
+    centerText("Timed Out", 100);
+    tft.setTextSize(1);
+    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    centerText("No payment was received in time.", 140);
+    delay(2000);
+
+    resetCart();
+    currentScreen = SCREEN_WELCOME;
+    drawWelcomeScreen();
     return;
   }
 
@@ -403,7 +443,7 @@ void handlePaymentCashScreen() {
 // Settings > Cards, Screen_18_AdminRFIDCards.ino) vends for free; anything
 // else is refused. See dispenseCart()'s freeVend flag in Core_11_Dispense.ino
 // for how that's kept out of revenue reporting.
-const unsigned long RFID_PAY_TIMEOUT_MS = 60000;  // give up and return to Payment Method if nothing's tapped
+const unsigned long RFID_PAY_TIMEOUT_MS = (unsigned long)CFG_RFID_TIMEOUT_SEC * 1000UL;  // give up and return to Payment Method if nothing's tapped
 
 unsigned long rfidPayEnteredMs = 0;
 char rfidStatusMsg[32] = "";
@@ -495,8 +535,19 @@ void handlePaymentRFIDScreen() {
   }
 
   if (millis() - rfidPayEnteredMs > RFID_PAY_TIMEOUT_MS) {
-    currentScreen = SCREEN_PAYMENT_METHOD;
-    drawPaymentMethodScreen();
+    drawGradientBackground();
+    tft.setTextSize(3);
+    tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
+    centerText("Payment", 70);
+    centerText("Timed Out", 100);
+    tft.setTextSize(1);
+    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    centerText("No card was tapped in time.", 140);
+    delay(2000);
+
+    resetCart();
+    currentScreen = SCREEN_WELCOME;
+    drawWelcomeScreen();
     return;
   }
 
