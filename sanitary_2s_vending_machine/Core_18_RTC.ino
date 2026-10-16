@@ -31,9 +31,17 @@ const uint8_t RTC_I2C_ADDR = 0x68;
 // was only moments away.
 const unsigned long RTC_FALLBACK_GRACE_MS = 8000;
 
+// Both retry loops below back off to this interval rather than hammering the
+// bus on every single loop() tick — a chip that's never going to answer (not
+// fitted, or genuinely dead) would otherwise cost one blocking I2C
+// transaction every ~20ms for the rest of uptime with zero chance of success.
+const unsigned long RTC_RETRY_INTERVAL_MS = 5000;
+
 unsigned long rtcModuleBootMs = 0;
 bool rtcFallbackUsed = false;        // true once the clock has been set FROM the RTC this boot
-bool rtcWrittenFromNetwork = false;  // true once a network time has been written back to it this boot
+bool rtcWrittenFromNetwork = false;  // true once a network time has ACTUALLY been written back to it this boot
+unsigned long rtcLastReadAttemptMs = 0;
+unsigned long rtcLastWriteAttemptMs = 0;
 
 uint8_t rtcBcdToDec(uint8_t bcd) { return (uint8_t)((bcd / 16) * 10 + (bcd % 16)); }
 uint8_t rtcDecToBcd(uint8_t dec) { return (uint8_t)((dec / 10) * 16 + (dec % 10)); }
@@ -96,12 +104,13 @@ bool rtcReadTime(struct tm &out) {
 }
 
 // Writes t (wall-clock IST, same as getLocalTime() returns) into the RTC's
-// seconds..year registers, always in 24-hour mode. Logs rather than silently
-// dropping a failed write — a NACK here (no RTC fitted, or a wiring fault)
-// used to look identical to a successful write that just never gets read
-// back, which is exactly the failure mode reported: set the clock, power
-// cycle, nothing comes back.
-void rtcWriteTime(const struct tm &t) {
+// seconds..year registers, always in 24-hour mode. Returns whether the write
+// actually landed — a NACK here (no RTC fitted, or a wiring fault) used to
+// look identical to a successful write that just never gets read back, which
+// is exactly the failure mode reported: set the clock, power cycle, nothing
+// comes back. The caller (maintainRTCFallback()) uses the return value to
+// decide whether it's safe to stop retrying.
+bool rtcWriteTime(const struct tm &t) {
   Wire.beginTransmission(RTC_I2C_ADDR);
   Wire.write((uint8_t)0x00);
   Wire.write(rtcDecToBcd((uint8_t)t.tm_sec));
@@ -113,9 +122,10 @@ void rtcWriteTime(const struct tm &t) {
   Wire.write(rtcDecToBcd((uint8_t)(t.tm_year % 100)));
   if (Wire.endTransmission() != 0) {
     Serial.println("RTC: write failed (no ACK) - time will NOT survive a power cycle");
-    return;
+    return false;
   }
   Serial.println("RTC: time written OK");
+  return true;
 }
 
 // Call every loop() tick, same as maintainNTP()/maintainLTEFallback(). Two
@@ -129,25 +139,39 @@ void rtcWriteTime(const struct tm &t) {
 //      power-cycle-with-no-connectivity.
 void maintainRTCFallback() {
   if (!timeSynced && millis() - rtcModuleBootMs > RTC_FALLBACK_GRACE_MS && !rtcFallbackUsed) {
-    struct tm rtcTm;
-    if (rtcReadTime(rtcTm)) {
-      setenv("TZ", "IST-5:30", 1);
-      tzset();
-      time_t epoch = mktime(&rtcTm);
-      struct timeval tv = { epoch, 0 };
-      settimeofday(&tv, nullptr);
-      timeSynced = true;
-      rtcFallbackUsed = true;
-      Serial.println("Clock: no WiFi/LTE yet, time set from onboard RTC");
+    // Throttled to RTC_RETRY_INTERVAL_MS rather than tried on every tick — a
+    // chip that never ACKs (not fitted, or dead) would otherwise cost one
+    // blocking I2C transaction roughly every 20ms for the rest of uptime.
+    if (millis() - rtcLastReadAttemptMs >= RTC_RETRY_INTERVAL_MS) {
+      rtcLastReadAttemptMs = millis();
+      struct tm rtcTm;
+      if (rtcReadTime(rtcTm)) {
+        setenv("TZ", "IST-5:30", 1);
+        tzset();
+        time_t epoch = mktime(&rtcTm);
+        struct timeval tv = { epoch, 0 };
+        settimeofday(&tv, nullptr);
+        timeSynced = true;
+        rtcFallbackUsed = true;
+        Serial.println("Clock: no WiFi/LTE yet, time set from onboard RTC");
+      }
     }
   }
 
-  if (timeSyncedFromNetwork && !rtcWrittenFromNetwork) {
+  if (timeSyncedFromNetwork && !rtcWrittenFromNetwork
+      && millis() - rtcLastWriteAttemptMs >= RTC_RETRY_INTERVAL_MS) {
+    rtcLastWriteAttemptMs = millis();
     struct tm ti;
     if (getLocalTime(&ti, 10)) {
-      rtcWriteTime(ti);
-      rtcWrittenFromNetwork = true;
-      Serial.println("Clock: network time written back to onboard RTC");
+      // Only latched true on an ACKed write — a NACK (transient I2C glitch,
+      // momentary power sag) used to be logged and treated as success anyway,
+      // so a real failure here silently gave up retrying for the rest of the
+      // boot: if the machine then lost power before ever managing to write,
+      // the DS3231 kept stale time with no further attempt made to fix it.
+      if (rtcWriteTime(ti)) {
+        rtcWrittenFromNetwork = true;
+        Serial.println("Clock: network time written back to onboard RTC");
+      }
     }
   }
 }

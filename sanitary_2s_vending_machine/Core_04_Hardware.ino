@@ -89,6 +89,11 @@ void initMotorPins() {
 }
 
 void runMotorPulse(int m, unsigned long ms) {
+  // Bounds-checked before the array read below, not just inside motorWrite()
+  // one line down — MOTOR_PINS[m] used to be indexed in the log line first,
+  // reading outside the fixed 6-entry MOTOR_PIN_POOL for any m that reached
+  // here negative or >= MAX_MOTORS.
+  if (m < 0 || m >= MAX_MOTORS) return;
   Serial.printf("motor M%d ON (GPIO %d) for %lums\n", m + 1, MOTOR_PINS[m], ms);
   motorWrite(m, true);
   delay(ms);

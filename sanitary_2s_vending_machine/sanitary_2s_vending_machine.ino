@@ -84,7 +84,8 @@ enum TextEntryTarget {
   TE_NIGHTLY_2,
   TE_RFID_CARD_MANUAL,
   TE_RFID_CARD_NAME,
-  TE_ADMIN_PIN
+  TE_ADMIN_PIN,
+  TE_ADMIN_PIN_CONFIRM  // re-entry step after TE_ADMIN_PIN accepts a new PIN — see Screen_14_AdminTextEntry.ino
 };
 
 // Which email Core_15_Report.ino is building. Has to be here rather than in
@@ -157,7 +158,7 @@ int wrapFontInBox(const GFXfont* font, const char* text, int boxX, int boxW, int
 int wrapFontHeight(int lines, const GFXfont* font);
 const GFXfont* productNameFont(int nameBoxW, int cardH, int priceSize, int &outLines, int &outBitmapSize);
 bool rtcReadTime(struct tm &out);
-void rtcWriteTime(const struct tm &t);
+bool rtcWriteTime(const struct tm &t);
 String computePhonePeChecksum(const String &base64Body, const String &endpointPath);
 void upiQRDisplay(esp_qrcode_handle_t qr);
 void getMotorBtnRect(int m, int &x, int &y, int &w, int &h);

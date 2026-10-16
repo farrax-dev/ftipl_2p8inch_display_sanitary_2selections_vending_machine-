@@ -411,6 +411,13 @@ void recordSale(int productIdx, int qty, const char* paymentMethod, int unitPric
       if (dailyHistory[slot].firstSec == 0) dailyHistory[slot].firstSec = (uint32_t)sec;
       dailyHistory[slot].lastSec = (uint32_t)sec;
     }
+    // Flushed right here, per product line, not just once at the end of the
+    // order in recordTransaction() — a multi-item cart calls dispenseProduct()
+    // (several blocking seconds each) between lines, and a power cut partway
+    // through used to lose this line from the daily table even though the
+    // CSV append and the lifetime NVS totals above already have it. One extra
+    // flash write per product line costs nothing a human-paced vend notices.
+    saveDailyHistory();
   }
 
   appendTxnLine(products[productIdx].name, unitPrice,
@@ -429,7 +436,7 @@ void recordTransaction(const char* paymentMethod) {
     if (payIdx >= 0) dailyHistory[slot].txnsByPay[payIdx]++;
   }
 
-  saveDailyHistory();   // one flash write per order, not per product line
+  saveDailyHistory();   // covers the txns/txnsByPay bump above; recordSale() already flushed its own per-line fields
 }
 
 void resetSalesTotals() {

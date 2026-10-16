@@ -139,6 +139,19 @@ void initiateUPIPayment() {
     return;
   }
 
+  // Checked against the buffer BEFORE copying, not discovered after — a
+  // silently truncated qrString used to still generate and display a QR
+  // code from a corrupted payload, with upiStage going to WAITING as if
+  // nothing were wrong and no way for the customer to know the code they're
+  // about to scan doesn't point at a complete transaction.
+  if (strlen(qrStr) > sizeof(upiQRText) - 1) {
+    upiStage = UPI_STAGE_ERROR;
+    strncpy(upiErrorMsg, "QR data too long for display", sizeof(upiErrorMsg) - 1);
+    Serial.printf("UPI init: qrString is %d bytes, buffer holds %d - refusing to show a truncated QR\n",
+                  (int)strlen(qrStr), (int)sizeof(upiQRText) - 1);
+    return;
+  }
+
   strncpy(upiQRText, qrStr, sizeof(upiQRText) - 1);
   upiQRText[sizeof(upiQRText) - 1] = '\0';
 

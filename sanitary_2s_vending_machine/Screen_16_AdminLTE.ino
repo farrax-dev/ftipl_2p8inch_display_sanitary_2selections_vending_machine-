@@ -45,10 +45,16 @@ void drawAdminLTEScreen() {
   drawCellularBars(268, 96, 2, connected ? bars : 0,
                     connected ? COL_SUCCESS : COL_TEXT_DIM);
 
+  // Greyed out together with the LTE:On/Off chip below whenever lteEnabled
+  // is false — the handler already no-ops the tap in that state (see below),
+  // but until now this still looked fully active with no visual explanation
+  // for why tapping just redraws the same screen.
+  uint16_t lteTestFill = lteEnabled ? COL_ACCENT : COL_CARD;
   drawCardShadow(LTE_TEST_X, LTE_TEST_Y, LTE_TEST_W, LTE_TEST_H, 6);
-  tft.fillRoundRect(LTE_TEST_X, LTE_TEST_Y, LTE_TEST_W, LTE_TEST_H, 6, COL_ACCENT);
+  tft.fillRoundRect(LTE_TEST_X, LTE_TEST_Y, LTE_TEST_W, LTE_TEST_H, 6, lteTestFill);
+  if (!lteEnabled) tft.drawRoundRect(LTE_TEST_X, LTE_TEST_Y, LTE_TEST_W, LTE_TEST_H, 6, COL_CARD_BRD);
   tft.setTextSize(2);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+  tft.setTextColor(lteEnabled ? COL_BG_TOP : COL_TEXT_DIM, lteTestFill);
   centerTextInBox("Test Internet", LTE_TEST_Y + 7, LTE_TEST_X, LTE_TEST_W);
 
   tft.setTextSize(1);

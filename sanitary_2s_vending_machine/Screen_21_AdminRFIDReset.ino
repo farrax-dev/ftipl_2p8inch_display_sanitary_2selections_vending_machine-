@@ -129,8 +129,11 @@ void handleAdminRFIDResetScreen() {
   mapTouchToScreen(raw, sx, sy);
 
   if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
-    currentScreen = SCREEN_ADMIN_RFID_CARDS;
-    drawAdminRFIDCardsScreen();
+    // This screen is only ever reached from the "Reset" chip on Admin >
+    // Settings (Screen_11_AdminSettings.ino) — there is no path into it from
+    // the RFID Cards screen — so Back returns there, not to Cards.
+    currentScreen = SCREEN_ADMIN_SETTINGS;
+    drawAdminSettingsScreen();
     return;
   }
 

@@ -77,14 +77,24 @@ void drawAdminWiFiScreen() {
     drawWiFiSymbol(275, 122, 2, 0, false);
   }
 
+  // Greyed out together with the WiFi:On/Off chip below whenever wifiEnabled
+  // is false — the handler already no-ops both taps in that state, but until
+  // now they still looked fully active, so tapping did nothing with no visual
+  // explanation why.
+  uint16_t wifiActionFill = wifiEnabled ? COL_ACCENT : COL_CARD;
+  uint16_t wifiActionText = wifiEnabled ? COL_BG_TOP : COL_TEXT_DIM;
+
   drawCardShadow(WF_CONNECT_X, WF_CONNECT_Y, WF_CONNECT_W, WF_CONNECT_H, 6);
-  tft.fillRoundRect(WF_CONNECT_X, WF_CONNECT_Y, WF_CONNECT_W, WF_CONNECT_H, 6, COL_ACCENT);
+  tft.fillRoundRect(WF_CONNECT_X, WF_CONNECT_Y, WF_CONNECT_W, WF_CONNECT_H, 6, wifiActionFill);
+  if (!wifiEnabled) tft.drawRoundRect(WF_CONNECT_X, WF_CONNECT_Y, WF_CONNECT_W, WF_CONNECT_H, 6, COL_CARD_BRD);
   tft.setTextSize(2);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+  tft.setTextColor(wifiActionText, wifiActionFill);
   centerTextInBox("Connect", WF_CONNECT_Y + 7, WF_CONNECT_X, WF_CONNECT_W);
 
   drawCardShadow(WF_PING_X, WF_PING_Y, WF_PING_W, WF_PING_H, 6);
-  tft.fillRoundRect(WF_PING_X, WF_PING_Y, WF_PING_W, WF_PING_H, 6, COL_ACCENT);
+  tft.fillRoundRect(WF_PING_X, WF_PING_Y, WF_PING_W, WF_PING_H, 6, wifiActionFill);
+  if (!wifiEnabled) tft.drawRoundRect(WF_PING_X, WF_PING_Y, WF_PING_W, WF_PING_H, 6, COL_CARD_BRD);
+  tft.setTextColor(wifiActionText, wifiActionFill);
   centerTextInBox("Ping", WF_PING_Y + 7, WF_PING_X, WF_PING_W);
 
   tft.setTextSize(1);

@@ -472,7 +472,20 @@ void handlePaymentCashScreen() {
 // for how that's kept out of revenue reporting.
 const unsigned long RFID_PAY_TIMEOUT_MS = (unsigned long)CFG_RFID_TIMEOUT_SEC * 1000UL;  // give up and return to Payment Method if nothing's tapped
 
+// Independent of the idle timeout above, which an actual tap — even a
+// rejected one — resets (see "an actual tap counts as activity" below).
+// That's fine for a customer genuinely trying different cards, but it means
+// repeated rejections, or a reader misreading noise on its UART line as a
+// phantom card present (the same class of floating-input failure this
+// project already hit once on the coin pulse line before a pull-up was
+// added), could keep this screen open indefinitely with the idle clock
+// never allowed to expire. This caps the session at a fixed wall-clock
+// ceiling no amount of activity can push back.
+const unsigned long RFID_PAY_HARD_CAP_MS = RFID_PAY_TIMEOUT_MS * 3;
+
 unsigned long rfidPayEnteredMs = 0;
+unsigned long rfidPaySessionStartMs = 0;   // set once on entry, never reset by activity
+unsigned long rfidLastTimeoutLineUpdate = 0;
 char rfidStatusMsg[32] = "";
 uint16_t rfidStatusColor = COL_TEXT_DIM;
 unsigned long rfidStatusUntilMs = 0;  // rejection message clears itself, same as the coin screen
@@ -486,8 +499,25 @@ void drawRFIDStatusLine() {
   }
 }
 
+// Same visibility the cash screen's own countdown gives CASH_TIMEOUT_MS —
+// without it, a customer (or anyone testing this) has no way to see the
+// idle timeout actually counting down, or to tell "it's about to time out"
+// apart from "this is broken and never will."
+void drawRFIDTimeoutLine() {
+  tft.fillRect(0, 160, tft.width(), 14, COL_BG_BOTTOM);
+  int remainingSec = (int)((RFID_PAY_TIMEOUT_MS - (millis() - rfidPayEnteredMs)) / 1000);
+  if (remainingSec < 0) remainingSec = 0;
+  tft.setTextSize(1);
+  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+  char buf[24];
+  snprintf(buf, sizeof(buf), "Time left: %ds", remainingSec);
+  centerText(buf, 164);
+}
+
 void drawPaymentRFIDScreen() {
   rfidPayEnteredMs = millis();
+  rfidPaySessionStartMs = millis();
+  rfidLastTimeoutLineUpdate = millis();
   rfidStatusMsg[0] = '\0';
 
   drawGradientBackground();
@@ -502,6 +532,7 @@ void drawPaymentRFIDScreen() {
   tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
   centerText("Hold your card near the reader", 118);
   drawRFIDStatusLine();
+  drawRFIDTimeoutLine();
   drawBackButton("< Back");
 }
 
@@ -511,21 +542,39 @@ void handlePaymentRFIDScreen() {
     drawRFIDStatusLine();
   }
 
+  if (millis() - rfidLastTimeoutLineUpdate > 1000) {
+    rfidLastTimeoutLineUpdate = millis();
+    drawRFIDTimeoutLine();
+  }
+
   char uid[21];
   if (pollRFIDCard(uid, sizeof(uid))) {
     int cardIdx = findRFIDCardIndex(uid);
     // withdrawLimit == 0 is unlimited (the default for a freshly-registered
     // card); otherwise this cart must fit in what's left of the card's
     // running allowance — see Screen_19_AdminRFIDCardEdit.ino.
-    int remaining = (cardIdx >= 0 && rfidCards[cardIdx].withdrawLimit > 0)
+    //
+    // hasLimit is checked separately from remaining so that an admin
+    // lowering withdrawLimit below the card's already-used total doesn't
+    // flip it into looking unlimited: a raw negative "remaining" and the
+    // true unlimited sentinel (-1 below) used to both satisfy
+    // `remaining >= 0` as false, so overLimit went false either way.
+    // Clamping remaining to 0 in that case blocks the card instead of
+    // waving it through.
+    bool hasLimit = (cardIdx >= 0 && rfidCards[cardIdx].withdrawLimit > 0);
+    int remaining = hasLimit
                        ? rfidCards[cardIdx].withdrawLimit - rfidCards[cardIdx].withdrawUsed
                        : -1;
-    bool overLimit = (remaining >= 0 && cartTotalQty() > remaining);
+    bool overLimit = hasLimit && cartTotalQty() > max(remaining, 0);
 
     if (cardIdx >= 0 && !overLimit) {
       int qty = cartTotalQty();
       bool dispensedOk = dispenseCart("RFID", true);  // freeVend — see Core_11_Dispense.ino
-      addRFIDCardUsage(cardIdx, qty);
+      // Only a successful dispense actually consumes the card's allowance —
+      // a jam/sensor failure already shows "Dispense Failed" below; debiting
+      // the allowance too would charge the customer's limit for product
+      // they never got, with no way to refund it back onto the card.
+      if (dispensedOk) addRFIDCardUsage(cardIdx, qty);
 
       drawGradientBackground();
       tft.setTextSize(3);
@@ -561,7 +610,8 @@ void handlePaymentRFIDScreen() {
     drawRFIDStatusLine();
   }
 
-  if (millis() - rfidPayEnteredMs > RFID_PAY_TIMEOUT_MS) {
+  if (millis() - rfidPayEnteredMs > RFID_PAY_TIMEOUT_MS
+      || millis() - rfidPaySessionStartMs > RFID_PAY_HARD_CAP_MS) {
     drawGradientBackground();
     tft.setTextSize(3);
     tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);

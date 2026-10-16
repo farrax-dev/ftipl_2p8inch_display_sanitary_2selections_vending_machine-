@@ -299,6 +299,20 @@ void handleAdminSettingsScreen() {
           if (pointInRect(sx, sy, PAY_ROW_X, y, PAY_ROW_W, PAY_ROW_H)) {
             paymentEnabled[p] = !paymentEnabled[p];
             savePaymentEnabled(p);
+
+            // hideProductPrices only ever gets its toggle shown while the
+            // machine is RFID-only or free-vend (see showPriceToggleRow
+            // below) — a machine that genuinely charges money has no
+            // business hiding the amount. Turning Cash or UPI on is exactly
+            // the moment that stops being true, so clear it here rather than
+            // leaving it stuck true in NVS from an earlier RFID-only
+            // configuration, where it would silently blank the Cart Review
+            // total while Cash/UPI still show the real amount due.
+            if ((p == PAY_IDX_CASH || p == PAY_IDX_UPI) && paymentEnabled[p] && hideProductPrices) {
+              hideProductPrices = false;
+              saveHideProductPrices();
+            }
+
             drawAdminSettingsScreen();
             return;
           }

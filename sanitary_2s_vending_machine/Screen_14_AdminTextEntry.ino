@@ -10,6 +10,18 @@ bool textEntryShow = false;
 const char* textEntryTitle = "Enter Name";
 AppScreen textEntryReturnScreen = SCREEN_ADMIN_EDIT;
 
+// Holds a new PIN that passed format validation but hasn't been confirmed by
+// re-entry yet (TE_ADMIN_PIN_CONFIRM) — never written to adminPin/NVS until
+// the second entry matches it.
+char adminPinPending[9] = "";
+
+// Shown in place of the normal buffer/counter line (drawKeyboardPreview())
+// when a commit is rejected, instead of the screen silently leaving as if it
+// had saved. Self-clears after teErrorUntil, same pattern as the coin/RFID
+// payment screens' own status-line timeout.
+char teErrorMsg[40] = "";
+unsigned long teErrorUntil = 0;
+
 KbLayer kbLayer = KB_LAYER_UPPER;
 
 const KeyDef KB_UPPER[4][11] = {
@@ -185,6 +197,18 @@ void openTextEntry(TextEntryTarget target) {
       textEntryReturnScreen = SCREEN_ADMIN_SETTINGS;
       kbLayer = KB_LAYER_SYM;
       break;
+    // Second step after TE_ADMIN_PIN accepts a format-valid new PIN — opens
+    // blank, not prefilled, so the admin has to actually retype it rather
+    // than just tapping Done again on whatever's still sitting in the
+    // buffer. commitTextEntry() compares this against adminPinPending.
+    case TE_ADMIN_PIN_CONFIRM:
+      textEntryBuffer[0] = '\0';
+      textEntryMaxLen = sizeof(adminPin) - 1;
+      textEntryMask = true;
+      textEntryTitle = "Confirm New PIN";
+      textEntryReturnScreen = SCREEN_ADMIN_SETTINGS;
+      kbLayer = KB_LAYER_SYM;
+      break;
     default:
       strncpy(textEntryBuffer, productNames[adminEditingSlot], sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(productNames[0]) - 1;
@@ -213,6 +237,13 @@ void returnFromTextEntry() {
 
 void drawKeyboardPreview() {
   tft.fillRect(6, 56, 308, 26, COL_BG_TOP);
+
+  if (teErrorMsg[0] != '\0' && millis() < teErrorUntil) {
+    tft.setTextSize(2);
+    tft.setTextColor(COL_DANGER, COL_BG_TOP);
+    centerText(teErrorMsg, 60);
+    return;
+  }
 
   int len = strlen(textEntryBuffer);
   char shown[70];
@@ -332,7 +363,12 @@ void handleKeyPress(const char* label) {
   appendChar(label[0]);
 }
 
-void commitTextEntry() {
+// Returns true when the entry was actually accepted and the screen should
+// leave via returnFromTextEntry(); false means stay on this screen — either
+// because the entry was rejected (teErrorMsg explains why) or because
+// commitTextEntry() has already moved on to a follow-up step itself (the PIN
+// confirm re-entry below).
+bool commitTextEntry() {
   switch (textEntryTarget) {
     case TE_WIFI_SSID:
       strncpy(wifiSSID, textEntryBuffer, sizeof(wifiSSID));
@@ -396,7 +432,10 @@ void commitTextEntry() {
         target[sizeof(nightlyTime1) - 1] = '\0';
       } else {
         Serial.printf("Schedule: ignoring invalid time [%s]\n", textEntryBuffer);
-        return;   // leave the old value in place
+        snprintf(teErrorMsg, sizeof(teErrorMsg), "Use HH:MM (24h)");
+        teErrorUntil = millis() + 1800;
+        drawKeyboardPreview();
+        return false;   // leave the old value in place, stay on screen
       }
       saveScheduleSettings();
       break;
@@ -416,6 +455,11 @@ void commitTextEntry() {
     // times and the clock above) unless it's 4-8 digits — nothing else can
     // ever be typed back in on the login screen's numeric pad, so accepting
     // anything looser here would let an admin lock themselves out.
+    //
+    // A format-valid entry is NOT written to adminPin yet — it only gets
+    // there via TE_ADMIN_PIN_CONFIRM matching it below, so a fat-fingered
+    // new PIN can never silently become the active one with no way for the
+    // admin to notice until they're locked out.
     case TE_ADMIN_PIN: {
       int len = strlen(textEntryBuffer);
       bool digitsOnly = (len >= 4);
@@ -424,10 +468,28 @@ void commitTextEntry() {
       }
       if (!digitsOnly) {
         Serial.printf("Admin PIN: ignoring invalid entry [%s] (need 4-8 digits)\n", textEntryBuffer);
-        return;   // leave the old PIN in place
+        snprintf(teErrorMsg, sizeof(teErrorMsg), "Need 4-8 digits");
+        teErrorUntil = millis() + 1800;
+        drawKeyboardPreview();
+        return false;   // leave the old PIN in place, stay on screen
       }
-      strncpy(adminPin, textEntryBuffer, sizeof(adminPin));
+      strncpy(adminPinPending, textEntryBuffer, sizeof(adminPinPending));
+      adminPinPending[sizeof(adminPinPending) - 1] = '\0';
+      openTextEntry(TE_ADMIN_PIN_CONFIRM);
+      return false;   // not committed yet — confirm step owns the screen now
+    }
+    case TE_ADMIN_PIN_CONFIRM: {
+      if (strcmp(textEntryBuffer, adminPinPending) != 0) {
+        Serial.println("Admin PIN: confirm entry didn't match - retry from the start");
+        snprintf(teErrorMsg, sizeof(teErrorMsg), "PINs didn't match");
+        teErrorUntil = millis() + 1800;
+        adminPinPending[0] = '\0';
+        openTextEntry(TE_ADMIN_PIN);   // back to the first step, old PIN prefilled as before
+        return false;
+      }
+      strncpy(adminPin, adminPinPending, sizeof(adminPin));
       adminPin[sizeof(adminPin) - 1] = '\0';
+      adminPinPending[0] = '\0';
       saveAdminPin();
       break;
     }
@@ -437,9 +499,19 @@ void commitTextEntry() {
       saveNameSlot(adminEditingSlot);
       break;
   }
+  return true;
 }
 
 void handleAdminTextEntryScreen() {
+  // Self-clears the error line the same way the coin/RFID payment screens
+  // clear their own status lines — once it's timed out, repaint the preview
+  // area with whatever's actually in the buffer instead of leaving a stale
+  // rejection message sitting there.
+  if (teErrorMsg[0] != '\0' && millis() >= teErrorUntil) {
+    teErrorMsg[0] = '\0';
+    drawKeyboardPreview();
+  }
+
   if (isRealTouch()) {
     if (millis() - lastTouchTime > TOUCH_DEBOUNCE) {
       lastTouchTime = millis();
@@ -448,6 +520,8 @@ void handleAdminTextEntryScreen() {
       mapTouchToScreen(raw, sx, sy);
 
       if (pointInRect(sx, sy, TE_CANCEL_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H)) {
+        teErrorMsg[0] = '\0';
+        adminPinPending[0] = '\0';
         returnFromTextEntry();
         return;
       }
@@ -457,8 +531,7 @@ void handleAdminTextEntryScreen() {
         return;
       }
       if (pointInRect(sx, sy, TE_DONE_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H)) {
-        commitTextEntry();
-        returnFromTextEntry();
+        if (commitTextEntry()) returnFromTextEntry();
         return;
       }
 
