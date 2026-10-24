@@ -111,7 +111,7 @@ bool getClockStrings(char* timeBuf, size_t tSize, char* dateBuf, size_t dSize) {
     strftime(timeBuf, tSize, "%I:%M %p", &ti);                             // 09:41 PM
     if (timeBuf[0] == '0') memmove(timeBuf, timeBuf + 1, strlen(timeBuf)); // drop leading zero
   }
-  strftime(dateBuf, dSize, "%a %d %b %Y", &ti);                          // Fri 04 Sep 2026
+  strftime(dateBuf, dSize, "%a %d %b", &ti);                               // Fri 04 Sep
   return true;
 }
 

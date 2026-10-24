@@ -216,7 +216,7 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   // ever charged there, so a price figure is more confusing than useful.
   // Out of stock hides it too: there is nothing to buy at any price.
   char priceBuf[12];
-  snprintf(priceBuf, sizeof(priceBuf), "Rs %d", products[i].price);
+  snprintf(priceBuf, sizeof(priceBuf), "Rs. %d", products[i].price);
   bool showPrice = (!hideProductPrices && !outOfStock);
   int priceSize = fitTextSize(priceBuf, innerW, (h >= 60) ? 2 : 1);
 
@@ -232,10 +232,10 @@ void drawProductCard(int i, int x, int y, int w, int h) {
     snprintf(statusBuf, sizeof(statusBuf), "%s", allInCart ? "ALL IN CART" : "CART FULL");
     statusColor = COL_WARNING;
   } else if (inCart) {
-    snprintf(statusBuf, sizeof(statusBuf), "x%d - %d%s left", cartQty[i], totalStock, CFG_STOCK_UNIT);
+    snprintf(statusBuf, sizeof(statusBuf), "x%d - Qty Avail: %d%s", cartQty[i], totalStock, CFG_STOCK_UNIT);
     statusColor = COL_ACCENT;
   } else {
-    snprintf(statusBuf, sizeof(statusBuf), "%d%s left", totalStock, CFG_STOCK_UNIT);
+    snprintf(statusBuf, sizeof(statusBuf), "Qty Avail: %d%s", totalStock, CFG_STOCK_UNIT);
     statusColor = COL_SUCCESS;
   }
 
@@ -329,8 +329,7 @@ void quickVendSelect(int i, int x, int y, int w, int h) {
     runFreeVendCheckout();
     return;
   }
-  currentScreen = SCREEN_PAYMENT_METHOD;
-  drawPaymentMethodScreen();
+  startPaymentFlow();
 }
 
 void onSelectTouched(int sx, int sy) {
@@ -369,6 +368,9 @@ void onSelectTouched(int sx, int sy) {
 
       if (totalStock <= 0) {
         rejectCardTap(i, x, y, w, h, "Out of stock");
+      } else if (!isQuickVend() && cartQty[i] > 0) {
+        // Already selected. Quantity is changed on the Your Cart screen only.
+        rejectCardTap(i, x, y, w, h, "Edit qty in Cart");
       } else if (cartQty[i] >= totalStock) {
         snprintf(why, sizeof(why), "Only %d left", totalStock);
         rejectCardTap(i, x, y, w, h, why);

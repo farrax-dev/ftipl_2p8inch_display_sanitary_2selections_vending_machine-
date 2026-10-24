@@ -53,9 +53,10 @@ void drawAdminEditScreen() {
   // match its neighbours. Read-only, so no shadow (nothing to "raise").
   tft.fillRoundRect(108, 80, 50, 28, 6, COL_CARD);
   tft.setTextColor(COL_TEXT, COL_CARD);
-  char pbuf[8];
-  snprintf(pbuf, sizeof(pbuf), "Rs%d", products[i].price);
-  centerTextInBox(pbuf, 88, 108, 50);
+  char pbuf[12];
+  snprintf(pbuf, sizeof(pbuf), "Rs. %d", products[i].price);
+  tft.setTextSize(1);   // "Rs. 10" at size 2 would overflow the 50px box
+  centerTextInBox(pbuf, 90, 108, 50);
 
   tft.setTextSize(1);
   tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);

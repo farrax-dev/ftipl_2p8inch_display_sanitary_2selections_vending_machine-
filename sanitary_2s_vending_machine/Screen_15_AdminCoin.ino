@@ -20,7 +20,7 @@ void drawAdminCoinScreen() {
     tft.setTextSize(2);
     tft.setTextColor(COL_TEXT, COL_CARD);
     char label[12];
-    snprintf(label, sizeof(label), "Rs %d coin", COIN_DENOM_VALUES[d]);
+    snprintf(label, sizeof(label), "Rs. %d coin", COIN_DENOM_VALUES[d]);
     tft.setCursor(COIN_ROW_X + 10, y + 5);
     tft.print(label);
 

@@ -15,6 +15,44 @@ const char* PM_DESCRIPTIONS[PAYMENT_COUNT] = {
   "Registered cards only"
 };
 
+// Opens the screen for one payment method (index into PAYMENT_NAMES).
+void openPaymentMethod(int p) {
+  switch (p) {
+    case 0: currentScreen = SCREEN_PAYMENT_UPI; drawPaymentUPIScreen(); break;
+    case 1: currentScreen = SCREEN_PAYMENT_CASH; drawPaymentCashScreen(); break;
+    case 2: currentScreen = SCREEN_PAYMENT_RFID; drawPaymentRFIDScreen(); break;
+  }
+}
+
+// Entry point to payment. With exactly one enabled method there is nothing to
+// choose, so the method screen is skipped and that method opens directly.
+void startPaymentFlow() {
+  int idx[PAYMENT_COUNT];
+  if (getEnabledPaymentMethods(idx) == 1) {
+    openPaymentMethod(idx[0]);
+    return;
+  }
+  currentScreen = SCREEN_PAYMENT_METHOD;
+  drawPaymentMethodScreen();
+}
+
+// Back out of a payment screen: to the method list when there is a choice to
+// make, otherwise to wherever the customer came from.
+void backFromPayment() {
+  int idx[PAYMENT_COUNT];
+  if (getEnabledPaymentMethods(idx) != 1) {
+    currentScreen = SCREEN_PAYMENT_METHOD;
+    drawPaymentMethodScreen();
+  } else if (isQuickVend()) {
+    resetCart();
+    currentScreen = SCREEN_SELECT;
+    drawSelectScreen();
+  } else {
+    currentScreen = SCREEN_CART_REVIEW;
+    drawCartReviewScreen();
+  }
+}
+
 void drawPaymentMethodScreen() {
   drawGradientBackground();
 
@@ -46,9 +84,9 @@ void drawPaymentMethodScreen() {
       int nameSize = (w >= 250) ? 3 : 2;
 
       int nameLines = wrapTextInBox(PAYMENT_NAMES[p], innerX, innerW, 0, nameSize, false);
-      int descLines = wrapTextInBox(PM_DESCRIPTIONS[p], innerX, innerW, 0, 1, false);
+      int descLines = wrapTextInBox(PM_DESCRIPTIONS[p], innerX, innerW, 0, 2, false);
       int nameH = wrapTextHeight(nameLines, nameSize);
-      int descH = wrapTextHeight(descLines, 1);
+      int descH = wrapTextHeight(descLines, 2);
 
       const int PM_RULE_GAP = 9;
       int blockY = y + (h - (nameH + PM_RULE_GAP * 2 + 1 + descH)) / 2;
@@ -64,9 +102,9 @@ void drawPaymentMethodScreen() {
       tft.fillRect(innerX + (innerW - ruleW) / 2, blockY + nameH + PM_RULE_GAP, ruleW, 1, COL_ACCENT);
 
       tft.setTextColor(COL_TEXT_DIM, COL_CARD);
-      tft.setTextSize(1);
+      tft.setTextSize(2);
       wrapTextInBox(PM_DESCRIPTIONS[p], innerX, innerW,
-                    blockY + nameH + PM_RULE_GAP * 2 + 1, 1, true);
+                    blockY + nameH + PM_RULE_GAP * 2 + 1, 2, true);
     }
   }
 
@@ -103,11 +141,7 @@ void handlePaymentMethodScreen() {
         int x, y, w, h;
         getSelectCardRect(k, count, x, y, w, h);
         if (pointInRect(sx, sy, x, y, w, h)) {
-          switch (idx[k]) {
-            case 0: currentScreen = SCREEN_PAYMENT_UPI; drawPaymentUPIScreen(); break;
-            case 1: currentScreen = SCREEN_PAYMENT_CASH; drawPaymentCashScreen(); break;
-            case 2: currentScreen = SCREEN_PAYMENT_RFID; drawPaymentRFIDScreen(); break;
-          }
+          openPaymentMethod(idx[k]);
           return;
         }
       }

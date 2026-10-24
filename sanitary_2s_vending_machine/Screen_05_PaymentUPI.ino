@@ -229,7 +229,7 @@ void drawUPIStatusLine(int y) {
   tft.setTextSize(1);
   tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
   char buf[40];
-  snprintf(buf, sizeof(buf), "Rs %d - waiting for payment (%ds)", orderTotal, remainingSec);
+  snprintf(buf, sizeof(buf), "Rs. %d - waiting for payment (%ds)", orderTotal, remainingSec);
   centerText(buf, y);
 }
 
@@ -251,15 +251,16 @@ void drawUPISuccessScreen() {
   tft.setTextSize(2);
   tft.setTextColor(COL_ACCENT, COL_BG_BOTTOM);
   char buf[24];
-  snprintf(buf, sizeof(buf), "Rs %d", orderTotal);
+  snprintf(buf, sizeof(buf), "Rs. %d", orderTotal);
   centerText(buf, 140);
 
-  tft.setTextSize(1);
+  tft.setTextSize(2);
   if (upiVendPending) {
     tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
     centerText("Preparing your item...", 165);
   } else if (upiDispenseFailed) {
     tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
+    tft.setTextSize(1);  // 33 chars: too wide for size 2
     centerText("Dispense failed - contact support", 165);
     drawProceedButton("Done");
   } else {
@@ -293,7 +294,7 @@ void drawUPIErrorScreen() {
   tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
   centerText("Payment Error", 70);
 
-  tft.setTextSize(1);
+  tft.setTextSize(fitTextSize(upiErrorMsg, tft.width() - 8, 2));
   tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
   centerText(upiErrorMsg, 105);
 
@@ -374,8 +375,7 @@ void handlePaymentUPIScreen() {
 
       if (upiStage == UPI_STAGE_WAITING) {
         if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
-          currentScreen = SCREEN_PAYMENT_METHOD;
-          drawPaymentMethodScreen();
+          backFromPayment();
         }
       } else if (upiStage == UPI_STAGE_SUCCESS) {
         if (pointInRect(sx, sy, BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H)) {
@@ -385,8 +385,7 @@ void handlePaymentUPIScreen() {
         }
       } else if (upiStage == UPI_STAGE_ERROR) {
         if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
-          currentScreen = SCREEN_PAYMENT_METHOD;
-          drawPaymentMethodScreen();
+          backFromPayment();
         }
         if (pointInRect(sx, sy, BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H)) {
           drawPaymentUPIScreen();

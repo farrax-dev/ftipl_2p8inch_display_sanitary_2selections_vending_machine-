@@ -20,9 +20,9 @@ void drawWelcomeClock() {
     tft.setCursor(10, 8);
     tft.print(timeBuf);
 
-    tft.setTextSize(1);
+    tft.setTextSize(2);
     tft.setTextColor(COL_ACCENT, COL_BG_TOP);
-    rightText(dateBuf, WELCOME_CLOCK_W - 8, 12);
+    rightText(dateBuf, WELCOME_CLOCK_W - 8, 8);
 
     lastClockMinute = currentMinuteStamp();
   } else {
@@ -31,10 +31,10 @@ void drawWelcomeClock() {
     tft.setCursor(10, 8);
     tft.print("--:--");
 
-    tft.setTextSize(1);
+    tft.setTextSize(2);
     tft.setTextColor(COL_TEXT_DIM, COL_BG_TOP);
-    rightText((WiFi.status() == WL_CONNECTED) ? "Syncing time..." : "No network",
-              WELCOME_CLOCK_W - 8, 12);
+    rightText((WiFi.status() == WL_CONNECTED) ? "Syncing..." : "No network",
+              WELCOME_CLOCK_W - 8, 8);
 
     lastClockMinute = -1;
   }
@@ -133,43 +133,6 @@ void drawFooterPrompt(bool visible) {
                   WELCOME_PILL_Y + 11, WELCOME_PILL_X, WELCOME_PILL_W);
 }
 
-// Machine name and ID, in the strip below the footer pill. Kept clear of the
-// pill's
-// bounds (which get repainted on every blink) so it survives the pulse and
-// only needs drawing once per screen entry.
-const int WELCOME_ID_Y = 230;
-
-void drawWelcomeMachineId() {
-  tft.fillRect(0, WELCOME_ID_Y - 2, tft.width(), 12, COL_BG_BOTTOM);
-
-  // The name is what a customer or a technician recognises, so it leads. The
-  // ID follows only when both fit on the line: it is what ties a machine to
-  // its reports, but at 320px and text size 1 there is room for about 52
-  // characters, and a long name has to win over an ID that also appears in
-  // every report subject.
-  char buf[64];
-  bool haveName = (strlen(machineName) > 0);
-  bool haveId   = (strlen(machineId) > 0);
-
-  if (haveName && haveId && strlen(machineName) + strlen(machineId) + 3 <= 52) {
-    snprintf(buf, sizeof(buf), "%s  -  %s", machineName, machineId);
-  } else if (haveName) {
-    snprintf(buf, sizeof(buf), "%s", machineName);
-  } else if (haveId) {
-    snprintf(buf, sizeof(buf), "ID: %s", machineId);
-  } else {
-    return;
-  }
-
-  tft.setTextSize(1);
-  // COL_WARNING (rich gold) rather than a raw ILI9341_YELLOW — every other
-  // screen draws through the theme's own macros (Core_03_Theme.ino), and a
-  // pale/saturated stock yellow would clash against this palette's warm
-  // cream background.
-  tft.setTextColor(COL_WARNING, COL_BG_BOTTOM);
-  centerText(buf, WELCOME_ID_Y);
-}
-
 // ---------- Blink control (footer prompt pulse) ----------
 unsigned long lastBlinkTime = 0;
 bool blinkVisible = true;
@@ -184,7 +147,6 @@ void drawWelcomeScreen() {
   drawWelcomeClock();
   drawWelcomeCard();
   drawFooterPrompt(true);
-  drawWelcomeMachineId();
 
   lastBlinkTime    = millis();
   lastClockRefresh = millis();
@@ -208,6 +170,8 @@ bool isInCorner(int sx, int sy) {
 }
 
 void onWelcomeTouched() {
+  // Everything is sold out: the screen stays locked on Welcome.
+  if (allProductsOutOfStock()) return;
   resetCart();
   currentScreen = SCREEN_SELECT;
   drawSelectScreen();

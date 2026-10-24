@@ -33,7 +33,7 @@ void drawCartReviewScreen() {
   // rather than being the one place on this screen that leaks it.
   if (!hideProductPrices) {
     char totalBuf[16];
-    snprintf(totalBuf, sizeof(totalBuf), "Rs %d", cartTotal());
+    snprintf(totalBuf, sizeof(totalBuf), "Rs. %d", cartTotal());
     tft.setTextSize(2);
     tft.setTextColor(COL_ACCENT, COL_BG_TOP);
     rightText(totalBuf, headerRightX(), headerTextY(2));
@@ -123,9 +123,9 @@ void drawCartRow(int i, int x, int y, int w, int h) {
     // The unit price only earns its place once it stops being the same
     // number as the line total.
     if (cartQty[i] > 1) {
-      snprintf(moneyBuf, sizeof(moneyBuf), "Rs %d  (Rs %d each)", lineTotal, products[i].price);
+      snprintf(moneyBuf, sizeof(moneyBuf), "Rs. %d  (Rs. %d each)", lineTotal, products[i].price);
     } else {
-      snprintf(moneyBuf, sizeof(moneyBuf), "Rs %d", lineTotal);
+      snprintf(moneyBuf, sizeof(moneyBuf), "Rs. %d", lineTotal);
     }
     moneySize = fitTextSize(moneyBuf, textW, (h >= 60) ? 2 : 1);
   }
@@ -200,8 +200,7 @@ void onCartReviewTouched(int sx, int sy) {
       runFreeVendCheckout();
       return;
     }
-    currentScreen = SCREEN_PAYMENT_METHOD;
-    drawPaymentMethodScreen();
+    startPaymentFlow();
     return;
   }
 

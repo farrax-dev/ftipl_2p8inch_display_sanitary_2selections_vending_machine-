@@ -148,7 +148,7 @@ String buildDailyHTML(uint32_t dateNum, bool hasCsv) {
        String(slot >= 0 ? dailyHistory[slot].txns : 0) + "</b></td></tr>";
   h += "<tr><td>Units Dispensed</td><td align=right><b>" + String(dayUnits(slot)) +
        "</b></td></tr>";
-  h += "<tr><td>Total Payment Received</td><td align=right><b>Rs " +
+  h += "<tr><td>Total Payment Received</td><td align=right><b>Rs. " +
        String(dayRevenue(slot)) + "</b></td></tr>";
   h += "<tr><td>Current Stock</td><td align=right><b>" + String(totalStockOnHand()) +
        "</b></td></tr>";
@@ -301,9 +301,9 @@ String buildFullHTML(bool csvTruncated) {
        "</b></td></tr>";
   h += "<tr><td>Units Dispensed</td><td align=right><b>" + String(winUnits) +
        "</b></td></tr>";
-  h += "<tr><td>Total Payment Received</td><td align=right><b>Rs " + String(winRs) +
+  h += "<tr><td>Total Payment Received</td><td align=right><b>Rs. " + String(winRs) +
        "</b></td></tr>";
-  h += "<tr><td>Average Daily Revenue</td><td align=right>Rs " +
+  h += "<tr><td>Average Daily Revenue</td><td align=right>Rs. " +
        String(n ? winRs / n : 0) + "</td></tr>";
   h += "<tr><td>Current Stock</td><td align=right><b>" + String(totalStockOnHand()) +
        "</b></td></tr>";

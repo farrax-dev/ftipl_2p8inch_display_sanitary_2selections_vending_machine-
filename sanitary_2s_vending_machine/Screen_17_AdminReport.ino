@@ -114,7 +114,7 @@ void drawReportSalesPage() {
   snprintf(buf, sizeof(buf), "%ld", totalUnitsSoldAll());
   drawReportTile(1, 0, "Products Sold", buf, false);
 
-  snprintf(buf, sizeof(buf), "Rs %ld", lifetimeRevenueTotal);
+  snprintf(buf, sizeof(buf), "Rs. %ld", lifetimeRevenueTotal);
   drawReportTile(0, 1, "Total Sales", buf, true);
 
   snprintf(buf, sizeof(buf), "%d units", totalStockOnHand());
@@ -123,7 +123,7 @@ void drawReportSalesPage() {
   int slot = findDailySlot(todayDateNum());
   char units[12], revenue[16];
   snprintf(units, sizeof(units), "%d sold", dayUnits(slot));
-  snprintf(revenue, sizeof(revenue), "Rs %ld", dayRevenue(slot));
+  snprintf(revenue, sizeof(revenue), "Rs. %ld", dayRevenue(slot));
   drawReportTileTwoLine(0, 2, "Today - tap: email", units, revenue);
 
   snprintf(buf, sizeof(buf), "%d", slot >= 0 ? dailyHistory[slot].txns : 0);
