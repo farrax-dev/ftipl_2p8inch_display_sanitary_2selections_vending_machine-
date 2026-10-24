@@ -111,7 +111,103 @@ int motorStockRowY(int row) {
   return MSTOCK_ROW_Y0 + row * (MSTOCK_ROW_H + MSTOCK_ROW_GAP);
 }
 
+// ---------- Edit keypad (type an exact stock figure) ----------
+// A modal drawn over this screen rather than a screen of its own: motorEditing
+// is the motor being edited, or -1 when the normal list is showing.
+const int MKP_X0 = 47, MKP_Y0 = 78, MKP_W = 70, MKP_H = 24, MKP_GX = 8, MKP_GY = 3;
+const char* const MKP_LABELS[12] = {"1","2","3","4","5","6","7","8","9","C","0","DEL"};
+
+void getKeypadKeyRect(int k, int &x, int &y) {
+  x = MKP_X0 + (k % 3) * (MKP_W + MKP_GX);
+  y = MKP_Y0 + (k / 3) * (MKP_H + MKP_GY);
+}
+
+void drawMotorEditValue() {
+  tft.fillRoundRect(60, 42, 200, 30, 6, COL_CARD);
+  tft.drawRoundRect(60, 42, 200, 30, 6, COL_CARD_BRD);
+  tft.setTextSize(3);
+  tft.setTextColor(COL_TEXT, COL_CARD);
+  centerTextInBox(motorEditBuf[0] ? motorEditBuf : "0", 47, 60, 200);
+}
+
+void drawMotorEditKeypad() {
+  drawGradientBackground();
+  char title[24];
+  snprintf(title, sizeof(title), "M%d Stock (max %d)", motorEditing + 1, STOCK_MAX);
+  drawScreenTitle(title);
+  drawMotorEditValue();
+
+  for (int k = 0; k < 12; k++) {
+    int x, y;
+    getKeypadKeyRect(k, x, y);
+    drawCardShadow(x, y, MKP_W, MKP_H, 6);
+    tft.fillRoundRect(x, y, MKP_W, MKP_H, 6, COL_CARD);
+    tft.drawRoundRect(x, y, MKP_W, MKP_H, 6, COL_CARD_BRD);
+    tft.setTextSize(2);
+    tft.setTextColor(COL_TEXT, COL_CARD);
+    centerTextInBox(MKP_LABELS[k], y + 5, x, MKP_W);
+  }
+
+  drawBackButton("Cancel");
+  drawProceedButton("Save");
+}
+
+void handleMotorEditKeypad() {
+  if (!isRealTouch() || millis() - lastTouchTime <= TOUCH_DEBOUNCE) return;
+  lastTouchTime = millis();
+  TS_Point raw = ts.getPoint();
+  int sx, sy;
+  mapTouchToScreen(raw, sx, sy);
+
+  if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
+    motorEditing = -1;
+    drawAdminMotorStockScreen();
+    return;
+  }
+  if (pointInRect(sx, sy, BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H)) {
+    int m = motorEditing;
+    motorStock[m] = constrain(atoi(motorEditBuf), 0, STOCK_MAX);
+    saveMotorStockSlot(m);
+    refreshLowStockArm();
+    motorEditing = -1;
+    drawAdminMotorStockScreen();
+    return;
+  }
+
+  for (int k = 0; k < 12; k++) {
+    int x, y;
+    getKeypadKeyRect(k, x, y);
+    if (!pointInRect(sx, sy, x, y, MKP_W, MKP_H)) continue;
+    size_t len = strlen(motorEditBuf);
+    if (k == 9) {
+      motorEditBuf[0] = '\0';
+    } else if (k == 11) {
+      if (len > 0) motorEditBuf[len - 1] = '\0';
+    } else if (len < sizeof(motorEditBuf) - 1) {
+      char digit = MKP_LABELS[k][0];
+      char next[8];
+      snprintf(next, sizeof(next), "%s%c", motorEditBuf, digit);
+      // A value above the configured maximum is simply not accepted.
+      if (atoi(next) <= STOCK_MAX) {
+        strncpy(motorEditBuf, next, sizeof(motorEditBuf) - 1);
+        motorEditBuf[sizeof(motorEditBuf) - 1] = '\0';
+        // No leading zeros: "0" then "5" reads as 5.
+        if (motorEditBuf[0] == '0' && motorEditBuf[1] != '\0') memmove(motorEditBuf, motorEditBuf + 1, strlen(motorEditBuf));
+      }
+    }
+    drawMotorEditValue();
+    return;
+  }
+}
+
+// Left edge and width of the Edit button, which sits just left of "T".
+void getMotorEditBtn(int testX, int &x, int &w) {
+  w = 36;
+  x = testX - 6 - w;
+}
+
 void drawAdminMotorStockScreen() {
+  if (motorEditing >= 0) { drawMotorEditKeypad(); return; }
   drawGradientBackground();
 
   drawScreenTitle("Motor Stock");
@@ -142,6 +238,13 @@ void drawAdminMotorStockScreen() {
     tft.setTextColor(COL_TEXT, COL_CARD);
     tft.setCursor(MSTOCK_ROW_X + 6, y + (h - 8) / 2);
     tft.print(label);
+
+    int editX, editW;
+    getMotorEditBtn(testX, editX, editW);
+    tft.fillRoundRect(editX, btnY, editW, btnSize, 4, COL_BG_TOP);
+    tft.drawRoundRect(editX, btnY, editW, btnSize, 4, COL_CARD_BRD);
+    tft.setTextColor(COL_ACCENT, COL_BG_TOP);
+    centerTextInBox("Edit", btnY + btnSize / 2 - 4, editX, editW);
 
     tft.fillRoundRect(testX, btnY, btnSize, btnSize, 4, COL_BG_TOP);
     tft.drawRoundRect(testX, btnY, btnSize, btnSize, 4, COL_CARD_BRD);
@@ -180,6 +283,7 @@ void drawAdminMotorStockScreen() {
 }
 
 void handleAdminMotorStockScreen() {
+  if (motorEditing >= 0) { handleMotorEditKeypad(); return; }
   if (isRealTouch()) {
     if (millis() - lastTouchTime > TOUCH_DEBOUNCE) {
       lastTouchTime = millis();
@@ -215,6 +319,14 @@ void handleAdminMotorStockScreen() {
         int testX  = minusX - 6 - btnSize;
         int btnY = y + (h - btnSize) / 2;
 
+        int editX, editW;
+        getMotorEditBtn(testX, editX, editW);
+        if (pointInRect(sx, sy, editX, btnY, editW, btnSize)) {
+          motorEditing = m;
+          snprintf(motorEditBuf, sizeof(motorEditBuf), "%d", motorStock[m]);
+          drawMotorEditKeypad();
+          return;
+        }
         if (pointInRect(sx, sy, testX, btnY, btnSize, btnSize)) {
           int owner = productForMotor(m);
           runMotorPulse(m, (owner >= 0) ? runTimeForProduct(owner) : MOTOR_TEST_MS);

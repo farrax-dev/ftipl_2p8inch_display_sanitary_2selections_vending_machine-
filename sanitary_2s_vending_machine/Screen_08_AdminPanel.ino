@@ -109,6 +109,7 @@ void handleAdminPanelScreen() {
 
       if (pointInRect(sx, sy, BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H)) {
         motorStockPage = 0;
+        motorEditing = -1;
         currentScreen = SCREEN_ADMIN_MOTOR_STOCK;
         drawAdminMotorStockScreen();
         return;

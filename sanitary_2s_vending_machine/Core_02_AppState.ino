@@ -13,6 +13,9 @@ int adminEditingSlot = -1;
 const int MOTORS_PER_PAGE = 6;
 const int MOTOR_STOCK_PAGES = (MAX_MOTORS + MOTORS_PER_PAGE - 1) / MOTORS_PER_PAGE;
 int motorStockPage = 0;
+// Motor being edited on the Motor Stock keypad (-1 = none); Screen_08 resets it.
+int  motorEditing = -1;
+char motorEditBuf[6] = "";
 
 // Which of the Report screen's three pages is showing, and whether the
 // destructive "Reset all totals" action has been armed by a first tap. Both

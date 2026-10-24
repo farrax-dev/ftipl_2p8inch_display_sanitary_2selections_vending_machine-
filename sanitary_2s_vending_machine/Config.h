@@ -128,8 +128,9 @@
 #define CFG_PRODUCT_COUNT      2
 
 // Stock level a freshly-initialised motor starts at, and the maximum the
-// admin +/- buttons will count up to.
-#define CFG_STOCK_MAX          3
+// admin can set for a motor (the +/- buttons and the Edit keypad both stop
+// here).
+#define CFG_STOCK_MAX          25
 
 // Unit shown after the quantity-available figure on the product select
 // screen, e.g. a stock of 20 reads "20" with this left as "", "20ml" with
