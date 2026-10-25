@@ -44,6 +44,8 @@
 //
 // Pick a theme by number in Config.h's CFG_COLOR_THEME — 0 (Blossom) is the
 // original theme this machine shipped with and is the default.
+// select colors from the theme and use this site to get RGB565 value https://rgbcolorpicker.com/565
+
 #if CFG_COLOR_THEME == 0
 // Theme 0: Blossom (pink / rose) - the original default theme this machine shipped with
 #define COL_BG_TOP     0xFF7E   // #FFEFF7 — near-white with a whisper of pink (gradient top)
