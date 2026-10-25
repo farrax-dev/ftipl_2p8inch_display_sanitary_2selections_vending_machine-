@@ -20,6 +20,9 @@ const int UPI_QR_MODULE_PX = 2;
 // the block still ends at 162 and leaves the status line and Cancel button
 // below it untouched.
 const int UPI_QR_TOP_Y     = 40;
+const int UPI_QR_LEFT_X    = 18;                 // QR (white box starts 6px further left)
+// Info card to the right of the QR: amount, instruction and the countdown.
+const int UPI_CARD_X = 156, UPI_CARD_Y = 34, UPI_CARD_W = 154, UPI_CARD_H = 134;
 int upiQRSize = 0;
 
 String computePhonePeChecksum(const String &base64Body, const String &endpointPath) {
@@ -186,7 +189,7 @@ void upiQRDisplay(esp_qrcode_handle_t qr) {
   upiQRSize = size;
 
   int qrPixelSize = size * UPI_QR_MODULE_PX;
-  int qx = (tft.width() - qrPixelSize) / 2;
+  int qx = UPI_QR_LEFT_X;
   int qy = UPI_QR_TOP_Y;
 
   tft.fillRect(qx - 6, qy - 6, qrPixelSize + 12, qrPixelSize + 12, ILI9341_WHITE);
@@ -202,8 +205,21 @@ void upiQRDisplay(esp_qrcode_handle_t qr) {
 
 void drawUPIWaitingScreen() {
   drawGradientBackground();
-
   drawScreenTitle("Scan to Pay");
+
+  // Info card, same look as the cash screen's Remaining card.
+  drawCardShadow(UPI_CARD_X, UPI_CARD_Y, UPI_CARD_W, UPI_CARD_H, 10);
+  tft.fillRoundRect(UPI_CARD_X, UPI_CARD_Y, UPI_CARD_W, UPI_CARD_H, 10, COL_CARD);
+  tft.drawRoundRect(UPI_CARD_X, UPI_CARD_Y, UPI_CARD_W, UPI_CARD_H, 10, COL_CARD_BRD);
+  tft.drawRoundRect(UPI_CARD_X + 1, UPI_CARD_Y + 1, UPI_CARD_W - 2, UPI_CARD_H - 2, 9, COL_ACCENT);
+
+  drawSerifLine("Amount to pay", UPI_CARD_X, UPI_CARD_W, UPI_CARD_Y + 20, COL_TEXT, 1);
+  char amt[16];
+  snprintf(amt, sizeof(amt), "Rs. %d", orderTotal);
+  drawSerifLine(amt, UPI_CARD_X, UPI_CARD_W, UPI_CARD_Y + 52, COL_ACCENT, 0);
+  tft.fillRect(UPI_CARD_X + UPI_CARD_W / 4, UPI_CARD_Y + 72, UPI_CARD_W / 2, 2, COL_CARD_BRD);
+  drawSerifLine("Scan with any", UPI_CARD_X, UPI_CARD_W, UPI_CARD_Y + 88, COL_TEXT, 2);
+  drawSerifLine("UPI app", UPI_CARD_X, UPI_CARD_W, UPI_CARD_Y + 104, COL_TEXT, 2);
 
   esp_qrcode_config_t qrCfg = ESP_QRCODE_CONFIG_DEFAULT();
   qrCfg.display_func = upiQRDisplay;
@@ -213,24 +229,23 @@ void drawUPIWaitingScreen() {
   esp_qrcode_generate(&qrCfg, upiQRText);
 
   if (upiQRSize == 0) {
-    tft.setTextSize(2);
-    tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
-    centerText("QR generation failed", 90);
+    drawSerifLine("QR generation failed", 0, UPI_CARD_X, 100, COL_DANGER, 1);
   }
 
-  drawUPIStatusLine(UPI_QR_TOP_Y + upiQRSize * UPI_QR_MODULE_PX + 12);
+  drawUPIStatusLine(0);
   drawBackButton("< Cancel");
 }
 
+// The countdown lives at the bottom of the info card; y is unused now that
+// the line no longer sits under the QR, but the signature stays for callers.
 void drawUPIStatusLine(int y) {
-  tft.fillRect(0, y - 2, tft.width(), 16, COL_BG_BOTTOM);
+  (void)y;
   int remainingSec = (int)((upiTimeoutMs - (millis() - upiStartTime)) / 1000);
   if (remainingSec < 0) remainingSec = 0;
-  tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
-  char buf[40];
-  snprintf(buf, sizeof(buf), "Rs. %d - waiting for payment (%ds)", orderTotal, remainingSec);
-  centerText(buf, y);
+  tft.fillRect(UPI_CARD_X + 5, UPI_CARD_Y + 112, UPI_CARD_W - 10, 18, COL_CARD);
+  char buf[24];
+  snprintf(buf, sizeof(buf), "Waiting... %ds", remainingSec);
+  drawSerifLine(buf, UPI_CARD_X, UPI_CARD_W, UPI_CARD_Y + 122, COL_SUCCESS, 2);
 }
 
 bool upiVendPending = false;
@@ -243,29 +258,20 @@ bool upiDispenseFailed = false;
 void drawUPISuccessScreen() {
   drawGradientBackground();
 
-  tft.setTextSize(3);
-  tft.setTextColor(COL_SUCCESS, COL_BG_BOTTOM);
-  centerText("Payment", 70);
-  centerText("Successful!", 100);
+  drawSerifLine("Payment", 0, tft.width(), 50, COL_SUCCESS, 0);
+  drawSerifLine("Successful!", 0, tft.width(), 86, COL_SUCCESS, 0);
 
-  tft.setTextSize(2);
-  tft.setTextColor(COL_ACCENT, COL_BG_BOTTOM);
   char buf[24];
   snprintf(buf, sizeof(buf), "Rs. %d", orderTotal);
-  centerText(buf, 140);
+  drawSerifLine(buf, 0, tft.width(), 128, COL_ACCENT, 0);
 
-  tft.setTextSize(2);
   if (upiVendPending) {
-    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
-    centerText("Preparing your item...", 165);
+    drawSerifLine("Preparing your item...", 0, tft.width(), 165, COL_TEXT, 1);
   } else if (upiDispenseFailed) {
-    tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
-    tft.setTextSize(1);  // 33 chars: too wide for size 2
-    centerText("Dispense failed - contact support", 165);
+    drawSerifLine("Dispense failed - contact support", 0, tft.width(), 165, COL_DANGER, 1);
     drawProceedButton("Done");
   } else {
-    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
-    centerText("Please collect your item", 165);
+    drawSerifLine("Please collect your item", 0, tft.width(), 165, COL_TEXT, 1);
     drawProceedButton("Done");
   }
 }
@@ -277,26 +283,16 @@ void drawUPISuccessScreen() {
 void drawUPITimeoutScreen() {
   drawGradientBackground();
 
-  tft.setTextSize(3);
-  tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
-  centerText("Payment", 70);
-  centerText("Timed Out", 100);
-
-  tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
-  centerText("No payment was received in time.", 140);
+  drawSerifLine("Payment", 0, tft.width(), 70, COL_DANGER, 0);
+  drawSerifLine("Timed Out", 0, tft.width(), 108, COL_DANGER, 0);
+  drawSerifLine("No payment was received in time.", 0, tft.width(), 150, COL_TEXT, 1);
 }
 
 void drawUPIErrorScreen() {
   drawGradientBackground();
 
-  tft.setTextSize(2);
-  tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
-  centerText("Payment Error", 70);
-
-  tft.setTextSize(fitTextSize(upiErrorMsg, tft.width() - 8, 2));
-  tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
-  centerText(upiErrorMsg, 105);
+  drawSerifLine("Payment Error", 0, tft.width(), 70, COL_DANGER, 0);
+  drawSerifLine(upiErrorMsg, 0, tft.width(), 112, COL_TEXT, 1);
 
   drawBackButton("< Back");
   drawProceedButton("Retry");

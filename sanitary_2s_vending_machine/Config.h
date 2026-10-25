@@ -212,9 +212,9 @@
 // now) but left available here, not deleted — flip back to true and reflash
 // to bring the Screen_18/19 admin card screens and the RFID payment option
 // back without touching any other code.
-#define CFG_PAYMENT_UPI_AVAILABLE     false
+#define CFG_PAYMENT_UPI_AVAILABLE     true
 #define CFG_PAYMENT_CASH_AVAILABLE    true
-#define CFG_PAYMENT_RFID_AVAILABLE    true
+#define CFG_PAYMENT_RFID_AVAILABLE    false
 
 // Machine-wide free vend. true means every completed cart is dispensed for
 // free, with no payment method ever shown to the customer at all — the
@@ -256,7 +256,7 @@
 // LTE is off for this build — no modem should be initialised or retried —
 // but nothing about the modem code is removed. Flip this back to true and
 // reflash any time a SIM/modem is fitted and connectivity is wanted again.
-#define CFG_WIFI_ENABLED       false
+#define CFG_WIFI_ENABLED       true
 #define CFG_LTE_ENABLED        false
 
 // Site WiFi. Leave blank for a cellular-only machine. Ignored entirely when
