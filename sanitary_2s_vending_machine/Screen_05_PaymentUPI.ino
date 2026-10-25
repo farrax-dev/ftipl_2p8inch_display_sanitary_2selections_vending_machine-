@@ -227,7 +227,7 @@ void drawUPIStatusLine(int y) {
   int remainingSec = (int)((upiTimeoutMs - (millis() - upiStartTime)) / 1000);
   if (remainingSec < 0) remainingSec = 0;
   tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+  tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
   char buf[40];
   snprintf(buf, sizeof(buf), "Rs. %d - waiting for payment (%ds)", orderTotal, remainingSec);
   centerText(buf, y);
@@ -256,7 +256,7 @@ void drawUPISuccessScreen() {
 
   tft.setTextSize(2);
   if (upiVendPending) {
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
     centerText("Preparing your item...", 165);
   } else if (upiDispenseFailed) {
     tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
@@ -264,7 +264,7 @@ void drawUPISuccessScreen() {
     centerText("Dispense failed - contact support", 165);
     drawProceedButton("Done");
   } else {
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
     centerText("Please collect your item", 165);
     drawProceedButton("Done");
   }
@@ -283,7 +283,7 @@ void drawUPITimeoutScreen() {
   centerText("Timed Out", 100);
 
   tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+  tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
   centerText("No payment was received in time.", 140);
 }
 
@@ -295,7 +295,7 @@ void drawUPIErrorScreen() {
   centerText("Payment Error", 70);
 
   tft.setTextSize(fitTextSize(upiErrorMsg, tft.width() - 8, 2));
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+  tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
   centerText(upiErrorMsg, 105);
 
   drawBackButton("< Back");

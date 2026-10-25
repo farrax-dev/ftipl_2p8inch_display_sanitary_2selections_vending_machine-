@@ -322,7 +322,7 @@
 #define COL_SHADOW     0xEE7D   // #E9CCE9
 #define COL_DANGER     0xE1CA   // #E63952
 #define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
+#define COL_WARNING    0xB421   // #f3c547
 
 #else
 #error "CFG_COLOR_THEME must be 0-19 - see the list in Config.h"

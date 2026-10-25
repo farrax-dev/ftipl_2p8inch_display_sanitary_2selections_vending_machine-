@@ -27,12 +27,12 @@ void drawWelcomeClock() {
     lastClockMinute = currentMinuteStamp();
   } else {
     tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_TOP);
+    tft.setTextColor(COL_TEXT, COL_BG_TOP);
     tft.setCursor(10, 8);
     tft.print("--:--");
 
     tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_TOP);
+    tft.setTextColor(COL_TEXT, COL_BG_TOP);
     rightText((WiFi.status() == WL_CONNECTED) ? "Syncing..." : "No network",
               WELCOME_CLOCK_W - 8, 8);
 

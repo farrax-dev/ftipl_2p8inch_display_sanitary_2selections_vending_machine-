@@ -338,6 +338,58 @@ int wrapFontHeight(int lines, const GFXfont* font) {
   return (lines > 0) ? lines * font->yAdvance : 0;
 }
 
+// Same as drawSerifLine() below but in the regular (non-bold) FreeSerif face.
+// maxFace: 1 = 12pt, 2 = 9pt.
+int drawSerifRegularLine(const char* text, int boxX, int boxW, int centerY, uint16_t color, int maxFace) {
+  const GFXfont* faces[3] = { &FreeSerif12pt7b, &FreeSerif12pt7b, &FreeSerif9pt7b };
+  int16_t x1, y1;
+  uint16_t w = 0, h = 0;
+  int face = maxFace;
+  for (; face < 3; face++) {
+    tft.setTextSize(1);
+    tft.setFont(faces[face]);
+    tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+    if ((int)w <= boxW - 4) break;
+  }
+  if (face > 2) face = 2;
+  tft.setTextSize(1);
+  tft.setFont(faces[face]);
+  tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  tft.setTextColor(color);
+  tft.setCursor(boxX + (boxW - (int)w) / 2 - x1, centerY - (int)h / 2 - y1);
+  tft.print(text);
+  tft.setFont();
+  return (int)w;
+}
+
+// One line of the Welcome screen's text style (FreeSerifBold), centred in a
+// box both ways: horizontally in boxX..boxX+boxW, vertically on centerY using
+// the glyphs' real bounds. maxFace is the largest face to try (0 = 18pt,
+// 1 = 12pt, 2 = 9pt); it steps down until the text fits the box width.
+// Returns the width drawn. GFX fonts are transparent, so whatever is behind
+// the text must already be painted.
+int drawSerifLine(const char* text, int boxX, int boxW, int centerY, uint16_t color, int maxFace) {
+  const GFXfont* faces[3] = { &FreeSerifBold18pt7b, &FreeSerifBold12pt7b, &FreeSerifBold9pt7b };
+  int16_t x1, y1;
+  uint16_t w = 0, h = 0;
+  int face = maxFace;
+  for (; face < 3; face++) {
+    tft.setTextSize(1);
+    tft.setFont(faces[face]);
+    tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+    if ((int)w <= boxW - 4) break;
+  }
+  if (face > 2) face = 2;
+  tft.setTextSize(1);
+  tft.setFont(faces[face]);
+  tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  tft.setTextColor(color);
+  tft.setCursor(boxX + (boxW - (int)w) / 2 - x1, centerY - (int)h / 2 - y1);
+  tft.print(text);
+  tft.setFont();
+  return (int)w;
+}
+
 // Longer labels ("Exit Admin", "Motor Stock") don't fit BTN_*_W at a fixed
 // text size 2 — a size-2 char cell is 12px, so anything past 8-ish
 // characters runs past the button edge. fitTextSize() (below) picks the

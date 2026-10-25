@@ -37,7 +37,7 @@ void drawSelectHeader() {
 
   if (isQuickVend()) {
     tft.setTextSize(1);
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_TOP);
+    tft.setTextColor(COL_TEXT, COL_BG_TOP);
     rightText("Tap to select", headerRightX(), headerTextY(1));
     return;
   }
@@ -46,7 +46,7 @@ void drawSelectHeader() {
   char counter[12];
   snprintf(counter, sizeof(counter), "%d / %d", qty, maxCartQty);
   tft.setTextSize(2);
-  tft.setTextColor(qty >= maxCartQty ? COL_WARNING : COL_TEXT_DIM, COL_BG_TOP);
+  tft.setTextColor(qty >= maxCartQty ? COL_WARNING : COL_TEXT, COL_BG_TOP);
   rightText(counter, headerRightX(), headerTextY(2));
 }
 
@@ -63,7 +63,7 @@ void drawSelectScreen() {
 
   if (count == 0) {
     tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
     centerText("No products available", 110);
   } else {
     for (int k = 0; k < count; k++) {
@@ -125,6 +125,33 @@ const int PCARD_PAD = 6;
 const int PCARD_GAP = 3;
 const int PCARD_MAX_NAME_LINES = 2;
 
+// Height the status block under the price can need. A card tall enough for it
+// shows "Qty Avail:" with the figure on a second line, as large as the card
+// is wide enough for; shorter cards keep the one-line "Qty Avail: N".
+// Status text is regular-weight serif (FreeSerif): 12pt lines are ~24px apart,
+// 9pt ~18px. Cards under 60px tall are too short for either and keep the
+// small bitmap line.
+const int STATUS_LINE_H_12 = 24, STATUS_LINE_H_9 = 18;
+bool statusUsesSerif(int cardH) { return cardH >= 60; }
+int statusFaceFor(int cardH, int innerW) {
+  // 12pt only where the card is tall enough for two lines and wide enough
+  // for "Qty Avail:" at that size.
+  if (cardH >= 100) {
+    int16_t x1, y1; uint16_t w, h;
+    tft.setTextSize(1);
+    tft.setFont(&FreeSerif12pt7b);
+    tft.getTextBounds("Qty Avail:", 0, 0, &x1, &y1, &w, &h);
+    tft.setFont();
+    if ((int)w <= innerW - 4) return 1;
+  }
+  return 2;
+}
+int statusBlockH(int cardH, int innerW) {
+  if (!statusUsesSerif(cardH)) return 8;
+  int lineH = (statusFaceFor(cardH, innerW) == 1) ? STATUS_LINE_H_12 : STATUS_LINE_H_9;
+  return (cardH >= 100) ? 2 * lineH : lineH;
+}
+
 // Largest name size at which EVERY enabled product wraps to at most two
 // lines and still leaves room for the price and status lines under it.
 // Uniform by construction — the shortest name on the screen doesn't get to
@@ -135,7 +162,7 @@ int productNameSize(int nameBoxW, int cardH, int priceSize) {
   int maxSize = (nameBoxW >= 240) ? 3 : 2;
   // What is left for the name once the price line, the status line, the gaps
   // between them and 2px of breathing room top and bottom are taken out.
-  int avail = cardH - 4 - (PCARD_GAP + 8 * priceSize) - (PCARD_GAP + 8);
+  int avail = cardH - 4 - (PCARD_GAP + 8 * priceSize) - (PCARD_GAP + statusBlockH(cardH, nameBoxW));
 
   for (int sz = maxSize; sz > 1; sz--) {
     bool fits = true;
@@ -164,7 +191,7 @@ int productNameSize(int nameBoxW, int cardH, int priceSize) {
 const GFXfont* productNameFont(int nameBoxW, int cardH, int priceSize, int &outLines, int &outBitmapSize) {
   int idx[MAX_PRODUCTS];
   int count = getEnabledProducts(idx);
-  int avail = cardH - 4 - (PCARD_GAP + 8 * priceSize) - (PCARD_GAP + 8);
+  int avail = cardH - 4 - (PCARD_GAP + 8 * priceSize) - (PCARD_GAP + statusBlockH(cardH, nameBoxW));
 
   const GFXfont* candidates[2] = { &FreeSerifBold12pt7b, &FreeSerifBold9pt7b };
   for (int c = 0; c < 2; c++) {
@@ -194,9 +221,12 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   // Two different reasons a card can be at its limit, and they need different
   // words: the whole cart is full, or this product has no more stock behind
   // what is already in the cart.
+  // A card already in the cart never changes its text — selection is shown by
+  // the highlight alone. The limit warning only applies to cards that cannot
+  // be added.
   bool allInCart = (!outOfStock && cartQty[i] >= totalStock);
   bool cartFull  = (cartTotalQty() >= maxCartQty);
-  bool atLimit   = (!outOfStock && (allInCart || cartFull));
+  bool atLimit   = (!outOfStock && !inCart && (allInCart || cartFull));
 
   uint16_t bg = outOfStock ? COL_BG_TOP : COL_CARD;
   uint16_t border = atLimit ? COL_WARNING : (inCart ? COL_ACCENT : COL_CARD_BRD);
@@ -208,6 +238,7 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   tft.fillRoundRect(x, y, w, h, 10, bg);
   tft.drawRoundRect(x, y, w, h, 10, border);
   if (inCart || atLimit) tft.drawRoundRect(x + 1, y + 1, w - 2, h - 2, 9, border);
+  if (inCart) tft.drawRoundRect(x + 2, y + 2, w - 4, h - 4, 8, border);
 
   int innerX = x + PCARD_PAD;
   int innerW = w - 2 * PCARD_PAD;
@@ -220,23 +251,38 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   bool showPrice = (!hideProductPrices && !outOfStock);
   int priceSize = fitTextSize(priceBuf, innerW, (h >= 60) ? 2 : 1);
 
-  // One line saying whatever matters most about this card right now. It
-  // replaces the old "Qty Avail" caption + figure pair, which spent two
-  // lines and a word on something "19ml left" says in one.
-  char statusBuf[28];
+  // What the status block says. Stock states are one bold line; the normal
+  // state is "Qty Avail:" over the figure when the card is tall enough, and
+  // the one-line "Qty Avail: N" otherwise.
+  char statusLine[2][28];
+  statusLine[0][0] = statusLine[1][0] = '\0';
+  int statusLines = 1;
   uint16_t statusColor;
+  bool roomForTwo = (h >= 100);
   if (outOfStock) {
-    snprintf(statusBuf, sizeof(statusBuf), "OUT OF STOCK");
+    snprintf(statusLine[0], sizeof(statusLine[0]), "OUT OF STOCK");
     statusColor = COL_DANGER;
   } else if (atLimit) {
-    snprintf(statusBuf, sizeof(statusBuf), "%s", allInCart ? "ALL IN CART" : "CART FULL");
+    snprintf(statusLine[0], sizeof(statusLine[0]), "%s", allInCart ? "ALL IN CART" : "CART FULL");
     statusColor = COL_WARNING;
-  } else if (inCart) {
-    snprintf(statusBuf, sizeof(statusBuf), "x%d - Qty Avail: %d%s", cartQty[i], totalStock, CFG_STOCK_UNIT);
-    statusColor = COL_ACCENT;
   } else {
-    snprintf(statusBuf, sizeof(statusBuf), "Qty Avail: %d%s", totalStock, CFG_STOCK_UNIT);
     statusColor = COL_SUCCESS;
+    if (roomForTwo) {
+      statusLines = 2;
+      snprintf(statusLine[0], sizeof(statusLine[0]), "Qty Avail:");
+      snprintf(statusLine[1], sizeof(statusLine[1]), "%d%s", totalStock, CFG_STOCK_UNIT);
+    } else {
+      snprintf(statusLine[0], sizeof(statusLine[0]), "Qty Avail: %d%s", totalStock, CFG_STOCK_UNIT);
+    }
+  }
+  bool serifStatus = statusUsesSerif(h);
+  int statusFace = statusFaceFor(h, innerW);
+  int statusLineH = (statusFace == 1) ? STATUS_LINE_H_12 : STATUS_LINE_H_9;
+  int statusH;
+  if (serifStatus) {
+    statusH = statusLines * statusLineH;
+  } else {
+    statusH = 8;
   }
 
   int nameLines = 0, bitmapSize = 1;
@@ -251,10 +297,10 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   // never needs this clamp.
   if (!nameFont && priceSize > bitmapSize) priceSize = bitmapSize;
 
-  int blockH = nameH + (showPrice ? PCARD_GAP + 8 * priceSize : 0) + PCARD_GAP + 8;
+  int blockH = nameH + (showPrice ? PCARD_GAP + 8 * priceSize : 0) + PCARD_GAP + statusH;
   int cursorY = y + (h - blockH) / 2;
 
-  tft.setTextColor(outOfStock ? COL_TEXT_DIM : COL_TEXT, bg);
+  tft.setTextColor(outOfStock ? COL_TEXT : COL_TEXT, bg);
   if (nameFont) {
     wrapFontInBox(nameFont, products[i].name, innerX, innerW, cursorY, true);
   } else {
@@ -272,9 +318,17 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   }
 
   cursorY += PCARD_GAP;
-  tft.setTextSize(1);
-  tft.setTextColor(statusColor, bg);
-  centerTextInBox(statusBuf, cursorY, innerX, innerW);
+  for (int l = 0; l < statusLines; l++) {
+    if (serifStatus) {
+      drawSerifRegularLine(statusLine[l], innerX, innerW, cursorY + statusLineH / 2, statusColor, statusFace);
+      cursorY += statusLineH;
+    } else {
+      tft.setTextSize(1);
+      tft.setTextColor(statusColor, bg);
+      centerTextInBox(statusLine[l], cursorY, innerX, innerW);
+      cursorY += 10;
+    }
+  }
 }
 
 // Refused tap: pulse the card red, and say why up in the header. Silence was
@@ -369,8 +423,10 @@ void onSelectTouched(int sx, int sy) {
       if (totalStock <= 0) {
         rejectCardTap(i, x, y, w, h, "Out of stock");
       } else if (!isQuickVend() && cartQty[i] > 0) {
-        // Already selected. Quantity is changed on the Your Cart screen only.
-        rejectCardTap(i, x, y, w, h, "Edit qty in Cart");
+        // Tapping a selected card un-selects it. Quantities beyond one are
+        // changed on the Your Cart screen only.
+        cartQty[i] = 0;
+        drawSelectScreen();
       } else if (cartQty[i] >= totalStock) {
         snprintf(why, sizeof(why), "Only %d left", totalStock);
         rejectCardTap(i, x, y, w, h, why);

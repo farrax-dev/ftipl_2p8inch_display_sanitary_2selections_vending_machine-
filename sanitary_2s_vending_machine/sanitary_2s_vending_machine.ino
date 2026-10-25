@@ -46,6 +46,8 @@
 #include <Fonts/FreeSerifBold9pt7b.h>   // header fallback — Core_08_UIHelpers.ino
 #include <Fonts/FreeSerifBold12pt7b.h>  // screen headers — Core_08_UIHelpers.ino's drawScreenTitle()
 #include <Fonts/FreeSerifBold18pt7b.h>  // Welcome screen's big title — Screen_01_Welcome.ino
+#include <Fonts/FreeSerif9pt7b.h>       // regular-weight serif — Qty Avail on the product cards (Screen_02_Select.ino)
+#include <Fonts/FreeSerif12pt7b.h>      // regular-weight serif — Qty Avail on the product cards
 #include <Adafruit_ILI9341.h>
 #include <XPT2046_Touchscreen.h>
 #include <Preferences.h>
@@ -153,10 +155,11 @@ void getSelectCardRect(int k, int count, int &x, int &y, int &w, int &h);
 void color565toRGB(uint16_t color, uint8_t &r, uint8_t &g, uint8_t &b);
 // Same reason as the rest of this block — GFXfont isn't fully declared yet at
 // the point Arduino's generator inserts its own attempt, which breaks on
-// these three (Core_08_UIHelpers.ino, Screen_02_Select.ino).
+// these four (Core_08_UIHelpers.ino, Screen_02_Select.ino, Screen_03_CartReview.ino).
 int wrapFontInBox(const GFXfont* font, const char* text, int boxX, int boxW, int topY, bool draw);
 int wrapFontHeight(int lines, const GFXfont* font);
 const GFXfont* productNameFont(int nameBoxW, int cardH, int priceSize, int &outLines, int &outBitmapSize);
+const GFXfont* cartNameFont(int textW, int rowH);
 bool rtcReadTime(struct tm &out);
 bool rtcWriteTime(const struct tm &t);
 String computePhonePeChecksum(const String &base64Body, const String &endpointPath);

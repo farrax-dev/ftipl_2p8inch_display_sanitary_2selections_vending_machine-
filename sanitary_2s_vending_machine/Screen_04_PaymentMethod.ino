@@ -62,11 +62,27 @@ void drawPaymentMethodScreen() {
   int count = getEnabledPaymentMethods(idx);
 
   if (count == 0) {
-    tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-    centerText("No payment methods", 100);
-    centerText("available", 130);
+    drawSerifLine("No payment methods", 0, tft.width(), 100, COL_TEXT, 1);
+    drawSerifLine("available", 0, tft.width(), 135, COL_TEXT, 1);
   } else {
+    // Largest bold face at which every method name fits one line of a card.
+    int cx, cy, cw, ch;
+    getSelectCardRect(0, count, cx, cy, cw, ch);
+    const GFXfont* nameFont = &FreeSerifBold9pt7b;
+    const GFXfont* faces[2] = { &FreeSerifBold18pt7b, &FreeSerifBold12pt7b };
+    for (int f = 0; f < 2; f++) {
+      tft.setTextSize(1);
+      tft.setFont(faces[f]);
+      bool fits = true;
+      for (int k = 0; k < count && fits; k++) {
+        int16_t bx, by; uint16_t bw, bh;
+        tft.getTextBounds(PAYMENT_NAMES[idx[k]], 0, 0, &bx, &by, &bw, &bh);
+        if ((int)bw > cw - 12) fits = false;
+      }
+      tft.setFont();
+      if (fits) { nameFont = faces[f]; break; }
+    }
+
     for (int k = 0; k < count; k++) {
       int x, y, w, h;
       getSelectCardRect(k, count, x, y, w, h);
@@ -76,35 +92,38 @@ void drawPaymentMethodScreen() {
       tft.fillRoundRect(x, y, w, h, 10, COL_CARD);
       tft.drawRoundRect(x, y, w, h, 10, COL_CARD_BRD);
 
-      // Name against the card's top edge and description against its bottom
-      // is what this did before, and on a card 145px tall that left the whole
-      // middle empty with the two lines stranded at either end. Both are
-      // measured first now and drawn as one block centred in the card.
+      // Heading in the bold serif face (same family as the screen titles and
+      // the Welcome card), measured with the description and drawn as one
+      // block centred in the card: bold accent heading, a short rule, then
+      // the description in the dark text colour.
       int innerX = x + 6, innerW = w - 12;
-      int nameSize = (w >= 250) ? 3 : 2;
 
-      int nameLines = wrapTextInBox(PAYMENT_NAMES[p], innerX, innerW, 0, nameSize, false);
-      int descLines = wrapTextInBox(PM_DESCRIPTIONS[p], innerX, innerW, 0, 2, false);
-      int nameH = wrapTextHeight(nameLines, nameSize);
-      int descH = wrapTextHeight(descLines, 2);
+      tft.setTextSize(1);
+      int16_t bx, by; uint16_t bw, bh;
+      tft.setFont(nameFont);
+      tft.getTextBounds(PAYMENT_NAMES[p], 0, 0, &bx, &by, &bw, &bh);
+      tft.setFont();
+      int nameH = nameFont->yAdvance;
+
+      const GFXfont* descFont = &FreeSerifBold9pt7b;
+      int descLines = wrapFontInBox(descFont, PM_DESCRIPTIONS[p], innerX, innerW, 0, false);
+      int descH = wrapFontHeight(descLines, descFont);
 
       const int PM_RULE_GAP = 9;
       int blockY = y + (h - (nameH + PM_RULE_GAP * 2 + 1 + descH)) / 2;
 
-      tft.setTextColor(COL_TEXT, COL_CARD);
-      tft.setTextSize(nameSize);
-      wrapTextInBox(PAYMENT_NAMES[p], innerX, innerW, blockY, nameSize, true);
+      tft.setFont(nameFont);
+      tft.setTextColor(COL_ACCENT, COL_CARD);
+      tft.setCursor(innerX + (innerW - (int)bw) / 2 - bx, blockY - by);
+      tft.print(PAYMENT_NAMES[p]);
+      tft.setFont();
 
-      // Short accent hairline between the two halves: the name says what the
-      // method is, the line under it says how it works, and at this size a gap
-      // on its own doesn't read as a division between the two.
       int ruleW = innerW / 2;
-      tft.fillRect(innerX + (innerW - ruleW) / 2, blockY + nameH + PM_RULE_GAP, ruleW, 1, COL_ACCENT);
+      tft.fillRect(innerX + (innerW - ruleW) / 2, blockY + nameH + PM_RULE_GAP, ruleW, 2, COL_CARD_BRD);
 
-      tft.setTextColor(COL_TEXT_DIM, COL_CARD);
-      tft.setTextSize(2);
-      wrapTextInBox(PM_DESCRIPTIONS[p], innerX, innerW,
-                    blockY + nameH + PM_RULE_GAP * 2 + 1, 2, true);
+      tft.setTextColor(COL_TEXT, COL_CARD);
+      wrapFontInBox(descFont, PM_DESCRIPTIONS[p], innerX, innerW,
+                    blockY + nameH + PM_RULE_GAP * 2 + 1, true);
     }
   }
 

@@ -92,7 +92,7 @@ void drawDispensingScreen() {
   tft.setTextColor(COL_ACCENT, COL_BG_BOTTOM);
   centerText("Dispensing", 90);
   tft.setTextSize(2);
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+  tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
   centerText("Please wait...", 130);
 }
 
@@ -170,14 +170,14 @@ void runFreeVendCheckout() {
     tft.setTextColor(COL_SUCCESS, COL_BG_BOTTOM);
     centerText("Enjoy!", 80);
     tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
     centerText("Please collect your item", 130);
   } else {
     tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
     centerText("Dispense", 70);
     centerText("Failed", 100);
     tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
     centerText("Please contact support", 140);
   }
   delay(2000);

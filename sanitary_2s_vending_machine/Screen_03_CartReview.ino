@@ -47,7 +47,7 @@ void drawCartReviewScreen() {
 
   if (count == 0) {
     tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
+    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
     centerText("Cart is empty", 110);
   } else {
     int rowH = cartRowH(count);
@@ -60,24 +60,28 @@ void drawCartReviewScreen() {
   drawProceedButton(freeVendMode ? "Get Free >" : "Pay >");
 }
 
-// One name size for every row rather than per row, and never a size that
-// clips a name that a smaller one would have shown whole. Size 3 fits only
-// 8 characters in the text column, so a one-item cart was rendering
-// "Regular+Wings" as "Regular+" on a row 149px tall — the largest type on
-// the screen doing the worst job of its one duty.
-int cartNameSize(int textW, int rowH) {
-  if (rowH < 20) return 1;
-  if (rowH >= 60) {
+// Serif face for item names, the same family as the Welcome screen's
+// "SANITARY NAPKIN" title (FreeSerifBold). One face for every row: the
+// largest (12pt, else 9pt) at which every name in the cart fits the text
+// column on one line and the row is tall enough. nullptr means neither fits
+// and the bitmap font is used instead.
+const GFXfont* cartNameFont(int textW, int rowH) {
+  const GFXfont* candidates[2] = { &FreeSerifBold12pt7b, &FreeSerifBold9pt7b };
+  for (int c = 0; c < 2; c++) {
+    if (candidates[c]->yAdvance > rowH - 4) continue;
+    tft.setTextSize(1);
+    tft.setFont(candidates[c]);
     bool fits = true;
     for (int i = 0; i < MAX_PRODUCTS && fits; i++) {
-      if (cartQty[i] > 0 && (int)strlen(products[i].name) * 18 > textW) fits = false;
+      if (cartQty[i] <= 0) continue;
+      int16_t x1, y1; uint16_t w, h;
+      tft.getTextBounds(products[i].name, 0, 0, &x1, &y1, &w, &h);
+      if ((int)w > textW) fits = false;
     }
-    if (fits) return 3;
+    tft.setFont();
+    if (fits) return candidates[c];
   }
-  // Floor of 2. A name too long for size 2 is clipped rather than shrunk:
-  // dropping every row to size 1 to accommodate one long name costs more
-  // than clipping the one name does.
-  return 2;
+  return nullptr;
 }
 
 void drawCartRow(int i, int x, int y, int w, int h) {
@@ -107,13 +111,10 @@ void drawCartRow(int i, int x, int y, int w, int h) {
   // the running total up in the header — the stepper beside it is already
   // showing the quantity, and "Rs15 x1 = Rs15" was restating that in the
   // least legible type on the screen.
-  bool twoLine = (h >= 44) && !hideProductPrices;
-
-  int nameSize = cartNameSize(textW, h);
-  int nameMaxChars = textW / (6 * nameSize);
-  if (nameMaxChars < 4) nameMaxChars = 4;
-  char nameBuf[24];
-  snprintf(nameBuf, sizeof(nameBuf), "%.*s", nameMaxChars, products[i].name);
+  const GFXfont* nameFont = cartNameFont(textW, h);
+  int nameSize = (h < 20) ? 1 : 2;   // bitmap fallback only
+  int nameH = nameFont ? nameFont->yAdvance : 8 * nameSize;
+  bool twoLine = (nameH + 6 + 8 <= h - 4) && !hideProductPrices;
 
   const int ROW_LINE_GAP = 6;
   int moneySize = 0;
@@ -127,21 +128,35 @@ void drawCartRow(int i, int x, int y, int w, int h) {
     } else {
       snprintf(moneyBuf, sizeof(moneyBuf), "Rs. %d", lineTotal);
     }
-    moneySize = fitTextSize(moneyBuf, textW, (h >= 60) ? 2 : 1);
+    int maxMoney = (nameH + ROW_LINE_GAP + 16 <= h - 4) ? 2 : 1;
+    moneySize = fitTextSize(moneyBuf, textW, maxMoney);
   }
 
-  int blockH = 8 * nameSize + (twoLine ? ROW_LINE_GAP + 8 * moneySize : 0);
+  int blockH = nameH + (twoLine ? ROW_LINE_GAP + 8 * moneySize : 0);
   int blockY = y + (h - blockH) / 2;
 
-  tft.setTextSize(nameSize);
   tft.setTextColor(COL_TEXT, COL_CARD);
-  tft.setCursor(textX, blockY);
-  tft.print(nameBuf);
+  if (nameFont) {
+    tft.setTextSize(1);
+    tft.setFont(nameFont);
+    int16_t x1, y1; uint16_t w, hh;
+    tft.getTextBounds(products[i].name, 0, 0, &x1, &y1, &w, &hh);
+    tft.setCursor(textX - x1, blockY - y1);
+    tft.print(products[i].name);
+    tft.setFont();
+  } else {
+    int maxChars = max(4, textW / (6 * nameSize));
+    char nameBuf[24];
+    snprintf(nameBuf, sizeof(nameBuf), "%.*s", maxChars, products[i].name);
+    tft.setTextSize(nameSize);
+    tft.setCursor(textX, blockY);
+    tft.print(nameBuf);
+  }
 
   if (twoLine) {
     tft.setTextSize(moneySize);
     tft.setTextColor(COL_ACCENT, COL_CARD);
-    tft.setCursor(textX, blockY + 8 * nameSize + ROW_LINE_GAP);
+    tft.setCursor(textX, blockY + nameH + ROW_LINE_GAP);
     tft.print(moneyBuf);
   }
 
