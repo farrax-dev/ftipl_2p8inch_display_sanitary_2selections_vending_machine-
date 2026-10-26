@@ -78,7 +78,7 @@ void drawReportTile(int col, int row, const char* label, const char* value, bool
   auiPut(value, AL_LEFT, x + 10, valueW, y + 26, accent ? COL_ACCENT : COL_TEXT, FACE_MD);
 
   if (mailChip) {
-    auiButton(x + RPT_TILE_W - 8 - RPT_MAIL_W, y + 17, RPT_MAIL_W, RPT_MAIL_H, "Mail", ABTN_PRIMARY, FACE_SM);
+    auiButton(x + RPT_TILE_W - 8 - RPT_MAIL_W, y + 17, RPT_MAIL_W, RPT_MAIL_H, "Mail", ABTN_PRIMARY, FACE_XS);
   }
 }
 
