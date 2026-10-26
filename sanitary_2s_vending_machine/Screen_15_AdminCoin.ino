@@ -20,7 +20,9 @@ void drawAdminCoinScreen() {
     tft.setTextSize(2);
     tft.setTextColor(COL_TEXT, COL_CARD);
     char label[12];
-    snprintf(label, sizeof(label), "Rs. %d coin", COIN_DENOM_VALUES[d]);
+    // "Re. 1" for the singular rupee, "Rs. N" for the rest
+    if (COIN_DENOM_VALUES[d] == 1) snprintf(label, sizeof(label), "Re. 1 coin");
+    else snprintf(label, sizeof(label), "Rs. %d coin", COIN_DENOM_VALUES[d]);
     tft.setCursor(COIN_ROW_X + 10, y + 5);
     tft.print(label);
 

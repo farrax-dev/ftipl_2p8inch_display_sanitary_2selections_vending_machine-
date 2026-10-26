@@ -121,14 +121,18 @@ void drawCartRow(int i, int x, int y, int w, int h) {
   char moneyBuf[32];
   if (twoLine) {
     int lineTotal = products[i].price * cartQty[i];
-    // The unit price only earns its place once it stops being the same
-    // number as the line total.
+    // Multi-unit lines read "Rs. 30 (2x15)" — qty x unit price — so the
+    // price setting is visible at a glance; a single unit is just "Rs. 15".
     if (cartQty[i] > 1) {
-      snprintf(moneyBuf, sizeof(moneyBuf), "Rs. %d  (Rs. %d each)", lineTotal, products[i].price);
+      snprintf(moneyBuf, sizeof(moneyBuf), "Rs. %d (%dx%d)", lineTotal, cartQty[i], products[i].price);
     } else {
       snprintf(moneyBuf, sizeof(moneyBuf), "Rs. %d", lineTotal);
     }
-    int maxMoney = (nameH + ROW_LINE_GAP + 16 <= h - 4) ? 2 : 1;
+    // Shorter string than before, so it can afford a bigger size: 3 when the
+    // row is tall enough, else 2, else 1. fitTextSize() steps it down further
+    // if the text still would not fit the column.
+    int maxMoney = (nameH + ROW_LINE_GAP + 24 <= h - 4) ? 3
+                 : (nameH + ROW_LINE_GAP + 16 <= h - 4) ? 2 : 1;
     moneySize = fitTextSize(moneyBuf, textW, maxMoney);
   }
 
