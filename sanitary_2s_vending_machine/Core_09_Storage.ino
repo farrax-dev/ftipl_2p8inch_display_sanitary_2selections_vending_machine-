@@ -527,6 +527,14 @@ void loadPersistedProductData() {
 
   freeVendMode = prefs.getInt("freevend", CFG_FREE_VEND_MODE ? 1 : 0) != 0;
   hideProductPrices = prefs.getInt("hideprices", 0) != 0;
+  // A machine that charges money has no business hiding the amount. The
+  // admin toggle only exists for free-vend / RFID-only machines, so a stale
+  // "hide" left in NVS from one of those configurations must not blank the
+  // Select and Cart screens once Cash or UPI is back on.
+  if (hideProductPrices && !freeVendMode && !isRFIDOnlyMachine()) {
+    hideProductPrices = false;
+    saveHideProductPrices();
+  }
   clock24Hour = prefs.getInt("clock24h", 0) != 0;
 
   // Force-ANDed with the compile-time switch, the same way paymentEnabled[]
