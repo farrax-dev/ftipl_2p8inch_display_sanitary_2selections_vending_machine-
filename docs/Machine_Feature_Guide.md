@@ -205,13 +205,13 @@ The hub every admin task starts from: six large tiles, each with a live one-line
 
 ### 3.12 Reports (5 tabs)
 A tab strip across the top jumps straight to any page:
-1. **Sales:** lifetime transaction count, lifetime units sold, lifetime revenue, current total stock on hand, and today's revenue and units/transactions. Tapping the "Today" tile (it carries a Mail chip) sends today's report by email on the spot.
+1. **Sales:** lifetime transaction count, lifetime units sold, lifetime revenue, current total stock on hand, and today's revenue and units/transactions.
 2. **Items:** a proper table of units sold / revenue / stock remaining per product; row height adapts to how many products there are. A disabled product with real sales history still shows (that history is real money); a disabled product with zero sales quietly drops off the list.
-3. **Auto:** up to two nightly automatic report send times (tap to type HH:MM), low-stock alert switch, and its trigger threshold as a `[-] n [+]` stepper (1 through 5; a motor at or below it is also drawn red on the Stock screen).
+3. **Auto:** two independent daily report send times ("Report time 1" / "Report time 2" — times only; the report always goes to the single Send-to address on the Email tab). Tapping one opens a picker with an on/off switch and Hour / Minute `+`/`-` columns (minutes in steps of 5, AM/PM chip in 12-hour mode); nothing is stored until Save. Also a low-stock alert switch, and its trigger threshold as a `[-] n [+]` stepper (1 through 5; a motor at or below it is also drawn red on the Stock screen).
 4. **Email:** Gmail sender address, app password (shown only as a character count, never the value, until explicitly revealed), report recipient address, and machine name (shown here because it appears in every email subject).
 5. **Data:** how many days of history are stored (out of the 60-day rolling window), which link reports will go out on, and "Clear sales data", which requires two deliberate taps (arms red "Tap again to erase" / Confirm, then executes) since it's unrecoverable.
 - A status line above the bottom bar shows how the last send — manual or automatic — went.
-- A global "Send Now" button sends the complete 60-day report with a full transaction spreadsheet attached; it's greyed out if email isn't fully configured, and tapping it then jumps to the Email tab to show what's missing, rather than letting an admin wait and then fail.
+- Two send buttons in the bottom bar: **Send Today** (today's report plus today's transactions spreadsheet) and **Send 60 Days** (the complete 60-day report with a full transaction spreadsheet). Both are greyed out if email isn't fully configured, and tapping it then jumps to the Email tab to show what's missing, rather than letting an admin wait and then fail.
 
 ### 3.13 RFID Card Management
 - Paginated list of every registered card (three per page), showing its name (or raw ID if unnamed), a usage/limit badge that only appears at all for a card that actually has a limit set (left blank for the common unlimited case, rather than cluttering every row with "0/0"), and a one-tap delete (no confirmation step — deletion is treated as low-stakes since a card can simply be re-registered).
@@ -292,7 +292,7 @@ If the admin turns on **Free Vend** (§3.6), none of the rows above are ever sho
 - Reports are sent over WiFi if available, automatically falling back to the 4G modem if not, using the same email-sending logic either way — nothing about the report content or format changes depending on which link carried it.
 - Sending automatically retries a few times on transient network trouble before giving up, with a growing pause between attempts (the assumption being that most cellular failures are the link dropping mid-handshake, not the mail server rejecting anything, so a short wait and another try recovers most of them). If a report with an attachment keeps failing after every retry, it makes one final attempt without the attachment — the summary figures matter more than the raw spreadsheet on a weak link — rather than not reporting at all.
 - A very large transaction spreadsheet is capped at a sensible size before attaching, since past a certain point an attached CSV stops being something a person actually reads and just becomes dead weight on a slow connection; the figures in the email body itself are unaffected either way.
-- The admin's "Send Now" button is disabled outright if email isn't fully configured yet, rather than letting someone wait for a send that can't succeed.
+- The admin's Send Today / Send 60 Days buttons are disabled outright if email isn't fully configured yet, rather than letting someone wait for a send that can't succeed.
 
 ---
 

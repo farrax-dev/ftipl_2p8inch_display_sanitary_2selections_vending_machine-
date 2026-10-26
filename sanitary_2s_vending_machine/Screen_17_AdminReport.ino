@@ -7,11 +7,11 @@
 //
 //   Sales - transactions, units, revenue, stock, today's figures (tile grid)
 //   Items - a Sold / Rs / Left table, one row per product
-//   Auto  - the two nightly e-mail times and the low-stock alert
+//   Auto  - the two daily report send times and the low-stock alert
 //   Email - Gmail credentials, recipient and machine name
 //   Data  - how much history is stored, link in use, and the reset
 //
-// The bottom bar is Back and Send Now. Send Now always sends the full 60-day
+// The bottom bar is Back, Send Today and Send 60 Days. Send 60 Days sends the full 60-day
 // report with the transaction CSV attached; the automatic mails are built and
 // sent by Core_16_ReportSchedule.ino without anyone standing here. The status
 // line above the bar shows how the last send, manual or automatic, went.
@@ -21,6 +21,16 @@
 const int RPT_PAGE_COUNT = 5;
 const int RPT_PAGE_SALES = 0, RPT_PAGE_ITEMS = 1, RPT_PAGE_AUTO = 2,
           RPT_PAGE_EMAIL = 3, RPT_PAGE_DATA = 4;
+
+// ---------- Bottom bar: Back | Send Today | Send 60 Days ----------
+// Custom widths (Back is short) so both send labels fit without shrinking.
+const int RPT_BAR_BACK_X = 16,  RPT_BAR_BACK_W = 56;
+const int RPT_BAR_TODAY_X = 80, RPT_BAR_TODAY_W = 108;
+const int RPT_BAR_FULL_X = 196, RPT_BAR_FULL_W = 108;
+
+bool rptBarHit(int sx, int sy, int x, int w) {
+  return pointInRect(sx, sy, x - 2, ABAR_Y - 3, w + 4, ABAR_H + 12);
+}
 
 // ---------- Tabs ----------
 const int RPT_TAB_Y = 35, RPT_TAB_H = 22, RPT_TAB_W = 56, RPT_TAB_PITCH = 58;
@@ -67,47 +77,38 @@ const int RPT_TILE_H = 36;
 int rptTileX(int col) { return RPT_ROW_X + col * (RPT_TILE_W + RPT_TILE_GAP); }
 int rptTileY(int row) { return RPT_TILE_Y0 + row * (RPT_TILE_H + RPT_TILE_ROW_GAP); }
 
-const int RPT_MAIL_W = 46, RPT_MAIL_H = 22;
-
-void drawReportTile(int col, int row, const char* label, const char* value, bool accent, bool mailChip) {
+void drawReportTile(int col, int row, const char* label, const char* value, bool accent) {
   int x = rptTileX(col), y = rptTileY(row);
   drawCard(x, y, RPT_TILE_W, RPT_TILE_H, 6);
 
   auiPut(label, AL_LEFT, x + 10, RPT_TILE_W - 20, y + 10, COL_TEXT_DIM, FACE_XS);
-  int valueW = RPT_TILE_W - 20 - (mailChip ? RPT_MAIL_W + 6 : 0);
-  auiPut(value, AL_LEFT, x + 10, valueW, y + 26, accent ? COL_ACCENT : COL_TEXT, FACE_MD);
-
-  if (mailChip) {
-    auiButton(x + RPT_TILE_W - 8 - RPT_MAIL_W, y + 17, RPT_MAIL_W, RPT_MAIL_H, "Mail", ABTN_PRIMARY, FACE_XS);
-  }
+  auiPut(value, AL_LEFT, x + 10, RPT_TILE_W - 20, y + 26, accent ? COL_ACCENT : COL_TEXT, FACE_MD);
 }
 
-// The headline figures. The "Today" tile (col 0, row 2) doubles as a tap
-// target — see handleAdminReportScreen() — sending the exact numbers shown:
-// today's figures are the same ones the nightly mail carries, so the operator
-// can sanity-check them before they go out.
+// The headline figures. Sending is done from the bottom bar (Send Today /
+// Send 60 Days), not from these tiles.
 void drawReportSalesPage() {
   char buf[24];
 
   snprintf(buf, sizeof(buf), "%ld", lifetimeTxnCount);
-  drawReportTile(0, 0, "Transactions", buf, false, false);
+  drawReportTile(0, 0, "Transactions", buf, false);
 
   snprintf(buf, sizeof(buf), "%ld", totalUnitsSoldAll());
-  drawReportTile(1, 0, "Products sold", buf, false, false);
+  drawReportTile(1, 0, "Products sold", buf, false);
 
   snprintf(buf, sizeof(buf), "%ld", lifetimeRevenueTotal);
-  drawReportTile(0, 1, "Total sales (Rs.)", buf, true, false);
+  drawReportTile(0, 1, "Total sales (Rs.)", buf, true);
 
   snprintf(buf, sizeof(buf), "%d", totalStockOnHand());
-  drawReportTile(1, 1, "Units in stock", buf, false, false);
+  drawReportTile(1, 1, "Units in stock", buf, false);
 
   int slot = findDailySlot(todayDateNum());
   snprintf(buf, sizeof(buf), "%ld", dayRevenue(slot));
-  drawReportTile(0, 2, "Today (Rs.)", buf, true, true);
+  drawReportTile(0, 2, "Today (Rs.)", buf, true);
 
   char today[20];
   snprintf(today, sizeof(today), "%d / %d", dayUnits(slot), slot >= 0 ? dailyHistory[slot].txns : 0);
-  drawReportTile(1, 2, "Today units/txns", today, false, false);
+  drawReportTile(1, 2, "Today units/txns", today, false);
 }
 
 // ---------- Items tab: a real table ----------
@@ -178,11 +179,157 @@ void drawReportProductPage() {
 }
 
 // ---------- Auto tab ----------
+// Two independent daily send times (the report always goes to the single
+// "Send to" address on the Email tab — these are times, not recipients). Each
+// row shows its time, or Off, and opens the time picker below.
+char* reportTimePtr(int slot) { return (slot == 0) ? nightlyTime1 : nightlyTime2; }
+
+// "14:05" -> "2:05 PM" (or unchanged in 24-hour mode); blank/invalid -> "Off".
+void formatReportTime(const char* hhmm, char* out, size_t n) {
+  int m = parseScheduleTime(hhmm);
+  if (m < 0) { snprintf(out, n, "Off"); return; }
+  int h = m / 60, mi = m % 60;
+  if (clock24Hour) { snprintf(out, n, "%02d:%02d", h, mi); return; }
+  int h12 = (h % 12 == 0) ? 12 : h % 12;
+  snprintf(out, n, "%d:%02d %s", h12, mi, h >= 12 ? "PM" : "AM");
+}
+
+// ---------- Time picker (modal over the Reports screen) ----------
+// rptTimeSlot is the slot being edited (0 or 1), or -1 when the tabs show.
+// Nothing is stored until Save. Minutes move in steps of 5 and both fields
+// wrap around, so any time is a few taps away and nothing can be typed wrong.
+int  rptTimeSlot = -1;
+bool rptTimeOn = false;
+int  rptTimeH = 22, rptTimeM = 0;
+
+const int RTP_SW_Y = 40, RTP_SW_H = 32;
+const int RTP_LABEL_CY = 86;
+const int RTP_PLUS_Y = 94,  RTP_PLUS_H = 30;
+const int RTP_VAL_Y  = 127, RTP_VAL_H  = 28;
+const int RTP_MINUS_Y = 158, RTP_MINUS_H = 30;
+const int RTP_COL_W = 80, RTP_COLON_W = 24, RTP_AMPM_W = 56, RTP_AMPM_GAP = 14;
+
+int rtpTotalW() { return RTP_COL_W * 2 + RTP_COLON_W + (clock24Hour ? 0 : RTP_AMPM_GAP + RTP_AMPM_W); }
+int rtpHourX()  { return (320 - rtpTotalW()) / 2; }
+int rtpMinX()   { return rtpHourX() + RTP_COL_W + RTP_COLON_W; }
+int rtpAmpmX()  { return rtpMinX() + RTP_COL_W + RTP_AMPM_GAP; }
+
+void openReportTimePicker(int slot) {
+  int m = parseScheduleTime(reportTimePtr(slot));
+  rptTimeSlot = slot;
+  rptTimeOn = (m >= 0);
+  rptTimeH = (m >= 0) ? m / 60 : 22;
+  rptTimeM = (m >= 0) ? (m % 60) : 0;
+  drawAdminReportScreen();
+}
+
+void drawRtpButton(int x, int y, int h, bool plus) {
+  if (rptTimeOn) {
+    drawCardShadow(x, y, RTP_COL_W, h, 8);
+    tft.fillRoundRect(x, y, RTP_COL_W, h, 8, COL_ACCENT);
+  } else {
+    tft.fillRoundRect(x, y, RTP_COL_W, h, 8, COL_CARD);
+    tft.drawRoundRect(x, y, RTP_COL_W, h, 8, COL_CARD_BRD);
+  }
+  uint16_t g = rptTimeOn ? COL_BG_TOP : COL_TEXT_DIM;
+  int cx = x + RTP_COL_W / 2, cy = y + h / 2;
+  tft.fillRect(cx - 7, cy - 1, 15, 3, g);
+  if (plus) tft.fillRect(cx - 1, cy - 7, 3, 15, g);
+}
+
+void drawRtpColumn(int x, const char* label, const char* value) {
+  uint16_t col = rptTimeOn ? COL_TEXT : COL_TEXT_DIM;
+  auiPut(label, AL_CENTER, x, RTP_COL_W, RTP_LABEL_CY, col, FACE_SM);
+  drawRtpButton(x, RTP_PLUS_Y, RTP_PLUS_H, true);
+  tft.fillRoundRect(x, RTP_VAL_Y, RTP_COL_W, RTP_VAL_H, 6, COL_CARD);
+  tft.drawRoundRect(x, RTP_VAL_Y, RTP_COL_W, RTP_VAL_H, 6, COL_CARD_BRD);
+  auiPut(value, AL_CENTER, x + 2, RTP_COL_W - 4, RTP_VAL_Y + RTP_VAL_H / 2,
+         rptTimeOn ? COL_ACCENT : COL_TEXT_DIM, FACE_LG);
+  drawRtpButton(x, RTP_MINUS_Y, RTP_MINUS_H, false);
+}
+
+void drawReportTimePicker() {
+  drawGradientBackground();
+  char title[24];
+  snprintf(title, sizeof(title), "Daily Report %d", rptTimeSlot + 1);
+  drawScreenTitle(title);
+
+  auiRow(RPT_ROW_X, RTP_SW_Y, RPT_ROW_W, RTP_SW_H);
+  auiRowLabel(RPT_ROW_X + 12, RTP_SW_Y + RTP_SW_H / 2, 170, "Send this report");
+  auiOnOff(RPT_RIGHT, RTP_SW_Y + RTP_SW_H / 2, rptTimeOn);
+
+  int h = rptTimeH;
+  if (!clock24Hour) h = (h % 12 == 0) ? 12 : h % 12;
+  char hb[6], mb[6];
+  snprintf(hb, sizeof(hb), "%02d", h);
+  snprintf(mb, sizeof(mb), "%02d", rptTimeM);
+  drawRtpColumn(rtpHourX(), "Hour", hb);
+  drawRtpColumn(rtpMinX(), "Minute", mb);
+  auiPut(":", AL_CENTER, rtpHourX() + RTP_COL_W, RTP_COLON_W, RTP_VAL_Y + RTP_VAL_H / 2 - 2,
+         rptTimeOn ? COL_TEXT : COL_TEXT_DIM, FACE_LG);
+
+  if (!clock24Hour) {
+    auiButton(rtpAmpmX(), RTP_VAL_Y, RTP_AMPM_W, RTP_VAL_H, rptTimeH >= 12 ? "PM" : "AM",
+              rptTimeOn ? ABTN_SECONDARY : ABTN_OFF, FACE_SM);
+  }
+
+  auiBarButton(0, 2, "Cancel", ABTN_SECONDARY);
+  auiBarButton(1, 2, "Save", ABTN_PRIMARY);
+}
+
+void handleReportTimePicker(int sx, int sy) {
+  if (auiBarHit(sx, sy, 0, 2)) {
+    rptTimeSlot = -1;
+    drawAdminReportScreen();
+    return;
+  }
+  if (auiBarHit(sx, sy, 1, 2)) {
+    char* t = reportTimePtr(rptTimeSlot);
+    if (rptTimeOn) snprintf(t, 6, "%02d:%02d", rptTimeH, rptTimeM);
+    else           t[0] = '\0';
+    saveScheduleSettings();
+    rptTimeSlot = -1;
+    drawAdminReportScreen();
+    return;
+  }
+  if (pointInRect(sx, sy, RPT_ROW_X, RTP_SW_Y, RPT_ROW_W, RTP_SW_H)) {
+    rptTimeOn = !rptTimeOn;
+    drawReportTimePicker();
+    return;
+  }
+  if (!rptTimeOn) return;
+
+  if (!clock24Hour && pointInRect(sx, sy, rtpAmpmX(), RTP_VAL_Y, RTP_AMPM_W, RTP_VAL_H)) {
+    rptTimeH = (rptTimeH + 12) % 24;
+    drawReportTimePicker();
+    return;
+  }
+
+  for (int c = 0; c < 2; c++) {
+    int x = (c == 0) ? rtpHourX() : rtpMinX();
+    int dir = 0;
+    if (pointInRect(sx, sy, x, RTP_PLUS_Y - 4, RTP_COL_W, RTP_PLUS_H + 4)) dir = 1;
+    else if (pointInRect(sx, sy, x, RTP_MINUS_Y, RTP_COL_W, RTP_MINUS_H + 3)) dir = -1;
+    if (dir == 0) continue;
+    if (c == 0) {
+      rptTimeH = (rptTimeH + dir + 24) % 24;
+    } else {
+      // Snap to the 5-minute grid first so an old odd value (e.g. :03) lands
+      // on :05 / :00 rather than skipping.
+      int m = (dir > 0) ? (rptTimeM / 5 + 1) * 5 : ((rptTimeM + 4) / 5 - 1) * 5;
+      rptTimeM = (m + 60) % 60;
+    }
+    drawReportTimePicker();
+    return;
+  }
+}
+
 void drawReportSchedulePage() {
-  drawReportRow(0, "Nightly email 1",
-                strlen(nightlyTime1) > 0 ? nightlyTime1 : "Off", COL_ACCENT, true);
-  drawReportRow(1, "Nightly email 2",
-                strlen(nightlyTime2) > 0 ? nightlyTime2 : "Off", COL_ACCENT, true);
+  char tb[12];
+  formatReportTime(nightlyTime1, tb, sizeof(tb));
+  drawReportRow(0, "Report time 1", tb, strlen(nightlyTime1) > 0 ? COL_ACCENT : COL_TEXT_DIM, true);
+  formatReportTime(nightlyTime2, tb, sizeof(tb));
+  drawReportRow(1, "Report time 2", tb, strlen(nightlyTime2) > 0 ? COL_ACCENT : COL_TEXT_DIM, true);
 
   int cy = reportRowCY(2);
   auiRow(RPT_ROW_X, reportRowY(2), RPT_ROW_W, RPT_ROW_H);
@@ -244,6 +391,7 @@ void drawReportDataPage() {
 }
 
 void drawAdminReportScreen() {
+  if (rptTimeSlot >= 0) { drawReportTimePicker(); return; }
   drawGradientBackground();
   drawScreenTitle("Reports");
 
@@ -262,11 +410,13 @@ void drawAdminReportScreen() {
   snprintf(status, sizeof(status), "Last send: %s", reportLastStatus);
   auiPut(status, AL_CENTER, 12, 296, RPT_STATUS_CY, reportLastOk ? COL_SUCCESS : COL_TEXT, FACE_XS);
 
-  auiBarButton(0, 2, "Back", ABTN_SECONDARY);
+  auiButton(RPT_BAR_BACK_X, ABAR_Y, RPT_BAR_BACK_W, ABAR_H, "Back", ABTN_SECONDARY, FACE_MD);
   // Greyed out until there's somewhere to send to, rather than letting the
   // tap fail with an error after a long wait. Still tappable: it jumps to the
   // Email tab to show what's missing.
-  auiBarButton(1, 2, "Send Now", emailConfigured() ? ABTN_PRIMARY : ABTN_OFF);
+  int sendStyle = emailConfigured() ? ABTN_PRIMARY : ABTN_OFF;
+  auiButton(RPT_BAR_TODAY_X, ABAR_Y, RPT_BAR_TODAY_W, ABAR_H, "Send Today", sendStyle, FACE_XS);
+  auiButton(RPT_BAR_FULL_X, ABAR_Y, RPT_BAR_FULL_W, ABAR_H, "Send 60 Days", sendStyle, FACE_XS);
 }
 
 // Sending blocks for as long as the modem takes (up to ~90s with an
@@ -285,14 +435,29 @@ void handleAdminReportScreen() {
   int sx, sy;
   mapTouchToScreen(raw, sx, sy);
 
-  if (auiBarHit(sx, sy, 0, 2)) {
+  if (rptTimeSlot >= 0) { handleReportTimePicker(sx, sy); return; }
+
+  if (rptBarHit(sx, sy, RPT_BAR_BACK_X, RPT_BAR_BACK_W)) {
     reportResetArmed = false;
     currentScreen = SCREEN_ADMIN_PANEL;
     drawAdminPanelScreen();
     return;
   }
 
-  if (auiBarHit(sx, sy, 1, 2)) {
+  if (rptBarHit(sx, sy, RPT_BAR_TODAY_X, RPT_BAR_TODAY_W)) {
+    if (!emailConfigured()) {
+      reportPage = RPT_PAGE_EMAIL;
+      drawAdminReportScreen();
+      return;
+    }
+    drawReportSendingOverlay("Today's sales plus today's transactions CSV.");
+    sendReportEmail(REPORT_DAILY, todayDateNum(), true);
+    lastTouchTime = millis();
+    drawAdminReportScreen();
+    return;
+  }
+
+  if (rptBarHit(sx, sy, RPT_BAR_FULL_X, RPT_BAR_FULL_W)) {
     if (!emailConfigured()) {
       reportPage = RPT_PAGE_EMAIL;   // send is impossible; show what's missing
       drawAdminReportScreen();
@@ -316,27 +481,11 @@ void handleAdminReportScreen() {
     }
   }
 
-  // Sales tab: tapping the "Today" tile emails today's report — the same
-  // thing the nightly schedule sends, on demand.
-  if (reportPage == RPT_PAGE_SALES &&
-      pointInRect(sx, sy, rptTileX(0), rptTileY(2), RPT_TILE_W, RPT_TILE_H)) {
-    if (!emailConfigured()) {
-      reportPage = RPT_PAGE_EMAIL;
-      drawAdminReportScreen();
-      return;
-    }
-    drawReportSendingOverlay("Today's sales plus today's transactions CSV.");
-    sendReportEmail(REPORT_DAILY, todayDateNum(), true);
-    lastTouchTime = millis();
-    drawAdminReportScreen();
-    return;
-  }
-
   if (reportPage == RPT_PAGE_AUTO) {
     if (pointInRect(sx, sy, RPT_ROW_X, reportRowY(0), RPT_ROW_W, RPT_ROW_H)) {
-      openTextEntry(TE_NIGHTLY_1);
+      openReportTimePicker(0);
     } else if (pointInRect(sx, sy, RPT_ROW_X, reportRowY(1), RPT_ROW_W, RPT_ROW_H)) {
-      openTextEntry(TE_NIGHTLY_2);
+      openReportTimePicker(1);
     } else if (pointInRect(sx, sy, RPT_ROW_X, reportRowY(2), RPT_ROW_W, RPT_ROW_H)) {
       lowStockAlertOn = !lowStockAlertOn;
       saveScheduleSettings();
