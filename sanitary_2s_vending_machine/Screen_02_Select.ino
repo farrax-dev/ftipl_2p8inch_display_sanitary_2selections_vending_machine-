@@ -15,6 +15,8 @@ unsigned long selectMsgUntil = 0;
 // as they are, and why the stock ones don't repeat CFG_STOCK_UNIT (the card
 // under the message is already showing it). Reserved for all three states,
 // not just the one showing, so the title can't change size as they swap.
+// Minimum slot; drawSelectHeader() widens it if "Tap to select" in the serif
+// face needs more.
 const int SELECT_HDR_RESERVED = 110;
 
 // Title on the left, "items in cart / limit" on the right. Showing the limit
@@ -26,7 +28,16 @@ void drawSelectHeader() {
   // call this directly, not through a full drawSelectScreen() redraw, so
   // the right-aligned counter/message beside it has to be repainted in the
   // same pass or it'd go stale against the freshly-cleared band.
-  drawScreenTitle("Select Products", SELECT_HDR_RESERVED);
+  // The slot is sized from the invitation text actually drawn (serif 9pt, the
+  // title's own face family) rather than a guess, and held for every state so
+  // the title can't change size as the right-hand text swaps.
+  int16_t bx, by; uint16_t bw, bh;
+  tft.setTextSize(1);
+  tft.setFont(&FreeSerifBold9pt7b);
+  tft.getTextBounds("Tap to select", 0, 0, &bx, &by, &bw, &bh);
+  tft.setFont();
+  int reserved = max(SELECT_HDR_RESERVED, HDR_STATUS_W + 4 + (int)bw + 10);
+  drawScreenTitle("Select Products", reserved);
 
   if (selectMsg[0] != 0) {
     tft.setTextSize(1);
@@ -35,10 +46,22 @@ void drawSelectHeader() {
     return;
   }
 
-  if (isQuickVend()) {
+  // Empty cart (quick-vend or not): invite the first tap. Once something is
+  // in the cart the "n / max" counter takes over.
+  if (isQuickVend() || cartTotalQty() == 0) {
+    // Same serif family as the "Select Products" title, vertically centred
+    // in the band the way drawHeaderTitle() does it.
+    int16_t x1, y1; uint16_t w, h;
     tft.setTextSize(1);
-    tft.setTextColor(COL_TEXT, COL_BG_TOP);
-    rightText("Tap to select", headerRightX(), headerTextY(1));
+    tft.setFont(&FreeSerifBold9pt7b);
+    // Accent, not body text: the theme's own highlight colour, so the
+    // invitation stands apart from the title and follows CFG_COLOR_THEME.
+    tft.setTextColor(COL_ACCENT, COL_BG_TOP);
+    tft.getTextBounds("Tap to select", 0, 0, &x1, &y1, &w, &h);
+    tft.setCursor(headerRightX() - (int)w - x1, HDR_Y + (HDR_H - (int)h) / 2 - y1);
+    tft.print("Tap to select");
+    tft.setFont();
+    tft.setTextSize(2);
     return;
   }
 
