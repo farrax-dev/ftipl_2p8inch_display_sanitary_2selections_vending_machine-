@@ -112,6 +112,15 @@ void loop() {
     case SCREEN_ADMIN_RFID_RESET:
       handleAdminRFIDResetScreen();
       break;
+    case SCREEN_ADMIN_PRODUCTS:
+      handleAdminProductsScreen();
+      break;
+    case SCREEN_ADMIN_NETWORK:
+      handleAdminNetworkScreen();
+      break;
+    case SCREEN_ADMIN_MACHINE:
+      handleAdminMachineScreen();
+      break;
   }
 
   maintainWiFiIndicator();

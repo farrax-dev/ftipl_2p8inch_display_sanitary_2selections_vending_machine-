@@ -10,7 +10,9 @@ int adminEditingSlot = -1;
 // Screen_10's own tab has loaded — Arduino only auto-forward-declares
 // functions, never variables, so a variable must be defined before its first
 // use across tabs.
-const int MOTORS_PER_PAGE = 6;
+// 4 a page: each row carries four controls (Test, -, quantity, +) and needs a
+// finger-sized height, which is what four rows of 34px fill.
+const int MOTORS_PER_PAGE = 4;
 const int MOTOR_STOCK_PAGES = (MAX_MOTORS + MOTORS_PER_PAGE - 1) / MOTORS_PER_PAGE;
 int motorStockPage = 0;
 // Motor being edited on the Motor Stock keypad (-1 = none); Screen_08 resets it.
@@ -40,8 +42,8 @@ int rfidEditingCard = -1;
 // Whether the firmware currently tries to use the WiFi radio — separate from
 // CFG_WIFI_ENABLED, which says whether the radio is physically meant to be
 // used on this build at all. Same split as lteEnabled below: that macro
-// alone still gates whether Admin > Settings' "WiFi" button is reachable
-// (Screen_11_AdminSettings.ino), and this is what the WiFi Setup screen's
+// alone still gates whether Admin > Network's WiFi card is reachable
+// (Screen_23_AdminNetwork.ino), and this is what the WiFi Setup screen's
 // own on/off toggle actually flips (setWifiEnabled(), Core_06_Network.ino).
 // A *seed* value here, like everything else Config.h hands out —
 // loadPersistedProductData() overwrites it from NVS on every boot, always
@@ -56,8 +58,8 @@ bool wifiEnabled = CFG_WIFI_ENABLED;
 // Whether the firmware currently tries to use the cellular radio — separate
 // from CFG_LTE_ENABLED, which says whether a modem is physically fitted at
 // all. That macro alone still gates the one-time hardware bring-up in
-// setup() and whether Admin > Settings' "4G" button is reachable
-// (Screen_11_AdminSettings.ino) — a unit with no modem should never have
+// setup() and whether Admin > Network's 4G card is reachable
+// (Screen_23_AdminNetwork.ino) — a unit with no modem should never have
 // either touched, and nothing should ever be able to lock a technician out
 // of the one screen that can turn this back on.
 //

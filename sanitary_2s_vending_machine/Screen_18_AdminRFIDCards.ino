@@ -8,15 +8,18 @@
 // a physical card, or type its number in by hand when scanning isn't
 // convenient. Tapping a registered row (not its "X") opens Name/Limit/Usage
 // editing — Screen_19_AdminRFIDCardEdit.ino.
-const int RFCARD_ROW_X = 20, RFCARD_ROW_W = 280, RFCARD_ROW_H = 20;
-const int RFCARD_ROW_Y0 = 44, RFCARD_ROW_GAP = 4;
-// 4, not 5 — leaves clearance below the last row for the add/error status
-// line (y=150) before the action buttons start.
-const int RFCARD_ROWS_PER_PAGE = 4;
+//
+// Three 34px rows to a page: the card's name over its UID (or just the UID,
+// when it has no name), the usage badge for limited cards, and a delete
+// button. Scan and Enter buttons sit under the list; Back and the pager are
+// in the bottom bar.
+const int RFCARD_ROW_X = 16, RFCARD_ROW_W = 288, RFCARD_ROW_H = 34;
+const int RFCARD_ROW_Y0 = 38, RFCARD_ROW_GAP = 4;
+const int RFCARD_ROWS_PER_PAGE = 3;
+const int RFCARD_DEL_W = 32, RFCARD_DEL_H = 26;
 
-const int RFCARD_SCAN_BTN_X = 20,  RFCARD_SCAN_BTN_W = 138;
-const int RFCARD_MANUAL_BTN_X = 162, RFCARD_MANUAL_BTN_W = 138;
-const int RFCARD_ACTION_Y = 166, RFCARD_ACTION_H = 20;
+const int RFCARD_ACTION_Y = 166, RFCARD_ACTION_H = 26;
+const int RFCARD_MSG_CY = 157;
 
 int rfidCardsPageCount() {
   int pages = (rfidCardCount + RFCARD_ROWS_PER_PAGE - 1) / RFCARD_ROWS_PER_PAGE;
@@ -26,6 +29,13 @@ int rfidCardsPageCount() {
 int rfidCardRowY(int row) {
   return RFCARD_ROW_Y0 + row * (RFCARD_ROW_H + RFCARD_ROW_GAP);
 }
+
+int rfidDelX() { return RFCARD_ROW_X + RFCARD_ROW_W - 8 - RFCARD_DEL_W; }
+int rfidDelY(int row) { return rfidCardRowY(row) + (RFCARD_ROW_H - RFCARD_DEL_H) / 2; }
+
+// Two equal buttons under the list.
+int rfidActionX(int slot) { return RFCARD_ROW_X + slot * (RFCARD_ROW_W / 2 + 2); }
+int rfidActionW() { return RFCARD_ROW_W / 2 - 2; }
 
 // ---------- "waiting for a tap" overlay ----------
 bool rfidCardsScanning = false;
@@ -39,16 +49,11 @@ void drawRFIDCardsScanOverlay() {
   drawGradientBackground();
   drawScreenTitle("Scan New Card");
 
-  tft.setTextSize(2);
-  tft.setTextColor(COL_ACCENT, COL_BG_BOTTOM);
-  centerText("Hold card near", 90);
-  centerText("the reader", 113);
+  auiPut("Hold the card near", AL_CENTER, 10, 300, 90, COL_ACCENT, FACE_MD);
+  auiPut("the reader", AL_CENTER, 10, 300, 116, COL_ACCENT, FACE_MD);
+  auiHint("Cancels automatically after 30 seconds", 150);
 
-  tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-  centerText("Cancels automatically after 30s", 145);
-
-  drawBackButton("Cancel");
+  auiBarButton(0, 1, "Cancel", ABTN_SECONDARY);
 }
 
 void drawAdminRFIDCardsScreen() {
@@ -58,79 +63,68 @@ void drawAdminRFIDCardsScreen() {
 
   drawGradientBackground();
 
-  drawScreenTitle("RFID Cards", 60);
+  drawScreenTitle("RFID Cards", 70);
 
-  tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_TOP);
   char countBuf[12];
-  snprintf(countBuf, sizeof(countBuf), "%d/%d", rfidCardCount, MAX_RFID_CARDS);
-  rightText(countBuf, headerRightX(), headerTextY(1));
+  snprintf(countBuf, sizeof(countBuf), "%d / %d", rfidCardCount, MAX_RFID_CARDS);
+  auiPut(countBuf, AL_RIGHT, 200, headerRightX() - 200, HDR_Y + HDR_H / 2, COL_TEXT_DIM, FACE_SM);
 
   int first = rfidCardsPage * RFCARD_ROWS_PER_PAGE;
   int rowsOnPage = min(RFCARD_ROWS_PER_PAGE, rfidCardCount - first);
 
   if (rfidCardCount == 0) {
-    tft.setTextSize(1);
-    tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-    centerText("No cards registered yet", 100);
+    auiPut("No cards registered yet", AL_CENTER, 10, 300, 100, COL_TEXT, FACE_MD);
   } else {
     for (int row = 0; row < rowsOnPage; row++) {
       int i = first + row;
       int y = rfidCardRowY(row);
-      drawCard(RFCARD_ROW_X, y, RFCARD_ROW_W, RFCARD_ROW_H, 5);
+      auiRow(RFCARD_ROW_X, y, RFCARD_ROW_W, RFCARD_ROW_H);
 
-      int delSize = 18;
-      int delX = RFCARD_ROW_X + RFCARD_ROW_W - delSize - 6;
-      int delY = y + (RFCARD_ROW_H - delSize) / 2;
+      int rightEdge = rfidDelX() - 8;
 
       // A limit badge sits right-aligned before the delete button, so a
       // glance at the list shows who's close to their cap without opening
       // each card. Blank for unlimited cards (the common case) rather than
       // printing a distracting "0/0".
+      int textW = rightEdge - (RFCARD_ROW_X + 12);
       if (rfidCards[i].withdrawLimit > 0) {
         char limBuf[12];
         snprintf(limBuf, sizeof(limBuf), "%d/%d", rfidCards[i].withdrawUsed, rfidCards[i].withdrawLimit);
-        tft.setTextSize(1);
-        tft.setTextColor(COL_TEXT_DIM, COL_CARD);
-        rightText(limBuf, delX - 6, y + 7);
+        bool full = rfidCards[i].withdrawUsed >= rfidCards[i].withdrawLimit;
+        auiPut(limBuf, AL_RIGHT, rightEdge - 56, 56, y + RFCARD_ROW_H / 2,
+               full ? COL_DANGER : COL_ACCENT, FACE_SM);
+        textW -= 62;
       }
 
-      tft.setTextSize(1);
-      tft.setTextColor(COL_TEXT, COL_CARD);
-      tft.setCursor(RFCARD_ROW_X + 8, y + 7);
-      tft.print(rfidCards[i].name[0] ? rfidCards[i].name : rfidCards[i].uid);
+      if (rfidCards[i].name[0]) {
+        auiPut(rfidCards[i].name, AL_LEFT, RFCARD_ROW_X + 12, textW, y + 11, COL_TEXT, FACE_MD);
+        auiPut(rfidCards[i].uid,  AL_LEFT, RFCARD_ROW_X + 12, textW, y + 26, COL_TEXT_DIM, FACE_XS);
+      } else {
+        auiPut(rfidCards[i].uid, AL_LEFT, RFCARD_ROW_X + 12, textW, y + RFCARD_ROW_H / 2, COL_TEXT, FACE_MD);
+      }
 
-      tft.fillRoundRect(delX, delY, delSize, delSize, 4, COL_DANGER);
-      tft.setTextColor(COL_BG_TOP, COL_DANGER);
-      tft.setTextSize(1);
-      centerTextInBox("X", delY + 5, delX, delSize);
+      auiButton(rfidDelX(), rfidDelY(row), RFCARD_DEL_W, RFCARD_DEL_H, "X", ABTN_DANGER, FACE_SM);
     }
   }
 
   if (rfidCardsMsg[0] != '\0') {
-    tft.setTextSize(1);
-    tft.setTextColor(rfidCardsMsgColor, COL_BG_BOTTOM);
-    centerText(rfidCardsMsg, 150);
+    auiPut(rfidCardsMsg, AL_CENTER, 12, 296, RFCARD_MSG_CY, rfidCardsMsgColor, FACE_SM);
   }
 
   bool full = (rfidCardCount >= MAX_RFID_CARDS);
-  uint16_t scanFill = full ? COL_CARD : COL_ACCENT;
-  drawCardShadow(RFCARD_SCAN_BTN_X, RFCARD_ACTION_Y, RFCARD_SCAN_BTN_W, RFCARD_ACTION_H, 6);
-  tft.fillRoundRect(RFCARD_SCAN_BTN_X, RFCARD_ACTION_Y, RFCARD_SCAN_BTN_W, RFCARD_ACTION_H, 6, scanFill);
-  tft.setTextColor(full ? COL_TEXT_DIM : COL_BG_TOP, scanFill);
-  tft.setTextSize(1);
-  centerTextInBox(full ? "List full" : "Scan New Card", RFCARD_ACTION_Y + 6, RFCARD_SCAN_BTN_X, RFCARD_SCAN_BTN_W);
+  int style = full ? ABTN_OFF : ABTN_PRIMARY;
+  auiButton(rfidActionX(0), RFCARD_ACTION_Y, rfidActionW(), RFCARD_ACTION_H,
+            full ? "List full" : "Scan Card", style, FACE_SM);
+  auiButton(rfidActionX(1), RFCARD_ACTION_Y, rfidActionW(), RFCARD_ACTION_H,
+            full ? "List full" : "Enter Number", style, FACE_SM);
 
-  drawCardShadow(RFCARD_MANUAL_BTN_X, RFCARD_ACTION_Y, RFCARD_MANUAL_BTN_W, RFCARD_ACTION_H, 6);
-  tft.fillRoundRect(RFCARD_MANUAL_BTN_X, RFCARD_ACTION_Y, RFCARD_MANUAL_BTN_W, RFCARD_ACTION_H, 6, scanFill);
-  tft.setTextColor(full ? COL_TEXT_DIM : COL_BG_TOP, scanFill);
-  centerTextInBox(full ? "List full" : "Enter Manually", RFCARD_ACTION_Y + 6, RFCARD_MANUAL_BTN_X, RFCARD_MANUAL_BTN_W);
-
-  drawBackButton("< Back");
   if (pages > 1) {
     char pageLabel[16];
-    snprintf(pageLabel, sizeof(pageLabel), "Page %d/%d >", rfidCardsPage + 1, pages);
-    drawProceedButton(pageLabel);
+    snprintf(pageLabel, sizeof(pageLabel), "Page %d/%d", rfidCardsPage + 1, pages);
+    auiBarButton(0, 2, "Back", ABTN_SECONDARY);
+    auiBarButton(1, 2, pageLabel, ABTN_PRIMARY);
+  } else {
+    auiBarButton(0, 1, "Back", ABTN_SECONDARY);
   }
 }
 
@@ -167,7 +161,7 @@ void handleAdminRFIDCardsScreen() {
       TS_Point raw = ts.getPoint();
       int sx, sy;
       mapTouchToScreen(raw, sx, sy);
-      if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
+      if (auiBarHit(sx, sy, 0, 1)) {
         rfidCardsScanning = false;
         drawAdminRFIDCardsScreen();
       }
@@ -182,27 +176,29 @@ void handleAdminRFIDCardsScreen() {
       int sx, sy;
       mapTouchToScreen(raw, sx, sy);
 
-      if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
+      int pages = rfidCardsPageCount();
+      int slots = (pages > 1) ? 2 : 1;
+
+      if (auiBarHit(sx, sy, 0, slots)) {
         currentScreen = SCREEN_ADMIN_SETTINGS;
         drawAdminSettingsScreen();
         return;
       }
 
-      int pages = rfidCardsPageCount();
-      if (pages > 1 && pointInRect(sx, sy, BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H)) {
+      if (pages > 1 && auiBarHit(sx, sy, 1, slots)) {
         rfidCardsPage = (rfidCardsPage + 1) % pages;
         drawAdminRFIDCardsScreen();
         return;
       }
 
       bool full = (rfidCardCount >= MAX_RFID_CARDS);
-      if (!full && pointInRect(sx, sy, RFCARD_SCAN_BTN_X, RFCARD_ACTION_Y, RFCARD_SCAN_BTN_W, RFCARD_ACTION_H)) {
+      if (!full && pointInRect(sx, sy, rfidActionX(0), RFCARD_ACTION_Y, rfidActionW(), RFCARD_ACTION_H)) {
         rfidCardsScanning = true;
         rfidCardsScanStartMs = millis();
         drawRFIDCardsScanOverlay();
         return;
       }
-      if (!full && pointInRect(sx, sy, RFCARD_MANUAL_BTN_X, RFCARD_ACTION_Y, RFCARD_MANUAL_BTN_W, RFCARD_ACTION_H)) {
+      if (!full && pointInRect(sx, sy, rfidActionX(1), RFCARD_ACTION_Y, rfidActionW(), RFCARD_ACTION_H)) {
         openTextEntry(TE_RFID_CARD_MANUAL);
         return;
       }
@@ -212,10 +208,7 @@ void handleAdminRFIDCardsScreen() {
       for (int row = 0; row < rowsOnPage; row++) {
         int i = first + row;
         int y = rfidCardRowY(row);
-        int delSize = 18;
-        int delX = RFCARD_ROW_X + RFCARD_ROW_W - delSize - 6;
-        int delY = y + (RFCARD_ROW_H - delSize) / 2;
-        if (pointInRect(sx, sy, delX, delY, delSize, delSize)) {
+        if (pointInRect(sx, sy, rfidDelX() - 3, rfidDelY(row) - 3, RFCARD_DEL_W + 6, RFCARD_DEL_H + 6)) {
           removeRFIDCard(i);
           drawAdminRFIDCardsScreen();
           return;

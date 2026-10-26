@@ -8,11 +8,23 @@
 //
 // withdrawLimit is a running total, not a per-day/per-tap cap: 0 means
 // unlimited, otherwise the card is refused once withdrawUsed would exceed it
-// (Screen_06_PaymentOther.ino's handlePaymentRFIDScreen()). There's no
-// automatic reset yet — "Reset Usage" here is the only way to zero a card
-// back out.
-const int RFEDIT_LIMIT_Y = 112;
-const int RFEDIT_USED_Y  = 150;
+// (Screen_06_PaymentOther.ino's handlePaymentRFIDScreen()). Usage is zeroed
+// either with "Reset" here (one card) or by the monthly schedule on
+// Screen_21_AdminRFIDReset.ino (every card).
+//
+// Four rows in the same arrangement as Edit Product (Screen_09):
+//   Name    - value + Edit; the whole row taps
+//   Card ID - read-only (re-register the card to change it)
+//   Limit   - [-] value [+]   (Off = unlimited)
+//   Used    - value + Reset
+const int RFEDIT_ROW_X = 16, RFEDIT_ROW_W = 288, RFEDIT_ROW_H = 32;
+const int RFEDIT_ROW_Y0 = 40, RFEDIT_ROW_GAP = 6;
+const int RFEDIT_RIGHT = RFEDIT_ROW_X + RFEDIT_ROW_W - 8;
+const int RFEDIT_BTN_W = 72;
+const int RFEDIT_BTN_X = RFEDIT_RIGHT - RFEDIT_BTN_W;
+
+int rfeditRowY(int row) { return RFEDIT_ROW_Y0 + row * (RFEDIT_ROW_H + RFEDIT_ROW_GAP); }
+int rfeditRowCY(int row) { return rfeditRowY(row) + RFEDIT_ROW_H / 2; }
 
 void drawAdminRFIDCardEditScreen() {
   int i = rfidEditingCard;
@@ -20,78 +32,41 @@ void drawAdminRFIDCardEditScreen() {
 
   drawScreenTitle("Edit Card");
 
+  for (int r = 0; r < 4; r++) auiRow(RFEDIT_ROW_X, rfeditRowY(r), RFEDIT_ROW_W, RFEDIT_ROW_H);
+
   // ---- Name ----
-  tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-  tft.setCursor(20, 50);
-  tft.print("Name:");
+  int cy = rfeditRowCY(0);
+  auiRowLabel(RFEDIT_ROW_X + 12, cy, 80, "Name");
+  int vx = RFEDIT_ROW_X + 12 + auiTextW("Name", FACE_MD) + 12;
+  bool named = rfidCards[i].name[0] != '\0';
+  auiPut(named ? rfidCards[i].name : "(no name)", AL_LEFT, vx, RFEDIT_BTN_X - 8 - vx, cy,
+         named ? COL_ACCENT : COL_TEXT_DIM, FACE_MD);
+  auiRowButton(RFEDIT_BTN_X, cy, RFEDIT_BTN_W, "Edit", ABTN_PRIMARY);
 
-  drawCard(70, 44, 150, 26, 6);
-  tft.setTextColor(COL_TEXT, COL_CARD);
-  centerTextInBox(rfidCards[i].name[0] ? rfidCards[i].name : "(no name)", 52, 70, 150);
-
-  drawCardShadow(230, 44, 70, 26, 6);
-  tft.fillRoundRect(230, 44, 70, 26, 6, COL_ACCENT);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-  tft.setCursor(248, 52);
-  tft.print("Edit");
-
-  // ---- UID (read-only — re-register the card to change it) ----
-  tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-  tft.setCursor(20, 84);
-  tft.print("UID:");
-
-  drawCard(70, 78, 230, 20, 5);
-  tft.setTextColor(COL_TEXT, COL_CARD);
-  centerTextInBox(rfidCards[i].uid, 84, 70, 230);
+  // ---- UID (read-only) ----
+  cy = rfeditRowCY(1);
+  auiRowLabel(RFEDIT_ROW_X + 12, cy, 100, "Card ID");
+  vx = RFEDIT_ROW_X + 12 + auiTextW("Card ID", FACE_MD) + 12;
+  auiPut(rfidCards[i].uid, AL_LEFT, vx, RFEDIT_RIGHT - vx, cy, COL_TEXT, FACE_SM);
 
   // ---- Withdrawal limit (0 = unlimited) ----
-  tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-  tft.setCursor(20, 122);
-  tft.print("Limit:");
-
-  drawCardShadow(75, RFEDIT_LIMIT_Y, 28, 28, 6);
-  tft.fillRoundRect(75, RFEDIT_LIMIT_Y, 28, 28, 6, COL_ACCENT);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-  tft.setTextSize(2);
-  tft.setCursor(85, RFEDIT_LIMIT_Y + 7);
-  tft.print("-");
-
-  drawCardShadow(163, RFEDIT_LIMIT_Y, 28, 28, 6);
-  tft.fillRoundRect(163, RFEDIT_LIMIT_Y, 28, 28, 6, COL_ACCENT);
-  tft.setCursor(173, RFEDIT_LIMIT_Y + 7);
-  tft.print("+");
-
-  // Rounded fill only, no shadow — read-only figure between two buttons
-  // that already carry their own shadows.
-  tft.fillRoundRect(108, RFEDIT_LIMIT_Y, 50, 28, 6, COL_CARD);
-  tft.setTextColor(COL_TEXT, COL_CARD);
+  cy = rfeditRowCY(2);
+  auiRowLabel(RFEDIT_ROW_X + 12, cy, auiStepLeftX(RFEDIT_RIGHT) - RFEDIT_ROW_X - 20, "Limit");
   char limBuf[8];
   if (rfidCards[i].withdrawLimit > 0) snprintf(limBuf, sizeof(limBuf), "%d", rfidCards[i].withdrawLimit);
   else strcpy(limBuf, "Off");
-  centerTextInBox(limBuf, RFEDIT_LIMIT_Y + 8, 108, 50);
+  auiStepper(RFEDIT_RIGHT, cy, limBuf, COL_ACCENT);
 
-  // ---- Usage so far, and a manual reset (no auto reset yet) ----
-  tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_BOTTOM);
-  tft.setCursor(20, RFEDIT_USED_Y + 10);
-  tft.print("Used:");
-
-  tft.fillRoundRect(70, RFEDIT_USED_Y, 60, 28, 6, COL_CARD);
-  tft.setTextColor(COL_TEXT, COL_CARD);
+  // ---- Usage so far, and a per-card reset ----
+  cy = rfeditRowCY(3);
+  auiRowLabel(RFEDIT_ROW_X + 12, cy, 80, "Used");
   char usedBuf[8];
   snprintf(usedBuf, sizeof(usedBuf), "%d", rfidCards[i].withdrawUsed);
-  tft.setTextSize(2);
-  centerTextInBox(usedBuf, RFEDIT_USED_Y + 8, 70, 60);
+  vx = RFEDIT_ROW_X + 12 + auiTextW("Used", FACE_MD) + 12;
+  auiPut(usedBuf, AL_LEFT, vx, 60, cy, COL_ACCENT, FACE_MD);
+  auiRowButton(RFEDIT_BTN_X, cy, RFEDIT_BTN_W, "Reset", ABTN_DANGER);
 
-  drawCardShadow(140, RFEDIT_USED_Y, 160, 28, 6);
-  tft.fillRoundRect(140, RFEDIT_USED_Y, 160, 28, 6, COL_DANGER);
-  tft.setTextColor(COL_TEXT, COL_DANGER);
-  centerTextInBox("Reset Usage", RFEDIT_USED_Y + 8, 140, 160);
-
-  drawBackButton("< Back");
+  auiBarButton(0, 1, "Back", ABTN_SECONDARY);
 }
 
 void handleAdminRFIDCardEditScreen() {
@@ -103,31 +78,32 @@ void handleAdminRFIDCardEditScreen() {
       mapTouchToScreen(raw, sx, sy);
       int i = rfidEditingCard;
 
-      if (pointInRect(sx, sy, 230, 44, 70, 26)) {
+      if (auiBarHit(sx, sy, 0, 1)) {
+        currentScreen = SCREEN_ADMIN_RFID_CARDS;
+        drawAdminRFIDCardsScreen();
+        return;
+      }
+
+      if (pointInRect(sx, sy, RFEDIT_ROW_X, rfeditRowY(0), RFEDIT_ROW_W, RFEDIT_ROW_H)) {
         openTextEntry(TE_RFID_CARD_NAME);
         return;
       }
 
-      if (pointInRect(sx, sy, 75, RFEDIT_LIMIT_Y, 28, 28)) {
+      int step = auiStepTouch(sx, sy, RFEDIT_RIGHT, rfeditRowCY(2));
+      if (step < 0) {
         if (rfidCards[i].withdrawLimit > 0) setRFIDCardLimit(i, rfidCards[i].withdrawLimit - 1);
         drawAdminRFIDCardEditScreen();
         return;
       }
-      if (pointInRect(sx, sy, 163, RFEDIT_LIMIT_Y, 28, 28)) {
+      if (step > 0) {
         if (rfidCards[i].withdrawLimit < 999) setRFIDCardLimit(i, rfidCards[i].withdrawLimit + 1);
         drawAdminRFIDCardEditScreen();
         return;
       }
 
-      if (pointInRect(sx, sy, 140, RFEDIT_USED_Y, 160, 28)) {
+      if (auiRowButtonHit(sx, sy, RFEDIT_BTN_X, rfeditRowCY(3), RFEDIT_BTN_W)) {
         resetRFIDCardUsage(i);
         drawAdminRFIDCardEditScreen();
-        return;
-      }
-
-      if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
-        currentScreen = SCREEN_ADMIN_RFID_CARDS;
-        drawAdminRFIDCardsScreen();
         return;
       }
     }

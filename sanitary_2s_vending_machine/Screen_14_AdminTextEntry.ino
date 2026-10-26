@@ -53,11 +53,13 @@ const KeyDef* kbRow(int row) {
   }
 }
 
-const int KB_X0 = 6, KB_Y0 = 86, KB_COL_W = 29, KB_ROW_H = 33, KB_GX = 2, KB_GY = 3;
+// Ten 30px columns span the screen edge to edge (318px with 2px gaps); four 30px
+// rows. The preview field sits above them and the Cancel/Show/Done bar below.
+// Vertical layout: header to y=32, preview 36..62, keys 66..195, bar 200..234.
+const int KB_X0 = 1, KB_Y0 = 66, KB_COL_W = 30, KB_ROW_H = 30, KB_GX = 2, KB_GY = 3;
 
-const int TE_CANCEL_X = 10,  TE_BTN_Y = 34, TE_BTN_W = 95, TE_BTN_H = 20;
-const int TE_SHOW_X   = 112;
-const int TE_DONE_X   = 214;
+const int TE_PREV_X = 6, TE_PREV_Y = 36, TE_PREV_W = 308, TE_PREV_H = 26;
+const int TE_BAR_Y = 200, TE_BAR_H = 34;
 
 void getKeyRect(int row, int keyIdx, int &x, int &y, int &w, int &h) {
   const KeyDef* r = kbRow(row);
@@ -109,7 +111,7 @@ void openTextEntry(TextEntryTarget target) {
       textEntryMaxLen = sizeof(machineId) - 1;
       textEntryMask = false;
       textEntryTitle = "Machine ID";
-      textEntryReturnScreen = SCREEN_ADMIN_SETTINGS;
+      textEntryReturnScreen = SCREEN_ADMIN_MACHINE;
       break;
     case TE_MACHINE_NAME:
       strncpy(textEntryBuffer, machineName, sizeof(textEntryBuffer));
@@ -194,7 +196,7 @@ void openTextEntry(TextEntryTarget target) {
       textEntryMaxLen = sizeof(adminPin) - 1;
       textEntryMask = true;
       textEntryTitle = "Admin PIN";
-      textEntryReturnScreen = SCREEN_ADMIN_SETTINGS;
+      textEntryReturnScreen = SCREEN_ADMIN_MACHINE;
       kbLayer = KB_LAYER_SYM;
       break;
     // Second step after TE_ADMIN_PIN accepts a format-valid new PIN — opens
@@ -206,7 +208,7 @@ void openTextEntry(TextEntryTarget target) {
       textEntryMaxLen = sizeof(adminPin) - 1;
       textEntryMask = true;
       textEntryTitle = "Confirm New PIN";
-      textEntryReturnScreen = SCREEN_ADMIN_SETTINGS;
+      textEntryReturnScreen = SCREEN_ADMIN_MACHINE;
       kbLayer = KB_LAYER_SYM;
       break;
     default:
@@ -231,24 +233,27 @@ void returnFromTextEntry() {
   else if (textEntryReturnScreen == SCREEN_ADMIN_REPORT) drawAdminReportScreen();
   else if (textEntryReturnScreen == SCREEN_ADMIN_RFID_CARDS) drawAdminRFIDCardsScreen();
   else if (textEntryReturnScreen == SCREEN_ADMIN_RFID_CARD_EDIT) drawAdminRFIDCardEditScreen();
+  else if (textEntryReturnScreen == SCREEN_ADMIN_MACHINE) drawAdminMachineScreen();
   else if (textEntryReturnScreen == SCREEN_ADMIN_PANEL) drawAdminPanelScreen();
   else drawAdminEditScreen();
 }
 
 void drawKeyboardPreview() {
-  tft.fillRect(6, 56, 308, 26, COL_BG_TOP);
+  tft.fillRoundRect(TE_PREV_X, TE_PREV_Y, TE_PREV_W, TE_PREV_H, 6, COL_CARD);
+  tft.drawRoundRect(TE_PREV_X, TE_PREV_Y, TE_PREV_W, TE_PREV_H, 6, COL_CARD_BRD);
+  int cy = TE_PREV_Y + TE_PREV_H / 2;
 
   if (teErrorMsg[0] != '\0' && millis() < teErrorUntil) {
-    tft.setTextSize(2);
-    tft.setTextColor(COL_DANGER, COL_BG_TOP);
-    centerText(teErrorMsg, 60);
+    auiPut(teErrorMsg, AL_CENTER, TE_PREV_X + 8, TE_PREV_W - 16, cy, COL_DANGER, FACE_MD);
     return;
   }
 
   int len = strlen(textEntryBuffer);
   char shown[70];
+  uint16_t col = COL_ACCENT;
   if (len == 0) {
     strcpy(shown, "(empty)");
+    col = COL_TEXT_DIM;
   } else if (textEntryMask && !textEntryShow) {
     int n = min(len, 60);
     for (int k = 0; k < n; k++) shown[k] = '*';
@@ -258,42 +263,35 @@ void drawKeyboardPreview() {
     shown[sizeof(shown) - 1] = '\0';
   }
 
-  int shownLen = strlen(shown);
-  int textSize = (shownLen > 24) ? 1 : 2;
-  int maxChars = (textSize == 1) ? 50 : 25;
+  // Room left of the "12/30" counter. A string too long for even the smallest
+  // face shows its END, not its start — what was just typed is what needs to
+  // be seen.
+  const int counterW = 50;
+  int maxW = TE_PREV_W - 16 - counterW;
+  int face = auiFitFace(shown, maxW, FACE_MD);
   const char* view = shown;
-  if (shownLen > maxChars) view = shown + (shownLen - maxChars);
+  while (*view && auiTextW(view, face) > maxW) view++;
+  auiPut(view, AL_LEFT, TE_PREV_X + 8, maxW, cy, col, face);
 
-  tft.setTextSize(textSize);
-  tft.setTextColor(COL_ACCENT, COL_BG_TOP);
-  centerText(view, (textSize == 1) ? 64 : 60);
-
-  tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT_DIM, COL_BG_TOP);
   char counter[12];
   snprintf(counter, sizeof(counter), "%d/%d", len, textEntryMaxLen);
-  tft.setCursor(268, 72);
-  tft.print(counter);
+  auiPut(counter, AL_RIGHT, TE_PREV_X + TE_PREV_W - 8 - counterW, counterW, cy, COL_TEXT_DIM, FACE_XS);
 }
 
 void drawKey(const KeyDef &key, int row, int keyIdx) {
   int x, y, w, h;
   getKeyRect(row, keyIdx, x, y, w, h);
 
+  // Modifier keys (DEL, SPACE, aA, ?123...) are flat and set in the smaller
+  // bold face so they read as controls, not characters. No drop shadow on any
+  // key: at 30px a shadow would only crowd the 2-3px gaps between them.
   bool modifier = (strlen(key.label) > 1);
   uint16_t fill = modifier ? COL_BG_TOP : COL_CARD;
 
-  // Modifier keys (DEL, SPACE, aA, ?123...) stay flush with the background —
-  // same "flat" reasoning as elsewhere: a shadow under a background-matched
-  // fill reads as a smudge, not a raised key. Both drawAdminTextEntryScreen()
-  // and redrawKeyboardKeys() clear the whole keyboard area before calling
-  // this for every key, so there's never a stale shadow from a layer switch.
-  if (!modifier) drawCardShadow(x, y, w, h, 5);
   tft.fillRoundRect(x, y, w, h, 5, fill);
   tft.drawRoundRect(x, y, w, h, 5, COL_CARD_BRD);
-  tft.setTextSize(modifier ? 1 : 2);
-  tft.setTextColor(modifier ? COL_ACCENT : COL_TEXT, fill);
-  centerTextInBox(key.label, y + (modifier ? 13 : 9), x, w);
+  auiPut(key.label, AL_CENTER, x + 1, w - 2, y + h / 2,
+         modifier ? COL_ACCENT : COL_TEXT, modifier ? FACE_SM : FACE_MD);
 }
 
 void drawAdminTextEntryScreen() {
@@ -301,39 +299,32 @@ void drawAdminTextEntryScreen() {
 
   drawScreenTitle(textEntryTitle);
 
-  drawCard(TE_CANCEL_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H, 5);
-  tft.setTextSize(1);
-  tft.setTextColor(COL_TEXT, COL_CARD);
-  centerTextInBox("Cancel", TE_BTN_Y + 7, TE_CANCEL_X, TE_BTN_W);
-
-  if (textEntryMask) {
-    uint16_t showFill = textEntryShow ? COL_ACCENT : COL_CARD;
-    drawCardShadow(TE_SHOW_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H, 5);
-    tft.fillRoundRect(TE_SHOW_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H, 5, showFill);
-    tft.drawRoundRect(TE_SHOW_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H, 5, COL_CARD_BRD);
-    tft.setTextColor(textEntryShow ? COL_BG_TOP : COL_TEXT, showFill);
-    centerTextInBox(textEntryShow ? "Hide" : "Show", TE_BTN_Y + 7, TE_SHOW_X, TE_BTN_W);
-  }
-
-  drawCardShadow(TE_DONE_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H, 5);
-  tft.fillRoundRect(TE_DONE_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H, 5, COL_ACCENT);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-  centerTextInBox("Done", TE_BTN_Y + 7, TE_DONE_X, TE_BTN_W);
-
+  drawCardShadow(TE_PREV_X, TE_PREV_Y, TE_PREV_W, TE_PREV_H, 6);
   drawKeyboardPreview();
 
   for (int row = 0; row < 4; row++) {
     const KeyDef* r = kbRow(row);
     for (int k = 0; r[k].label != NULL; k++) drawKey(r[k], row, k);
   }
+
+  // Cancel / Show-Hide (masked fields only) / Done, on the bar's three slots.
+  auiButton(auiBarSlotX(0, 3), TE_BAR_Y, auiBarSlotW(3), TE_BAR_H, "Cancel", ABTN_SECONDARY, FACE_MD);
+  if (textEntryMask) {
+    auiButton(auiBarSlotX(1, 3), TE_BAR_Y, auiBarSlotW(3), TE_BAR_H,
+              textEntryShow ? "Hide" : "Show", textEntryShow ? ABTN_PRIMARY : ABTN_SECONDARY, FACE_MD);
+  }
+  auiButton(auiBarSlotX(2, 3), TE_BAR_Y, auiBarSlotW(3), TE_BAR_H, "Done", ABTN_PRIMARY, FACE_MD);
 }
 
+// A layer switch repaints the whole screen: the keys are drawn over a
+// gradient, and patching a rectangle of it with a flat colour left a visible
+// seam.
 void redrawKeyboardKeys() {
-  tft.fillRect(0, KB_Y0 - 2, tft.width(), tft.height() - KB_Y0 + 2, COL_BG_BOTTOM);
-  for (int row = 0; row < 4; row++) {
-    const KeyDef* r = kbRow(row);
-    for (int k = 0; r[k].label != NULL; k++) drawKey(r[k], row, k);
-  }
+  drawAdminTextEntryScreen();
+}
+
+bool teBarHit(int sx, int sy, int slot) {
+  return pointInRect(sx, sy, auiBarSlotX(slot, 3) - 2, TE_BAR_Y - 2, auiBarSlotW(3) + 4, TE_BAR_H + 6);
 }
 
 void appendChar(char c) {
@@ -519,18 +510,18 @@ void handleAdminTextEntryScreen() {
       int sx, sy;
       mapTouchToScreen(raw, sx, sy);
 
-      if (pointInRect(sx, sy, TE_CANCEL_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H)) {
+      if (teBarHit(sx, sy, 0)) {
         teErrorMsg[0] = '\0';
         adminPinPending[0] = '\0';
         returnFromTextEntry();
         return;
       }
-      if (textEntryMask && pointInRect(sx, sy, TE_SHOW_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H)) {
+      if (textEntryMask && teBarHit(sx, sy, 1)) {
         textEntryShow = !textEntryShow;
         drawAdminTextEntryScreen();
         return;
       }
-      if (pointInRect(sx, sy, TE_DONE_X, TE_BTN_Y, TE_BTN_W, TE_BTN_H)) {
+      if (teBarHit(sx, sy, 2)) {
         if (commitTextEntry()) returnFromTextEntry();
         return;
       }

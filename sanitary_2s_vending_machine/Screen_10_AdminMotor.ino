@@ -1,57 +1,65 @@
 // =====================================================
 //           ADMIN MOTOR ASSIGN SCREEN
 // =====================================================
-// 4 columns x 3 rows fits all MAX_MOTORS buttons (up to 12) on a 320x240
-// screen; currently 11 are populated, leaving the last grid slot empty.
-const int MOTOR_BTN_W = 68, MOTOR_BTN_H = 42, MOTOR_BTN_GX = 6, MOTOR_BTN_GY = 6;
-const int MOTOR_BTN_X0 = 16, MOTOR_BTN_Y0 = 46;
-const int MOTOR_BTN_COLS = 4;
+// A 3-column grid of motor tiles (M1..M<MAX_MOTORS>). A tile in the accent
+// colour belongs to the product being edited; tapping a free motor claims it,
+// tapping a motor another product owns takes it from that product, tapping
+// one of this product's own motors releases it. Tile height shrinks as rows
+// are added so the grid still fits when a build fits more motors.
+const int MOTOR_BTN_COLS = 3, MOTOR_BTN_W = 92, MOTOR_BTN_GAP = 6;
+const int MOTOR_BTN_X0 = 16, MOTOR_BTN_Y0 = 40;
 
-void getMotorBtnRect(int m, int &x, int &y, int &w, int &h) {
-  int col = m % MOTOR_BTN_COLS;
-  int row = m / MOTOR_BTN_COLS;
-  x = MOTOR_BTN_X0 + col * (MOTOR_BTN_W + MOTOR_BTN_GX);
-  y = MOTOR_BTN_Y0 + row * (MOTOR_BTN_H + MOTOR_BTN_GY);
-  w = MOTOR_BTN_W;
-  h = MOTOR_BTN_H;
+int motorGridRows() { return (MAX_MOTORS + MOTOR_BTN_COLS - 1) / MOTOR_BTN_COLS; }
+
+int motorBtnH() {
+  int rows = motorGridRows();
+  return min(62, (146 - (rows - 1) * MOTOR_BTN_GAP) / rows);
 }
+
+int motorBtnX(int m) { return MOTOR_BTN_X0 + (m % MOTOR_BTN_COLS) * (MOTOR_BTN_W + MOTOR_BTN_GAP); }
+int motorBtnY(int m) { return MOTOR_BTN_Y0 + (m / MOTOR_BTN_COLS) * (motorBtnH() + MOTOR_BTN_GAP); }
 
 void drawAdminMotorAssignScreen() {
   int i = adminEditingSlot;
   drawGradientBackground();
 
-  char titleBuf[22];
-  snprintf(titleBuf, sizeof(titleBuf), "Assign Motors: P%d", i + 1);
+  char titleBuf[32];
+  snprintf(titleBuf, sizeof(titleBuf), "Motors: %s", products[i].name);
   drawScreenTitle(titleBuf);
 
+  int h = motorBtnH();
   for (int m = 0; m < MAX_MOTORS; m++) {
-    int x, y, w, h;
-    getMotorBtnRect(m, x, y, w, h);
+    int x = motorBtnX(m), y = motorBtnY(m);
 
     bool mine = (products[i].motorMask & (1 << m)) != 0;
     int owner = productForMotor(m);
 
     uint16_t fill = mine ? COL_ACCENT : COL_CARD;
-    drawCardShadow(x, y, w, h, 8);
-    tft.fillRoundRect(x, y, w, h, 8, fill);
-    tft.drawRoundRect(x, y, w, h, 8, COL_CARD_BRD);
+    drawCardShadow(x, y, MOTOR_BTN_W, h, 8);
+    tft.fillRoundRect(x, y, MOTOR_BTN_W, h, 8, fill);
+    tft.drawRoundRect(x, y, MOTOR_BTN_W, h, 8, COL_CARD_BRD);
 
-    tft.setTextSize(2);
-    tft.setTextColor(mine ? COL_BG_TOP : COL_TEXT, fill);
-    char label[4];
+    char label[6];
     snprintf(label, sizeof(label), "M%d", m + 1);
-    centerTextInBox(label, y + 6, x, w);
+    uint16_t txt = mine ? COL_BG_TOP : COL_TEXT;
 
-    tft.setTextSize(1);
-    char caption[10];
-    if (mine) snprintf(caption, sizeof(caption), "Mine");
-    else if (owner == -1) snprintf(caption, sizeof(caption), "Unused");
-    else snprintf(caption, sizeof(caption), "%.9s", products[owner].name);
-    tft.setTextColor(mine ? COL_BG_TOP : COL_TEXT_DIM, fill);
-    centerTextInBox(caption, y + 27, x, w);
+    if (h >= 44) {
+      auiPut(label, AL_CENTER, x + 4, MOTOR_BTN_W - 8, y + h / 2 - 9, txt, FACE_MD);
+      char caption[16];
+      if (mine) snprintf(caption, sizeof(caption), "Selected");
+      else if (owner == -1) snprintf(caption, sizeof(caption), "Free");
+      else snprintf(caption, sizeof(caption), "%s", products[owner].name);
+      auiPut(caption, AL_CENTER, x + 4, MOTOR_BTN_W - 8, y + h / 2 + 12,
+             mine ? COL_BG_TOP : COL_TEXT_DIM, FACE_XS);
+    } else {
+      auiPut(label, AL_CENTER, x + 4, MOTOR_BTN_W - 8, y + h / 2, txt, FACE_MD);
+    }
   }
 
-  drawBackButton("< Back");
+  int hintY = MOTOR_BTN_Y0 + motorGridRows() * (h + MOTOR_BTN_GAP) + 8;
+  if (hintY <= 186) auiHint("Tap a motor to assign or release it", hintY);
+
+  auiBarButton(0, 1, "Done", ABTN_PRIMARY);
 }
 
 void handleAdminMotorAssignScreen() {
@@ -63,16 +71,15 @@ void handleAdminMotorAssignScreen() {
       mapTouchToScreen(raw, sx, sy);
       int i = adminEditingSlot;
 
-      if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
+      if (auiBarHit(sx, sy, 0, 1)) {
         currentScreen = SCREEN_ADMIN_EDIT;
         drawAdminEditScreen();
         return;
       }
 
+      int h = motorBtnH();
       for (int m = 0; m < MAX_MOTORS; m++) {
-        int x, y, w, h;
-        getMotorBtnRect(m, x, y, w, h);
-        if (pointInRect(sx, sy, x, y, w, h)) {
+        if (pointInRect(sx, sy, motorBtnX(m), motorBtnY(m), MOTOR_BTN_W, h)) {
           bool mine = (products[i].motorMask & (1 << m)) != 0;
           if (mine) {
             products[i].motorMask &= ~(1 << m);
@@ -98,24 +105,34 @@ void handleAdminMotorAssignScreen() {
 // =====================================================
 //           ADMIN MOTOR STOCK SCREEN
 // =====================================================
-// All MAX_MOTORS rows don't fit at once with usable touch targets on a
-// 320x240 screen, so this paginates MOTORS_PER_PAGE at a time (the original
-// row layout/sizing, proven at 6-per-page, is unchanged).
-const int MSTOCK_ROW_X = 20, MSTOCK_ROW_W = 280, MSTOCK_ROW_H = 21;
-const int MSTOCK_ROW_Y0 = 44, MSTOCK_ROW_GAP = 3;
-
-// MOTORS_PER_PAGE, MOTOR_STOCK_PAGES, and motorStockPage live in
-// Core_02_AppState.ino — see the comment there for why.
+// One row per motor, MOTORS_PER_PAGE (Core_02_AppState.ino) to a page:
+//
+//   <product name>     [Test]  [-]  [ qty ]  [+]
+//   Motor 1
+//
+// Tapping the quantity box opens a keypad to type an exact figure; - and +
+// step by one. A quantity at or below the low-stock alert level is drawn in
+// the danger colour so a nearly empty motor stands out without opening
+// anything. Test runs the motor for the product's normal dispense time.
+const int MSTOCK_ROW_X = 16, MSTOCK_ROW_W = 288, MSTOCK_ROW_H = 34;
+const int MSTOCK_ROW_Y0 = 40, MSTOCK_ROW_GAP = 4;
+const int MSTOCK_RIGHT = MSTOCK_ROW_X + MSTOCK_ROW_W - 8;   // right edge of the stepper
+const int MSTOCK_TEST_W = 44;
 
 int motorStockRowY(int row) {
   return MSTOCK_ROW_Y0 + row * (MSTOCK_ROW_H + MSTOCK_ROW_GAP);
 }
+int motorStockRowCY(int row) { return motorStockRowY(row) + MSTOCK_ROW_H / 2; }
+int motorStockTestX() { return auiStepLeftX(MSTOCK_RIGHT) - 6 - MSTOCK_TEST_W; }
 
 // ---------- Edit keypad (type an exact stock figure) ----------
 // A modal drawn over this screen rather than a screen of its own: motorEditing
-// is the motor being edited, or -1 when the normal list is showing.
-const int MKP_X0 = 47, MKP_Y0 = 78, MKP_W = 70, MKP_H = 24, MKP_GX = 8, MKP_GY = 3;
-const char* const MKP_LABELS[12] = {"1","2","3","4","5","6","7","8","9","C","0","DEL"};
+// is the motor being edited, or -1 when the normal list is showing. The keys
+// take the left of the screen and Save/Cancel the right, so there is no bottom
+// bar on this view and the keys can be full height.
+const int MKP_X0 = 16, MKP_Y0 = 78, MKP_W = 62, MKP_H = 32, MKP_GX = 6, MKP_GY = 4;
+const int MKP_SIDE_X = 226, MKP_SIDE_W = 78, MKP_SIDE_H = 68;
+const char* const MKP_LABELS[12] = {"1","2","3","4","5","6","7","8","9","Clear","0","Del"};
 
 void getKeypadKeyRect(int k, int &x, int &y) {
   x = MKP_X0 + (k % 3) * (MKP_W + MKP_GX);
@@ -123,33 +140,29 @@ void getKeypadKeyRect(int k, int &x, int &y) {
 }
 
 void drawMotorEditValue() {
-  tft.fillRoundRect(60, 42, 200, 30, 6, COL_CARD);
-  tft.drawRoundRect(60, 42, 200, 30, 6, COL_CARD_BRD);
-  tft.setTextSize(3);
-  tft.setTextColor(COL_TEXT, COL_CARD);
-  centerTextInBox(motorEditBuf[0] ? motorEditBuf : "0", 47, 60, 200);
+  tft.fillRoundRect(16, 38, 288, 34, 8, COL_CARD);
+  tft.drawRoundRect(16, 38, 288, 34, 8, COL_CARD_BRD);
+  auiPut(motorEditBuf[0] ? motorEditBuf : "0", AL_CENTER, 24, 272, 55, COL_ACCENT, FACE_LG);
+  char lim[16];
+  snprintf(lim, sizeof(lim), "max %d", STOCK_MAX);
+  auiPut(lim, AL_RIGHT, 200, 96, 55, COL_TEXT_DIM, FACE_XS);
 }
 
 void drawMotorEditKeypad() {
   drawGradientBackground();
   char title[24];
-  snprintf(title, sizeof(title), "M%d Stock (max %d)", motorEditing + 1, STOCK_MAX);
+  snprintf(title, sizeof(title), "Motor %d Stock", motorEditing + 1);
   drawScreenTitle(title);
   drawMotorEditValue();
 
   for (int k = 0; k < 12; k++) {
     int x, y;
     getKeypadKeyRect(k, x, y);
-    drawCardShadow(x, y, MKP_W, MKP_H, 6);
-    tft.fillRoundRect(x, y, MKP_W, MKP_H, 6, COL_CARD);
-    tft.drawRoundRect(x, y, MKP_W, MKP_H, 6, COL_CARD_BRD);
-    tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT, COL_CARD);
-    centerTextInBox(MKP_LABELS[k], y + 5, x, MKP_W);
+    auiButton(x, y, MKP_W, MKP_H, MKP_LABELS[k], ABTN_SECONDARY, (k == 9 || k == 11) ? FACE_SM : FACE_MD);
   }
 
-  drawBackButton("Cancel");
-  drawProceedButton("Save");
+  auiButton(MKP_SIDE_X, MKP_Y0, MKP_SIDE_W, MKP_SIDE_H, "Save", ABTN_PRIMARY, FACE_MD);
+  auiButton(MKP_SIDE_X, MKP_Y0 + MKP_SIDE_H + MKP_GY, MKP_SIDE_W, MKP_SIDE_H, "Cancel", ABTN_SECONDARY, FACE_MD);
 }
 
 void handleMotorEditKeypad() {
@@ -159,12 +172,12 @@ void handleMotorEditKeypad() {
   int sx, sy;
   mapTouchToScreen(raw, sx, sy);
 
-  if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
+  if (pointInRect(sx, sy, MKP_SIDE_X, MKP_Y0 + MKP_SIDE_H + MKP_GY, MKP_SIDE_W, MKP_SIDE_H)) {
     motorEditing = -1;
     drawAdminMotorStockScreen();
     return;
   }
-  if (pointInRect(sx, sy, BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H)) {
+  if (pointInRect(sx, sy, MKP_SIDE_X, MKP_Y0, MKP_SIDE_W, MKP_SIDE_H)) {
     int m = motorEditing;
     motorStock[m] = constrain(atoi(motorEditBuf), 0, STOCK_MAX);
     saveMotorStockSlot(m);
@@ -200,12 +213,6 @@ void handleMotorEditKeypad() {
   }
 }
 
-// Left edge and width of the Edit button, which sits just left of "T".
-void getMotorEditBtn(int testX, int &x, int &w) {
-  w = 36;
-  x = testX - 6 - w;
-}
-
 void drawAdminMotorStockScreen() {
   if (motorEditing >= 0) { drawMotorEditKeypad(); return; }
   drawGradientBackground();
@@ -218,67 +225,37 @@ void drawAdminMotorStockScreen() {
   for (int row = 0; row < rowsOnPage; row++) {
     int m = firstMotor + row;
     int y = motorStockRowY(row);
-    int h = MSTOCK_ROW_H;
-    drawCard(MSTOCK_ROW_X, y, MSTOCK_ROW_W, h, 5);
+    int cy = motorStockRowCY(row);
+    auiRow(MSTOCK_ROW_X, y, MSTOCK_ROW_W, MSTOCK_ROW_H);
 
     int owner = productForMotor(m);
-    char label[20];
-    if (owner == -1) snprintf(label, sizeof(label), "M%d: (unassigned)", m + 1);
-    else snprintf(label, sizeof(label), "M%d: %.10s", m + 1, products[owner].name);
+    int labelW = motorStockTestX() - 8 - (MSTOCK_ROW_X + 10);
+    if (owner == -1) auiPut("Unassigned", AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 11, COL_TEXT_DIM, FACE_MD);
+    else             auiPut(products[owner].name, AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 11, COL_TEXT, FACE_MD);
+    char sub[12];
+    snprintf(sub, sizeof(sub), "Motor %d", m + 1);
+    auiPut(sub, AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 26, COL_TEXT_DIM, FACE_XS);
 
-    int btnSize = constrain(h - 6, 14, 26);
-    int plusX = MSTOCK_ROW_X + MSTOCK_ROW_W - 8 - btnSize;
-    int qtyBoxW = 30;
-    int qtyBoxX = plusX - 4 - qtyBoxW;
-    int minusX = qtyBoxX - 4 - btnSize;
-    int testX  = minusX - 6 - btnSize;
-    int btnY = y + (h - btnSize) / 2;
+    auiRowButton(motorStockTestX(), cy, MSTOCK_TEST_W, "Test", ABTN_SECONDARY);
 
-    tft.setTextSize(1);
-    tft.setTextColor(COL_TEXT, COL_CARD);
-    tft.setCursor(MSTOCK_ROW_X + 6, y + (h - 8) / 2);
-    tft.print(label);
-
-    int editX, editW;
-    getMotorEditBtn(testX, editX, editW);
-    tft.fillRoundRect(editX, btnY, editW, btnSize, 4, COL_BG_TOP);
-    tft.drawRoundRect(editX, btnY, editW, btnSize, 4, COL_CARD_BRD);
-    tft.setTextColor(COL_ACCENT, COL_BG_TOP);
-    centerTextInBox("Edit", btnY + btnSize / 2 - 4, editX, editW);
-
-    tft.fillRoundRect(testX, btnY, btnSize, btnSize, 4, COL_BG_TOP);
-    tft.drawRoundRect(testX, btnY, btnSize, btnSize, 4, COL_CARD_BRD);
-    tft.setTextColor(COL_ACCENT, COL_BG_TOP);
-    centerTextInBox("T", btnY + btnSize / 2 - 4, testX, btnSize);
-
-    tft.fillRoundRect(minusX, btnY, btnSize, btnSize, 4, COL_ACCENT);
-    tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-    centerTextInBox("-", btnY + btnSize / 2 - 4, minusX, btnSize);
-
-    // Rounded to match the "T"/"-"/"+" buttons either side of it — was a
-    // sharp-cornered fillRect, the one shape on the row that didn't match.
-    // No shadow: it's nested on an already-shadowed row card, and a
-    // read-only figure, not a control.
-    tft.fillRoundRect(qtyBoxX, btnY, qtyBoxW, btnSize, 4, COL_CARD);
-    tft.setTextColor(COL_TEXT, COL_CARD);
-    char qbuf[4];
+    char qbuf[6];
     snprintf(qbuf, sizeof(qbuf), "%d", motorStock[m]);
-    centerTextInBox(qbuf, btnY + btnSize / 2 - 4, qtyBoxX, qtyBoxW);
-
-    tft.fillRoundRect(plusX, btnY, btnSize, btnSize, 4, COL_ACCENT);
-    tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-    centerTextInBox("+", btnY + btnSize / 2 - 4, plusX, btnSize);
+    bool low = motorIsActive(m) && motorStock[m] <= lowStockThreshold;
+    auiStepper(MSTOCK_RIGHT, cy, qbuf, low ? COL_DANGER : COL_ACCENT);
   }
 
-  drawBackButton("< Back");
+  if (rowsOnPage < MOTORS_PER_PAGE) {
+    int hintY = motorStockRowY(rowsOnPage) + 8;
+    if (hintY <= 186) auiHint("Tap a quantity to type an exact figure", hintY);
+  }
 
-  // With MAX_MOTORS at 5 every motor fits on one page, so the pager would be
-  // a button that visibly does nothing. Drawn only when it has somewhere to
-  // go — the paging code stays for a build with more motors.
   if (MOTOR_STOCK_PAGES > 1) {
     char pageLabel[16];
-    snprintf(pageLabel, sizeof(pageLabel), "Page %d/%d >", motorStockPage + 1, MOTOR_STOCK_PAGES);
-    drawProceedButton(pageLabel);
+    snprintf(pageLabel, sizeof(pageLabel), "Page %d/%d", motorStockPage + 1, MOTOR_STOCK_PAGES);
+    auiBarButton(0, 2, "Back", ABTN_SECONDARY);
+    auiBarButton(1, 2, pageLabel, ABTN_PRIMARY);
+  } else {
+    auiBarButton(0, 1, "Back", ABTN_SECONDARY);
   }
 }
 
@@ -291,14 +268,14 @@ void handleAdminMotorStockScreen() {
       int sx, sy;
       mapTouchToScreen(raw, sx, sy);
 
-      if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
+      int slots = (MOTOR_STOCK_PAGES > 1) ? 2 : 1;
+      if (auiBarHit(sx, sy, 0, slots)) {
         currentScreen = SCREEN_ADMIN_PANEL;
         drawAdminPanelScreen();
         return;
       }
 
-      if (MOTOR_STOCK_PAGES > 1 &&
-          pointInRect(sx, sy, BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H)) {
+      if (MOTOR_STOCK_PAGES > 1 && auiBarHit(sx, sy, 1, slots)) {
         motorStockPage = (motorStockPage + 1) % MOTOR_STOCK_PAGES;
         drawAdminMotorStockScreen();
         return;
@@ -309,38 +286,24 @@ void handleAdminMotorStockScreen() {
 
       for (int row = 0; row < rowsOnPage; row++) {
         int m = firstMotor + row;
-        int y = motorStockRowY(row);
-        int h = MSTOCK_ROW_H;
-        int btnSize = constrain(h - 6, 14, 26);
-        int plusX = MSTOCK_ROW_X + MSTOCK_ROW_W - 8 - btnSize;
-        int qtyBoxW = 30;
-        int qtyBoxX = plusX - 4 - qtyBoxW;
-        int minusX = qtyBoxX - 4 - btnSize;
-        int testX  = minusX - 6 - btnSize;
-        int btnY = y + (h - btnSize) / 2;
+        int cy = motorStockRowCY(row);
 
-        int editX, editW;
-        getMotorEditBtn(testX, editX, editW);
-        if (pointInRect(sx, sy, editX, btnY, editW, btnSize)) {
-          motorEditing = m;
-          snprintf(motorEditBuf, sizeof(motorEditBuf), "%d", motorStock[m]);
-          drawMotorEditKeypad();
-          return;
-        }
-        if (pointInRect(sx, sy, testX, btnY, btnSize, btnSize)) {
+        if (auiRowButtonHit(sx, sy, motorStockTestX(), cy, MSTOCK_TEST_W)) {
           int owner = productForMotor(m);
           runMotorPulse(m, (owner >= 0) ? runTimeForProduct(owner) : MOTOR_TEST_MS);
           lastTouchTime = millis();
           return;
         }
-        if (pointInRect(sx, sy, minusX, btnY, btnSize, btnSize)) {
+
+        int step = auiStepTouch(sx, sy, MSTOCK_RIGHT, cy);
+        if (step < 0) {
           if (motorStock[m] > 0) motorStock[m]--;
           saveMotorStockSlot(m);
           refreshLowStockArm();
           drawAdminMotorStockScreen();
           return;
         }
-        if (pointInRect(sx, sy, plusX, btnY, btnSize, btnSize)) {
+        if (step > 0) {
           // Capped at STOCK_MAX (CFG_STOCK_MAX from Config.h), not an
           // arbitrary 99 — that's the ceiling a technician flashed for this
           // machine's chute/hopper capacity.
@@ -350,6 +313,13 @@ void handleAdminMotorStockScreen() {
           // refilled, without mailing anything mid-refill.
           refreshLowStockArm();
           drawAdminMotorStockScreen();
+          return;
+        }
+
+        if (pointInRect(sx, sy, auiStepValX(MSTOCK_RIGHT), cy - ASTEP_H / 2, ASTEP_VAL_W, ASTEP_H)) {
+          motorEditing = m;
+          snprintf(motorEditBuf, sizeof(motorEditBuf), "%d", motorStock[m]);
+          drawMotorEditKeypad();
           return;
         }
       }

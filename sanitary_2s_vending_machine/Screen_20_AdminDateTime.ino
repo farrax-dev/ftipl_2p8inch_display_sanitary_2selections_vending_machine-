@@ -13,28 +13,31 @@
 // in 12h mode the Hour field shows 1-12 with an AM/PM chip instead of 0-23,
 // so the stepper can never be walked past 12 the way it used to be able to
 // when the range check didn't know about clock24Hour at all.
-const int DT_ROW_X = 14, DT_ROW_W = 292, DT_ROW_H = 26;
-const int DT_ROW_Y0 = 38, DT_ROW_GAP = 4;
 const int DT_FIELD_COUNT = 5;
 
-const int DT_BTN_W = 24, DT_VAL_W = 60;
-const int DT_PLUS_X  = DT_ROW_X + DT_ROW_W - 8 - DT_BTN_W;
-const int DT_VAL_X   = DT_PLUS_X - 6 - DT_VAL_W;
-const int DT_MINUS_X = DT_VAL_X - 6 - DT_BTN_W;
+// Five columns, one per field, each a vertical stepper: [+] over the value over
+// [-], with the field name above. Whole-width buttons 34px tall are far easier
+// to hit than the 24x20 side-by-side -/+ the old row layout squeezed in, and
+// the five fields read left to right as the date and time do.
+const int DT_COL_W[DT_FIELD_COUNT] = { 44, 44, 72, 54, 54 };
+const int DT_COL_GAP = 5;
+const int DT_LABEL_CY = 47;
+const int DT_PLUS_Y = 56,  DT_PLUS_H = 34;
+const int DT_VAL_Y  = 93,  DT_VAL_H  = 30;
+const int DT_MINUS_Y = 126, DT_MINUS_H = 34;
+// AM/PM chip, Hour column only, in the space under its [-] button — only
+// drawn/hit-tested when clock24Hour is off. Tapping it flips the real 24-hour
+// value by 12 hours, same as stepping the Hour field twelve times but in one
+// tap.
+const int DT_AMPM_Y = 164, DT_AMPM_H = 26;
 
-// AM/PM chip, Hour row only, in the space between its label and the -/value/+
-// stepper — only drawn/hit-tested when clock24Hour is off. Tapping it flips
-// the real 24-hour value by 12 hours, same as stepping the Hour field twelve
-// times but in one tap.
-const int DT_AMPM_W = 44;
-const int DT_AMPM_X = DT_MINUS_X - 6 - DT_AMPM_W;
+// Bottom bar: Cancel / 12h-24h / Save. Slots from Core_08b_AdminUI.ino.
 
-// Custom 3-button bottom bar (Cancel / 12h-24h / Save) rather than the usual
-// Back+Proceed pair — this screen needs a third control and the standard bar
-// only budgets for two.
-const int DT_BAR_BACK_X = 8,   DT_BAR_BACK_W = 94;
-const int DT_BAR_12H_X  = 110, DT_BAR_12H_W  = 94;
-const int DT_BAR_SAVE_X = 212, DT_BAR_SAVE_W = 100;
+int dtColX(int f) {
+  int x = 16;
+  for (int k = 0; k < f; k++) x += DT_COL_W[k] + DT_COL_GAP;
+  return x;
+}
 
 const char* const DT_FIELD_LABELS[DT_FIELD_COUNT] = { "Day", "Month", "Year", "Hour", "Minute" };
 
@@ -42,10 +45,6 @@ const char* const DT_FIELD_LABELS[DT_FIELD_COUNT] = { "Day", "Month", "Year", "H
 // tapped, the same "edit a copy, commit on Done" shape the text-entry field
 // it replaces used.
 int dtEditDay = 1, dtEditMonth = 1, dtEditYear = 2026, dtEditHour = 0, dtEditMinute = 0;
-
-int dtRowY(int row) {
-  return DT_ROW_Y0 + row * (DT_ROW_H + DT_ROW_GAP);
-}
 
 // Hour field only: converts the stored 24-hour value to what a 12-hour clock
 // shows (1-12), so the on-screen figure and the +/- range agree with the
@@ -147,71 +146,48 @@ void commitAdminDateTime() {
   rtcWriteTime(t);
 }
 
+void dtDrawGlyph(int x, int w, int y, int h, bool plus) {
+  int cx = x + w / 2, cy = y + h / 2;
+  tft.fillRect(cx - 7, cy - 1, 15, 3, COL_BG_TOP);
+  if (plus) tft.fillRect(cx - 1, cy - 7, 3, 15, COL_BG_TOP);
+}
+
 void drawAdminDateTimeScreen() {
   drawGradientBackground();
   drawScreenTitle("Date & Time");
 
   for (int f = 0; f < DT_FIELD_COUNT; f++) {
-    int y = dtRowY(f);
-    drawCard(DT_ROW_X, y, DT_ROW_W, DT_ROW_H, 5);
+    int x = dtColX(f), w = DT_COL_W[f];
 
-    tft.setTextSize(1);
-    tft.setTextColor(COL_TEXT, COL_CARD);
-    tft.setCursor(DT_ROW_X + 10, y + (DT_ROW_H - 8) / 2);
-    tft.print(DT_FIELD_LABELS[f]);
+    auiPut(DT_FIELD_LABELS[f], AL_CENTER, x - 2, w + 4, DT_LABEL_CY, COL_TEXT, FACE_SM);
 
-    int ctrlY = y + 3, ctrlH = DT_ROW_H - 6;
-    int textY = ctrlY + (ctrlH - 16) / 2;
+    drawCardShadow(x, DT_PLUS_Y, w, DT_PLUS_H, 8);
+    tft.fillRoundRect(x, DT_PLUS_Y, w, DT_PLUS_H, 8, COL_ACCENT);
+    dtDrawGlyph(x, w, DT_PLUS_Y, DT_PLUS_H, true);
 
-    drawCardShadow(DT_MINUS_X, ctrlY, DT_BTN_W, ctrlH, 4);
-    tft.fillRoundRect(DT_MINUS_X, ctrlY, DT_BTN_W, ctrlH, 4, COL_ACCENT);
-    tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-    tft.setTextSize(2);
-    centerTextInBox("-", textY, DT_MINUS_X, DT_BTN_W);
-
-    // Rounded to match the flanking -/+ buttons; no shadow, read-only figure.
-    tft.fillRoundRect(DT_VAL_X, ctrlY, DT_VAL_W, ctrlH, 4, COL_BG_TOP);
-    tft.setTextColor(COL_ACCENT, COL_BG_TOP);
-    tft.setTextSize(2);
+    tft.fillRoundRect(x, DT_VAL_Y, w, DT_VAL_H, 6, COL_CARD);
+    tft.drawRoundRect(x, DT_VAL_Y, w, DT_VAL_H, 6, COL_CARD_BRD);
     char vbuf[8];
     snprintf(vbuf, sizeof(vbuf), (f == 2) ? "%04d" : "%02d", dtFieldValue(f));
-    centerTextInBox(vbuf, textY, DT_VAL_X, DT_VAL_W);
+    auiPut(vbuf, AL_CENTER, x + 2, w - 4, DT_VAL_Y + DT_VAL_H / 2, COL_ACCENT, FACE_MD);
 
-    drawCardShadow(DT_PLUS_X, ctrlY, DT_BTN_W, ctrlH, 4);
-    tft.fillRoundRect(DT_PLUS_X, ctrlY, DT_BTN_W, ctrlH, 4, COL_ACCENT);
-    tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-    tft.setTextSize(2);
-    centerTextInBox("+", textY, DT_PLUS_X, DT_BTN_W);
+    drawCardShadow(x, DT_MINUS_Y, w, DT_MINUS_H, 8);
+    tft.fillRoundRect(x, DT_MINUS_Y, w, DT_MINUS_H, 8, COL_ACCENT);
+    dtDrawGlyph(x, w, DT_MINUS_Y, DT_MINUS_H, false);
 
-    // AM/PM chip, Hour row only, 12h mode only — tells the two halves of the
-    // day apart now that the value above tops out at 12 instead of 23, and
-    // doubles as a one-tap way to jump 12 hours instead of stepping there.
+    // AM/PM chip, Hour column only, 12h mode only — tells the two halves of
+    // the day apart now that the value above tops out at 12 instead of 23.
     if (f == 3 && !clock24Hour) {
-      drawCardShadow(DT_AMPM_X, ctrlY, DT_AMPM_W, ctrlH, 4);
-      tft.fillRoundRect(DT_AMPM_X, ctrlY, DT_AMPM_W, ctrlH, 4, COL_ACCENT);
-      tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-      tft.setTextSize(1);
-      centerTextInBox(dtEditHour >= 12 ? "PM" : "AM", ctrlY + (ctrlH - 8) / 2, DT_AMPM_X, DT_AMPM_W);
+      auiButton(x, DT_AMPM_Y, w, DT_AMPM_H, dtEditHour >= 12 ? "PM" : "AM", ABTN_SECONDARY, FACE_SM);
     }
   }
 
-  drawCard(DT_BAR_BACK_X, BTN_Y, DT_BAR_BACK_W, BTN_H, 8);
-  tft.setTextSize(2);
-  tft.setTextColor(COL_TEXT, COL_CARD);
-  centerTextInBox("Cancel", BTN_Y + 9, DT_BAR_BACK_X, DT_BAR_BACK_W);
-
+  auiBarButton(0, 3, "Cancel", ABTN_SECONDARY);
   // Core_06_Network.ino's clock24Hour, toggled here — also reshapes the Hour
   // stepper above (1-12 + AM/PM chip vs. 0-23) rather than being purely
   // cosmetic for the Welcome screen clock the way it used to be.
-  drawCardShadow(DT_BAR_12H_X, BTN_Y, DT_BAR_12H_W, BTN_H, 8);
-  tft.fillRoundRect(DT_BAR_12H_X, BTN_Y, DT_BAR_12H_W, BTN_H, 8, COL_ACCENT);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-  centerTextInBox(clock24Hour ? "24h" : "12h", BTN_Y + 9, DT_BAR_12H_X, DT_BAR_12H_W);
-
-  drawCardShadow(DT_BAR_SAVE_X, BTN_Y, DT_BAR_SAVE_W, BTN_H, 8);
-  tft.fillRoundRect(DT_BAR_SAVE_X, BTN_Y, DT_BAR_SAVE_W, BTN_H, 8, COL_ACCENT);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
-  centerTextInBox("Save", BTN_Y + 9, DT_BAR_SAVE_X, DT_BAR_SAVE_W);
+  auiBarButton(1, 3, clock24Hour ? "24 hour" : "12 hour", ABTN_SECONDARY);
+  auiBarButton(2, 3, "Save", ABTN_PRIMARY);
 }
 
 void handleAdminDateTimeScreen() {
@@ -222,20 +198,21 @@ void handleAdminDateTimeScreen() {
   int sx, sy;
   mapTouchToScreen(raw, sx, sy);
 
-  if (pointInRect(sx, sy, DT_BAR_BACK_X, BTN_Y, DT_BAR_BACK_W, BTN_H)) {
-    currentScreen = SCREEN_ADMIN_PANEL;
-    drawAdminPanelScreen();
+  // Cancel and Save both come back to the Machine screen, where Clock lives.
+  if (auiBarHit(sx, sy, 0, 3)) {
+    currentScreen = SCREEN_ADMIN_MACHINE;
+    drawAdminMachineScreen();
     return;
   }
 
-  if (pointInRect(sx, sy, DT_BAR_SAVE_X, BTN_Y, DT_BAR_SAVE_W, BTN_H)) {
+  if (auiBarHit(sx, sy, 2, 3)) {
     commitAdminDateTime();
-    currentScreen = SCREEN_ADMIN_PANEL;
-    drawAdminPanelScreen();
+    currentScreen = SCREEN_ADMIN_MACHINE;
+    drawAdminMachineScreen();
     return;
   }
 
-  if (pointInRect(sx, sy, DT_BAR_12H_X, BTN_Y, DT_BAR_12H_W, BTN_H)) {
+  if (auiBarHit(sx, sy, 1, 3)) {
     clock24Hour = !clock24Hour;
     saveClock24Hour();
     drawAdminDateTimeScreen();
@@ -243,21 +220,20 @@ void handleAdminDateTimeScreen() {
   }
 
   for (int f = 0; f < DT_FIELD_COUNT; f++) {
-    int y = dtRowY(f);
-    int ctrlY = y + 3, ctrlH = DT_ROW_H - 6;
+    int x = dtColX(f), w = DT_COL_W[f];
 
-    if (f == 3 && !clock24Hour && pointInRect(sx, sy, DT_AMPM_X, ctrlY, DT_AMPM_W, ctrlH)) {
+    if (f == 3 && !clock24Hour && pointInRect(sx, sy, x, DT_AMPM_Y, w, DT_AMPM_H)) {
       dtEditHour = (dtEditHour + 12) % 24;
       drawAdminDateTimeScreen();
       return;
     }
 
-    if (pointInRect(sx, sy, DT_MINUS_X, ctrlY, DT_BTN_W, ctrlH)) {
+    if (pointInRect(sx, sy, x, DT_MINUS_Y - 2, w, DT_MINUS_H + 4)) {
       dtStepField(f, -1);
       drawAdminDateTimeScreen();
       return;
     }
-    if (pointInRect(sx, sy, DT_PLUS_X, ctrlY, DT_BTN_W, ctrlH)) {
+    if (pointInRect(sx, sy, x, DT_PLUS_Y - 4, w, DT_PLUS_H + 4)) {
       dtStepField(f, 1);
       drawAdminDateTimeScreen();
       return;

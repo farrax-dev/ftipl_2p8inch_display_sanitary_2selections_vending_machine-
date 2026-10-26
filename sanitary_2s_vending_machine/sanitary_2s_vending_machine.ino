@@ -20,6 +20,8 @@
 //   6. Core_06_Network.ino       - WiFi/NTP/UPI(PhonePe) config + connectivity
 //   7. Core_07_WiFiIndicator.ino  - status-bar WiFi signal icon
 //   8. Core_08_UIHelpers.ino      - shared buttons/text/layout drawing helpers
+//      Core_08b_AdminUI.ino      - admin UI kit: serif text, buttons, switches,
+//                                  steppers, bottom bar (every Screen_07-24 uses it)
 //   9. Core_09_Storage.ino        - NVS persistence + product/stock data
 //  10. Core_10_Cart.ino           - shopping cart state
 //  11. Core_11_Dispense.ino       - motor dispensing logic
@@ -126,7 +128,10 @@ enum AppScreen {
   SCREEN_ADMIN_RFID_CARDS,
   SCREEN_ADMIN_RFID_CARD_EDIT,
   SCREEN_ADMIN_DATETIME,
-  SCREEN_ADMIN_RFID_RESET
+  SCREEN_ADMIN_RFID_RESET,
+  SCREEN_ADMIN_PRODUCTS,   // product grid, between the panel and Edit Product
+  SCREEN_ADMIN_NETWORK,    // WiFi + 4G summary, between the panel and each setup
+  SCREEN_ADMIN_MACHINE     // max qty, machine ID, PIN, clock
 };
 
 // Sizing comes from Config.h so a new machine needs no edits here. Both are
@@ -164,7 +169,6 @@ bool rtcReadTime(struct tm &out);
 bool rtcWriteTime(const struct tm &t);
 String computePhonePeChecksum(const String &base64Body, const String &endpointPath);
 void upiQRDisplay(esp_qrcode_handle_t qr);
-void getMotorBtnRect(int m, int &x, int &y, int &w, int &h);
 const KeyDef* kbRow(int row);
 void getKeyRect(int row, int keyIdx, int &x, int &y, int &w, int &h);
 void openTextEntry(TextEntryTarget target);

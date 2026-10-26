@@ -1,8 +1,13 @@
 // =====================================================
 //           ADMIN COIN ACCEPTOR CONFIG SCREEN
 // =====================================================
-const int COIN_ROW_X = 20, COIN_ROW_W = 280, COIN_ROW_H = 26;
-const int COIN_ROW_Y0 = 50, COIN_ROW_GAP = 8;
+// One row per denomination the acceptor can be taught, each a switch between
+// Accept and Reject (a rejected coin is returned by the acceptor, never
+// credited).
+const int COIN_ROW_X = 16, COIN_ROW_W = 288, COIN_ROW_H = 32;
+const int COIN_ROW_Y0 = 40, COIN_ROW_GAP = 6;
+const int COIN_RIGHT = COIN_ROW_X + COIN_ROW_W - 8;
+const int COIN_SW_W = 90;
 
 int coinRowY(int d) {
   return COIN_ROW_Y0 + d * (COIN_ROW_H + COIN_ROW_GAP);
@@ -14,30 +19,19 @@ void drawAdminCoinScreen() {
   drawScreenTitle("Coin Acceptor");
 
   for (int d = 0; d < COIN_DENOM_COUNT; d++) {
-    int y = coinRowY(d);
-    drawCard(COIN_ROW_X, y, COIN_ROW_W, COIN_ROW_H, 6);
+    int y = coinRowY(d), cy = y + COIN_ROW_H / 2;
+    auiRow(COIN_ROW_X, y, COIN_ROW_W, COIN_ROW_H);
 
-    tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT, COL_CARD);
-    char label[12];
+    char label[16];
     // "Re. 1" for the singular rupee, "Rs. N" for the rest
     if (COIN_DENOM_VALUES[d] == 1) snprintf(label, sizeof(label), "Re. 1 coin");
     else snprintf(label, sizeof(label), "Rs. %d coin", COIN_DENOM_VALUES[d]);
-    tft.setCursor(COIN_ROW_X + 10, y + 5);
-    tft.print(label);
+    auiRowLabel(COIN_ROW_X + 12, cy, 150, label);
 
-    int toggleW = 90, toggleH = 20;
-    int toggleX = COIN_ROW_X + COIN_ROW_W - toggleW - 8;
-    int toggleY = y + (COIN_ROW_H - toggleH) / 2;
-    uint16_t toggleColor = coinDenomEnabled[d] ? COL_ACCENT : COL_BG_TOP;
-    tft.fillRoundRect(toggleX, toggleY, toggleW, toggleH, 5, toggleColor);
-    tft.drawRoundRect(toggleX, toggleY, toggleW, toggleH, 5, COL_CARD_BRD);
-    tft.setTextSize(1);
-    tft.setTextColor(coinDenomEnabled[d] ? COL_BG_TOP : COL_TEXT_DIM, toggleColor);
-    centerTextInBox(coinDenomEnabled[d] ? "ACCEPTED" : "REJECTED", toggleY + 6, toggleX, toggleW);
+    auiSwitch(COIN_RIGHT, cy, coinDenomEnabled[d], COIN_SW_W, "Accept", "Reject");
   }
 
-  drawBackButton("< Back");
+  auiBarButton(0, 1, "Back", ABTN_SECONDARY);
 }
 
 void handleAdminCoinScreen() {
@@ -48,7 +42,7 @@ void handleAdminCoinScreen() {
       int sx, sy;
       mapTouchToScreen(raw, sx, sy);
 
-      if (pointInRect(sx, sy, BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H)) {
+      if (auiBarHit(sx, sy, 0, 1)) {
         currentScreen = SCREEN_ADMIN_SETTINGS;
         drawAdminSettingsScreen();
         return;

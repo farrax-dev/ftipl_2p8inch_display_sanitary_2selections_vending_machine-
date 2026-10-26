@@ -128,35 +128,49 @@ This document catalogues every feature of the machine end to end: what a custome
 - "Cancel" on the PIN screen returns to Welcome with no PIN needed.
 
 ### 3.2 Admin Panel (Home)
-- Lists every product slot with its name, price, assigned motor(s), and enabled/disabled state; tapping a row opens that product's editor.
-- Quick-nav chips to Clock (Date & Time), Report (Sales Report), and Setup (Settings).
-- "Motor Stock" button for refilling, and "Exit Admin" to return to the customer-facing Welcome screen.
+The hub every admin task starts from: six large tiles, each with a live one-line summary so the state of the machine is visible before anything is opened, plus "Exit Admin" to return to the customer-facing Welcome screen.
+
+| Tile | Summary shown | Opens |
+|------|---------------|-------|
+| Products | "2 of 2 on sale" | product grid, then the product editor (§3.3, 3.4) |
+| Stock | "14 units left" | per-motor refilling (§3.5) |
+| Payments | "Free vend", or the enabled methods ("UPI/Cash") | Free Vend, method switches, coins, RFID (§3.6, 3.7, 3.11, 3.13, 3.14) |
+| Network | "WiFi connected" / "4G connected" / "Offline" | WiFi and 4G (§3.8, 3.9) |
+| Reports | "Today Rs.120" | sales, schedule, e-mail setup (§3.12) |
+| Machine | the machine ID | max quantity, machine ID, PIN, clock (§3.6a, 3.15) |
+
+**Look and feel (every admin screen):** the Welcome screen's serif typeface in four sizes (the smallest text is 12px tall, versus 7px before), finger-sized controls (buttons are at least 26px high, usually 32-38px), and one shared control set: switches that read ON/OFF, `[-] value [+]` steppers, a bottom bar of one to three buttons, and tap-anywhere-on-the-row for anything that opens something. Text that would not fit its box shrinks one size and is then clipped with "..", so a long machine name or e-mail address can never run off a card.
 
 ### 3.3 Product Editor
-- Edit product name (on-screen keyboard).
-- Adjust price in ₹1 steps, floor ₹1, ceiling ₹999 — saved instantly, no separate confirm step.
-- Assign or reassign motor(s) to the product.
-- Enable/Disable toggle — a disabled product disappears from the customer Select screen entirely; text turns red on this screen so its state is unmistakable at a glance.
+- The **Products** screen shows one tile per product slot (two columns, up to six): name, price, motors, and a green dot when the product is on sale or a hollow dot when it is hidden.
+- The editor has four rows: Name (tap to open the on-screen keyboard), Price (`[-] n [+]`), Motors (tap to assign), and Visible (switch).
+- Price moves in ₹1 steps, floor ₹1, ceiling ₹999 — saved instantly, no separate confirm step.
+- Visible off — a disabled product disappears from the customer Select screen entirely, and is dimmed with a hollow dot on the Products screen.
 - Per-unit dispense time is intentionally a single machine-wide setting (in `Config.h`), not editable per product here.
 
 ### 3.4 Motor Assignment
-- Grid of motor buttons, each labeled with its current owner ("Mine," "Unused," or another product's name).
+- Grid of motor tiles (three across), each labeled with its current owner ("Selected," "Free," or another product's name); the product's own motors are drawn in the accent colour.
 - Assigning a motor to one product automatically takes it away from whichever product owned it before — a motor can only ever belong to one product at a time.
 
 ### 3.5 Motor Stock (Refilling)
 - Per-motor stock counter, 0 up to the commissioned ceiling (3 units on this build).
-- "T" test button fires that motor for its normal dispense duration, useful for verifying wiring/mechanism during a refill without needing a real sale.
-- Paginated automatically once the machine has more motors than fit legibly on one screen at a time (six per page) — not needed on this 2-motor build, but a fleet-wide firmware built for a larger machine handles it without any screen redesign.
+- Each row shows the product name over "Motor n", a **Test** button, and a `[-] qty [+]` stepper. Tapping the quantity itself opens a keypad (with Save / Cancel beside it) for typing an exact figure.
+- A quantity at or below the low-stock alert level is drawn in red, so a nearly empty motor stands out without opening anything.
+- Test fires that motor for its normal dispense duration, useful for verifying wiring/mechanism during a refill without needing a real sale.
+- Paginated automatically once the machine has more motors than fit legibly on one screen at a time (four per page, with a Page n/m button) — not needed on this 2-motor build, but a fleet-wide firmware built for a larger machine handles it without any screen redesign.
 - Every stock change re-arms the low-stock email alert so refilling doesn't leave a stale "still low" state hanging, without emailing anything mid-refill.
 
-### 3.6 Settings Hub
-- Maximum cart quantity stepper — floor of 1, and a ceiling fixed at whatever this machine was commissioned with; the stepper simply cannot be pushed past that ceiling from the touchscreen, no matter how many times it's tapped.
-- **Free Vend toggle** — when turned on, the machine stops charging for anything: every completed cart is dispensed for free and the customer never sees a payment method screen at all (not even a "no payment methods" dead end — that screen is skipped entirely). The Select and Cart Review "Proceed"/"Pay" buttons relabel themselves to "Get Free" so the change is obvious to a shopper. This is separate from RFID's own free-vend-for-a-registered-card feature below — this one waives payment for everyone, machine-wide.
+### 3.6 Payments
+- **Free Vend switch** — when turned on, the machine stops charging for anything: every completed cart is dispensed for free and the customer never sees a payment method screen at all (not even a "no payment methods" dead end — that screen is skipped entirely). The Select and Cart Review "Proceed"/"Pay" buttons relabel themselves to "Get Free" so the change is obvious to a shopper. This is separate from RFID's own free-vend-for-a-registered-card feature below — this one waives payment for everyone, machine-wide.
 - One ON/OFF toggle per payment method actually built into this machine (UPI, Cash, RFID) — hidden methods never show a toggle at all, and this whole section disappears while Free Vend is on, since those toggles would have nothing left to control.
-- "Show Prices" toggle — appears whenever a customer never actually pays anything: with Free Vend on, or on an RFID-only free-vend machine. Lets the admin choose whether a reference price still shows on the Select screen even though nothing is charged.
-- Machine ID field (used in report emails to identify this specific unit).
-- Admin PIN field — the value itself is never displayed, always shown as fixed "****" for security.
-- Quick links to WiFi, UPI, Coin, and 4G sub-screens. WiFi/4G links only grey out if that radio hardware isn't physically fitted on this build at all — never just because the admin switched the radio off from its own screen, so there's always a way back in to turn it back on.
+- "Show Prices" switch — appears whenever a customer never actually pays anything: with Free Vend on, or on an RFID-only free-vend machine. Lets the admin choose whether a reference price still shows on the Select screen even though nothing is charged.
+- Each method row carries its own shortcut: UPI has **Setup** (§3.7), Cash has **Coins** (§3.11), RFID has **Cards** (§3.13) and **Reset** (§3.14).
+
+### 3.6a Machine
+- Max items per order — `[-] n [+]`, floor of 1, and a ceiling fixed at whatever this machine was commissioned with; the stepper simply cannot be pushed past that ceiling from the touchscreen, no matter how many times it's tapped.
+- Machine ID (used in report emails to identify this specific unit).
+- Admin PIN — the value itself is never displayed, always shown as fixed "****" for security. Changing it asks for the new PIN twice.
+- Clock — shows the current time and opens Date & Time (§3.15).
 
 ### 3.7 UPI / PhonePe Configuration
 - Only the Merchant ID and Store ID are editable here — every other PhonePe credential (base URL, provider ID, salt key/index, terminal ID) is fixed at the factory and deliberately never even shown on screen, since this is a device that sits in a public place.
@@ -167,20 +181,21 @@ This document catalogues every feature of the machine end to end: what a custome
 - Live status: connected/not-connected/turned-off (an intentional "off" always reads differently from a real connection failure), IP address, signal strength with quality label (Excellent/Good/Fair/Weak/Very weak) and a signal-bars icon.
 - "Connect" button forces a fresh reconnect and a fresh clock resync against internet time servers, rather than waiting for the next background retry.
 - "Ping" button tests real internet reachability (not just radio association) and reports response time in milliseconds — a machine can show "Connected" with a strong signal and still fail this if the access point itself has no working uplink, which is exactly the case this button exists to catch.
-- On/off toggle for the WiFi radio itself, sharing the same slot the "Proceed" button would normally occupy on other screens.
-- Screen refreshes its live status every 3 seconds even without a touch, so signal strength and connection state never look stale while an admin is standing there watching it.
+- The **Network** screen (reached from the Network tile) summarises WiFi and 4G side by side, each with a Setup button. A radio that is not physically fitted shows "Not fitted" and does not open; a radio merely switched off still opens, so there's always a way back in to turn it on.
+- The WiFi on/off switch sits in the screen's header; Back / Connect / Ping are in the bottom bar (Connect and Ping grey out while the radio is off).
+- The status card refreshes itself every 3 seconds even without a touch (just the card, not the whole screen, so it doesn't flicker), so signal strength and connection state never look stale while an admin is standing there watching it.
 
 ### 3.9 4G/LTE Setup
 - Shows the configured cellular APN (fixed, not editable here — a wrong APN attaches but has no working DNS, so it must match the SIM's carrier exactly).
 - Live status priority: turned-off (neutral) → connected → last real error message → "not connected" — so switching the modem off doesn't leave a stale scary error on screen.
 - Signal bars when connected.
 - "Test Internet" button runs a real internet reachability test over the cellular link (skipped instantly if the modem is off, avoiding a pointless 15–20 second wait).
-- On/off toggle for the modem.
-- Screen refreshes every 3 seconds.
+- On/off switch for the modem in the header; Back / Test 4G in the bottom bar.
+- Status card refreshes every 3 seconds.
 
 ### 3.10 On-Screen Keyboard (Shared Text Entry)
 - One shared, reusable keyboard component (uppercase/lowercase/symbols layers, switchable mid-entry) used by roughly fifteen different text fields across the admin area — WiFi credentials, machine ID/name, Gmail address and app password, report recipient, nightly send times, RFID card UID/name, admin PIN, product name — so every field behaves identically rather than each screen building its own input widget.
-- A live preview line shows the field's current text alongside a running "characters used / limit" count, so there's never a surprise when a value turns out too long to save.
+- A live preview field shows the field's current text alongside a running "characters used / limit" count, so there's never a surprise when a value turns out too long to save. If the text outgrows the field, the END is shown — what was just typed. Cancel / Show / Done sit in a bar under the keys.
 - Field-specific rules are enforced automatically: e.g. the Gmail app password field strips spaces on save (Google displays it in 4 groups but accepts it either way); nightly send times are validated as real "HH:MM" values and rejected (keeping the old value) if malformed; the admin PIN must be 4–8 digits only, because the login keypad can only ever type digits — anything looser would risk locking an admin out of their own machine.
 - A manually-typed RFID card number gets the same "already registered" / "added" feedback as a real scan, so the two entry paths behave identically from the admin's point of view.
 - Masked fields (passwords, PIN) have a "Show" toggle to verify what was typed before committing, and every field has a plain "Cancel" that discards the edit and returns to wherever it was opened from without saving anything.
@@ -188,18 +203,21 @@ This document catalogues every feature of the machine end to end: what a custome
 ### 3.11 Coin Denomination Control
 - One ON/OFF row per accepted coin value (₹1, ₹2, ₹5, ₹10) — directly controls what the coin acceptor will credit on the Cash payment screen, and what the accepted-denominations line on that screen advertises to the customer. Switching a denomination off here doesn't stop the acceptor physically taking that coin, only whether it gets credited — the same "a coin, once taken, can't be returned" limitation described in §7 still applies.
 
-### 3.12 Sales Report (4 pages)
-1. **Sales overview:** lifetime transaction count, lifetime units sold, lifetime revenue, current total stock on hand, and today's units/revenue/transaction count. Tapping "Today" sends today's report by email on the spot.
-2. **By product:** a proper table (not just running text) of units sold / revenue / stock remaining per product. A disabled product with real sales history still shows (that history is real money); a disabled product with zero sales quietly drops off the list.
-3. **Schedule & housekeeping:** up to two nightly automatic report send times, low-stock alert on/off and its trigger threshold (cycles 1 through 5), a live list of which product(s) are currently at or below that threshold, how many days of history are stored (out of a 60-day rolling window), and a "Reset all data" control that requires two deliberate taps (arms red "TAP AGAIN," then executes) since it's unrecoverable.
-4. **Email setup:** Gmail sender address, app password (shown only as a character count, never the value, until explicitly revealed), report recipient address, and machine name (shown here because it appears in every email subject).
-- A global "Send Now" button sends the complete 60-day report with a full transaction spreadsheet attached; it's greyed out entirely if email isn't fully configured, rather than letting an admin wait and then fail.
+### 3.12 Reports (5 tabs)
+A tab strip across the top jumps straight to any page:
+1. **Sales:** lifetime transaction count, lifetime units sold, lifetime revenue, current total stock on hand, and today's revenue and units/transactions. Tapping the "Today" tile (it carries a Mail chip) sends today's report by email on the spot.
+2. **Items:** a proper table of units sold / revenue / stock remaining per product; row height adapts to how many products there are. A disabled product with real sales history still shows (that history is real money); a disabled product with zero sales quietly drops off the list.
+3. **Auto:** up to two nightly automatic report send times (tap to type HH:MM), low-stock alert switch, and its trigger threshold as a `[-] n [+]` stepper (1 through 5; a motor at or below it is also drawn red on the Stock screen).
+4. **Email:** Gmail sender address, app password (shown only as a character count, never the value, until explicitly revealed), report recipient address, and machine name (shown here because it appears in every email subject).
+5. **Data:** how many days of history are stored (out of the 60-day rolling window), which link reports will go out on, and "Clear sales data", which requires two deliberate taps (arms red "Tap again to erase" / Confirm, then executes) since it's unrecoverable.
+- A status line above the bottom bar shows how the last send — manual or automatic — went.
+- A global "Send Now" button sends the complete 60-day report with a full transaction spreadsheet attached; it's greyed out if email isn't fully configured, and tapping it then jumps to the Email tab to show what's missing, rather than letting an admin wait and then fail.
 
 ### 3.13 RFID Card Management
-- Paginated list of every registered card (four per page), showing its name (or raw ID if unnamed), a usage/limit badge that only appears at all for a card that actually has a limit set (left blank for the common unlimited case, rather than cluttering every row with "0/0"), and a one-tap delete (no confirmation step — deletion is treated as low-stakes since a card can simply be re-registered).
+- Paginated list of every registered card (three per page), showing its name (or raw ID if unnamed), a usage/limit badge that only appears at all for a card that actually has a limit set (left blank for the common unlimited case, rather than cluttering every row with "0/0"), and a one-tap delete (no confirmation step — deletion is treated as low-stakes since a card can simply be re-registered).
 - "Scan New Card" — hold a card near the reader; auto-cancels after 30 seconds if nothing is presented, with a Cancel button to back out sooner.
-- "Enter Manually" — type a card's ID by hand via the on-screen keyboard, for cards that can't be scanned in place.
-- Up to 50 cards can be registered at once; once that cap is reached, both add-methods show "List full" instead of failing silently or letting the admin tap through to a confusing error.
+- "Enter Number" — type a card's ID by hand via the on-screen keyboard, for cards that can't be scanned in place.
+- Up to 50 cards can be registered at once; once that cap is reached, both add buttons (Scan Card / Enter Number) show "List full" instead of failing silently or letting the admin tap through to a confusing error.
 - Per-card editor: rename, view its ID (read-only — re-registering the physical card is the only way to change it), set/adjust a withdrawal limit (0 = unlimited, capped at 999), and manually reset that card's usage counter back to zero at any time.
 
 ### 3.14 RFID Monthly Auto-Reset
@@ -209,7 +227,7 @@ This document catalogues every feature of the machine end to end: what a custome
 - Shows the last month this actually fired, for confirmation it's working.
 
 ### 3.15 Date & Time
-- Simple stepper-based entry (day/month/year/hour/minute) rather than free typing — removes any chance of a mistyped separator or AM/PM mix-up. Day steps 1–31, month 1–12, year 2024–2099 (dates aren't checked against the actual length of the chosen month — the same latitude a typed date always had).
+- Simple stepper-based entry (day/month/year/hour/minute) — five columns, each a tall `+` button over the value over a `-` button — rather than free typing — removes any chance of a mistyped separator or AM/PM mix-up. Day steps 1–31, month 1–12, year 2024–2099 (dates aren't checked against the actual length of the chosen month — the same latitude a typed date always had).
 - 12-hour or 24-hour display toggle, with a dedicated AM/PM control in 12-hour mode that jumps the hour by exactly 12 in one tap rather than requiring twelve individual steps; switching between the two display modes only changes how the hour is shown/stepped, never the underlying value.
 - Changes are staged and only take effect on "Save" (or discarded on "Cancel") — nothing reaches the running clock or the hardware clock chip until that explicit confirmation.
 - Saving sets the running clock immediately and writes the same time to the battery-backed hardware clock, so it survives a power cut even with zero connectivity — but a later real network time sync can still correct it if one comes in, since a manually-typed time is trusted at the same level as the onboard clock, not treated as more authoritative than a real network sync.
