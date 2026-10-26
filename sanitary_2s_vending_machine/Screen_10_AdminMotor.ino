@@ -107,13 +107,13 @@ void handleAdminMotorAssignScreen() {
 // =====================================================
 // One row per motor, MOTORS_PER_PAGE (Core_02_AppState.ino) to a page:
 //
-//   <product name>     [Test]  [-]  [ qty ]  [+]
+//   <product name>     [Edit]  [-]  [ qty ]  [+]
 //   Motor 1
 //
 // Tapping the quantity box opens a keypad to type an exact figure; - and +
 // step by one. A quantity at or below the low-stock alert level is drawn in
 // the danger colour so a nearly empty motor stands out without opening
-// anything. Test runs the motor for the product's normal dispense time.
+// anything.
 const int MSTOCK_ROW_X = 16, MSTOCK_ROW_W = 288, MSTOCK_ROW_H = 34;
 const int MSTOCK_ROW_Y0 = 40, MSTOCK_ROW_GAP = 4;
 const int MSTOCK_RIGHT = MSTOCK_ROW_X + MSTOCK_ROW_W - 8;   // right edge of the stepper
@@ -236,7 +236,7 @@ void drawAdminMotorStockScreen() {
     snprintf(sub, sizeof(sub), "Motor %d", m + 1);
     auiPut(sub, AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 26, COL_TEXT_DIM, FACE_XS);
 
-    auiRowButton(motorStockTestX(), cy, MSTOCK_TEST_W, "Test", ABTN_SECONDARY);
+    auiRowButton(motorStockTestX(), cy, MSTOCK_TEST_W, "Edit", ABTN_PRIMARY);
 
     char qbuf[6];
     snprintf(qbuf, sizeof(qbuf), "%d", motorStock[m]);
@@ -246,7 +246,7 @@ void drawAdminMotorStockScreen() {
 
   if (rowsOnPage < MOTORS_PER_PAGE) {
     int hintY = motorStockRowY(rowsOnPage) + 8;
-    if (hintY <= 186) auiHint("Tap a quantity to type an exact figure", hintY);
+    if (hintY <= 186) auiHint("Tap Edit to type an exact quantity", hintY);
   }
 
   if (MOTOR_STOCK_PAGES > 1) {
@@ -289,9 +289,9 @@ void handleAdminMotorStockScreen() {
         int cy = motorStockRowCY(row);
 
         if (auiRowButtonHit(sx, sy, motorStockTestX(), cy, MSTOCK_TEST_W)) {
-          int owner = productForMotor(m);
-          runMotorPulse(m, (owner >= 0) ? runTimeForProduct(owner) : MOTOR_TEST_MS);
-          lastTouchTime = millis();
+          motorEditing = m;
+          snprintf(motorEditBuf, sizeof(motorEditBuf), "%d", motorStock[m]);
+          drawMotorEditKeypad();
           return;
         }
 
