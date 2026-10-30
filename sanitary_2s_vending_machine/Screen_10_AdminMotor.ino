@@ -131,13 +131,15 @@ int motorStockTestX() { return auiStepLeftX(MSTOCK_RIGHT) - 6 - MSTOCK_TEST_W; }
 // take the left of the screen and Save/Cancel the right, so there is no bottom
 // bar on this view and the keys can be full height.
 const int MKP_X0 = 16, MKP_Y0 = 78, MKP_W = 62, MKP_H = 32, MKP_GX = 6, MKP_GY = 4;
-const int MKP_SIDE_X = 226, MKP_SIDE_W = 78, MKP_SIDE_H = 68;
+const int MKP_SIDE_X = 226, MKP_SIDE_W = 78, MKP_SIDE_H = 44;
 const char* const MKP_LABELS[12] = {"1","2","3","4","5","6","7","8","9","Clear","0","Del"};
 
 void getKeypadKeyRect(int k, int &x, int &y) {
   x = MKP_X0 + (k % 3) * (MKP_W + MKP_GX);
   y = MKP_Y0 + (k / 3) * (MKP_H + MKP_GY);
 }
+
+int mkpSideY(int k) { return MKP_Y0 + k * (MKP_SIDE_H + MKP_GY); }
 
 void drawMotorEditValue() {
   tft.fillRoundRect(16, 38, 288, 34, 8, COL_CARD);
@@ -161,8 +163,11 @@ void drawMotorEditKeypad() {
     auiButton(x, y, MKP_W, MKP_H, MKP_LABELS[k], ABTN_SECONDARY, (k == 9 || k == 11) ? FACE_SM : FACE_MD);
   }
 
-  auiButton(MKP_SIDE_X, MKP_Y0, MKP_SIDE_W, MKP_SIDE_H, "Save", ABTN_PRIMARY, FACE_MD);
-  auiButton(MKP_SIDE_X, MKP_Y0 + MKP_SIDE_H + MKP_GY, MKP_SIDE_W, MKP_SIDE_H, "Cancel", ABTN_SECONDARY, FACE_MD);
+  // Save / Fill Max / Cancel stacked down the right. Fill Max is the per-tray
+  // refill: this motor goes straight to the maximum and the keypad closes.
+  auiButton(MKP_SIDE_X, mkpSideY(0), MKP_SIDE_W, MKP_SIDE_H, "Save", ABTN_PRIMARY, FACE_MD);
+  auiButton(MKP_SIDE_X, mkpSideY(1), MKP_SIDE_W, MKP_SIDE_H, "Fill Max", ABTN_PRIMARY, FACE_MD);
+  auiButton(MKP_SIDE_X, mkpSideY(2), MKP_SIDE_W, MKP_SIDE_H, "Cancel", ABTN_SECONDARY, FACE_MD);
 }
 
 void handleMotorEditKeypad() {
@@ -172,12 +177,21 @@ void handleMotorEditKeypad() {
   int sx, sy;
   mapTouchToScreen(raw, sx, sy);
 
-  if (pointInRect(sx, sy, MKP_SIDE_X, MKP_Y0 + MKP_SIDE_H + MKP_GY, MKP_SIDE_W, MKP_SIDE_H)) {
+  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(2), MKP_SIDE_W, MKP_SIDE_H)) {
     motorEditing = -1;
     drawAdminMotorStockScreen();
     return;
   }
-  if (pointInRect(sx, sy, MKP_SIDE_X, MKP_Y0, MKP_SIDE_W, MKP_SIDE_H)) {
+  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(1), MKP_SIDE_W, MKP_SIDE_H)) {
+    int m = motorEditing;
+    motorStock[m] = STOCK_MAX;
+    saveMotorStockSlot(m);
+    refreshLowStockArm();
+    motorEditing = -1;
+    drawAdminMotorStockScreen();
+    return;
+  }
+  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(0), MKP_SIDE_W, MKP_SIDE_H)) {
     int m = motorEditing;
     motorStock[m] = constrain(atoi(motorEditBuf), 0, STOCK_MAX);
     saveMotorStockSlot(m);
@@ -249,13 +263,15 @@ void drawAdminMotorStockScreen() {
     if (hintY <= 186) auiHint("Tap Edit to type an exact quantity", hintY);
   }
 
+  // Back | Refill Trays [| Page n/m]. Refill Trays is instant, no confirm:
+  // it sets every assigned motor to the maximum.
+  int slots = (MOTOR_STOCK_PAGES > 1) ? 3 : 2;
+  auiBarButton(0, slots, "Back", ABTN_SECONDARY);
+  auiBarButton(1, slots, "Refill Trays", ABTN_PRIMARY);
   if (MOTOR_STOCK_PAGES > 1) {
     char pageLabel[16];
     snprintf(pageLabel, sizeof(pageLabel), "Page %d/%d", motorStockPage + 1, MOTOR_STOCK_PAGES);
-    auiBarButton(0, 2, "Back", ABTN_SECONDARY);
-    auiBarButton(1, 2, pageLabel, ABTN_PRIMARY);
-  } else {
-    auiBarButton(0, 1, "Back", ABTN_SECONDARY);
+    auiBarButton(2, slots, pageLabel, ABTN_SECONDARY);
   }
 }
 
@@ -268,14 +284,27 @@ void handleAdminMotorStockScreen() {
       int sx, sy;
       mapTouchToScreen(raw, sx, sy);
 
-      int slots = (MOTOR_STOCK_PAGES > 1) ? 2 : 1;
+      int slots = (MOTOR_STOCK_PAGES > 1) ? 3 : 2;
       if (auiBarHit(sx, sy, 0, slots)) {
         currentScreen = SCREEN_ADMIN_PANEL;
         drawAdminPanelScreen();
         return;
       }
 
-      if (MOTOR_STOCK_PAGES > 1 && auiBarHit(sx, sy, 1, slots)) {
+      if (auiBarHit(sx, sy, 1, slots)) {
+        // Tray refill: every motor that has a product goes straight to the
+        // maximum. Unassigned motors are left alone.
+        for (int m = 0; m < MAX_MOTORS; m++) {
+          if (productForMotor(m) < 0) continue;
+          motorStock[m] = STOCK_MAX;
+          saveMotorStockSlot(m);
+        }
+        refreshLowStockArm();
+        drawAdminMotorStockScreen();
+        return;
+      }
+
+      if (MOTOR_STOCK_PAGES > 1 && auiBarHit(sx, sy, 2, slots)) {
         motorStockPage = (motorStockPage + 1) % MOTOR_STOCK_PAGES;
         drawAdminMotorStockScreen();
         return;

@@ -80,6 +80,7 @@ enum TextEntryTarget {
   TE_UPI_MERCHANT_ID,  // the two PhonePe fields the admin screen can edit —
   TE_UPI_STORE_ID,     // see Screen_12_AdminUPIConfig.ino
   TE_MACHINE_ID,
+  TE_STORE_ID,
   TE_MACHINE_NAME,
   TE_GMAIL_USER,
   TE_GMAIL_PASS,
@@ -122,7 +123,6 @@ enum AppScreen {
   SCREEN_ADMIN_WIFI,
   SCREEN_ADMIN_UPI,
   SCREEN_PAYMENT_RFID,
-  SCREEN_ADMIN_COIN,
   SCREEN_ADMIN_LTE,
   SCREEN_ADMIN_REPORT,
   SCREEN_ADMIN_RFID_CARDS,
@@ -131,7 +131,8 @@ enum AppScreen {
   SCREEN_ADMIN_RFID_RESET,
   SCREEN_ADMIN_PRODUCTS,   // product grid, between the panel and Edit Product
   SCREEN_ADMIN_NETWORK,    // WiFi + 4G summary, between the panel and each setup
-  SCREEN_ADMIN_MACHINE     // max qty, machine ID, PIN, clock
+  SCREEN_ADMIN_MACHINE,    // machine ID, store ID, PIN, clock
+  SCREEN_ADMIN_CUSTOMER    // max qty and the customer-screen idle timeout
 };
 
 // Sizing comes from Config.h so a new machine needs no edits here. Both are

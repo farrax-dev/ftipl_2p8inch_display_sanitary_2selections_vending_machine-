@@ -35,6 +35,33 @@ uint32_t lowAlertedMask = 0;
 // better trade than holding up a paying customer.
 bool lowStockAlertPending = false;
 
+// A scheduled daily send that FAILED (no link, bad credentials, a dropped TLS
+// handshake) is retried every NIGHTLY_RETRY_MS, up to NIGHTLY_MAX_TRIES times,
+// instead of being written off for the whole day. RAM only: after a reboot the
+// slot simply gets a fresh set of tries, which is the safe direction.
+const int NIGHTLY_MAX_TRIES = 6;
+const unsigned long NIGHTLY_RETRY_MS = 10UL * 60UL * 1000UL;
+uint8_t nightlyTries[2] = { 0, 0 };
+unsigned long nightlyRetryAt[2] = { 0, 0 };   // millis() gate; 0 = no wait
+
+// True when any sellable motor is at or below the alert level. The daily
+// report uses this to add its low-stock section, so one mail carries both.
+bool anyLowStock() {
+  for (int m = 0; m < MAX_MOTORS; m++) {
+    if (motorIsActive(m) && motorStock[m] <= lowStockThreshold) return true;
+  }
+  return false;
+}
+
+// Called when a slot's time is changed on the admin screen, so a new time
+// takes effect today even if that slot already sent earlier.
+void rearmNightlySlot(int slot) {
+  nightlySentDate[slot] = 0;
+  saveNightlySent(slot);
+  nightlyTries[slot] = 0;
+  nightlyRetryAt[slot] = 0;
+}
+
 // Last date the CSV was pruned, so the 60-day trim runs once per day.
 uint32_t lastPruneDate = 0;
 
@@ -141,10 +168,19 @@ void pruneIfNewDay(uint32_t today) {
   pruneEventLog(dailyHistory[order[0]].date);
 }
 
-// ---------- Nightly send ----------
+// ---------- Daily send ----------
 // Fires when the clock has passed a configured time and that slot hasn't
 // already fired today. Uses ">=" rather than an exact match so a send still
 // happens if the machine was powered off or busy at the exact minute.
+//
+// The scheduled mail is always the DAILY report, for both slots. When any
+// motor is low, that same mail carries a low-stock section (buildDailyHTML()),
+// so the operator gets one message, not a daily and an alert. A due daily
+// report is also handled BEFORE any queued stand-alone alert and, once sent,
+// cancels it — the alert used to go first and hide the report.
+//
+// A stand-alone low-stock alert is only sent when no daily report is due, so a
+// motor running out mid-afternoon is still reported promptly.
 void maintainReportSchedule() {
   if (!timeSynced) return;
 
@@ -157,10 +193,61 @@ void maintainReportSchedule() {
   ensureTodaySlot();
   pruneIfNewDay(today);
 
-  // Low-stock alert queued by a sale. Sent here rather than at detection so
-  // the blocking send happens on an idle machine. Cleared either way: a
-  // failure is logged and reported on the admin screen rather than retried
-  // every second.
+  int nowMin = currentMinutesOfDay();
+  const char* slotTimes[2] = { nightlyTime1, nightlyTime2 };
+
+  if (nowMin >= 0) {
+    for (int slot = 0; slot < 2; slot++) {
+      int target = parseScheduleTime(slotTimes[slot]);
+      if (target < 0) continue;                      // slot disabled
+      if (nightlySentDate[slot] == today) continue;  // already sent today
+      if (nowMin < target) continue;                 // not time yet
+      if (nightlyRetryAt[slot] != 0 && (long)(millis() - nightlyRetryAt[slot]) < 0) continue;  // waiting to retry
+
+      if (!emailConfigured()) {
+        // Mark it done anyway — without a recipient it can never succeed, and
+        // retrying every loop would stall the UI all evening.
+        nightlySentDate[slot] = today;
+        saveNightlySent(slot);
+        continue;
+      }
+
+      Serial.printf("Schedule: daily slot %d firing (%s), try %d\n", slot + 1, slotTimes[slot], nightlyTries[slot] + 1);
+      // With the attachment: that day's transactions in full, which is small
+      // enough to carry even over cellular.
+      bool ok = sendReportEmail(REPORT_DAILY, today, true);
+
+      if (ok) {
+        nightlySentDate[slot] = today;
+        saveNightlySent(slot);
+        nightlyTries[slot] = 0;
+        nightlyRetryAt[slot] = 0;
+        // The daily mail already listed anything low, so a queued stand-alone
+        // alert would only repeat it.
+        lowStockAlertPending = false;
+      } else {
+        Serial.printf("Schedule: daily slot %d failed: %s\n", slot + 1, reportLastStatus);
+        nightlyTries[slot]++;
+        if (nightlyTries[slot] >= NIGHTLY_MAX_TRIES) {
+          // Out of tries for today; the status line on the Reports screen keeps
+          // the reason. Tomorrow starts clean.
+          nightlySentDate[slot] = today;
+          saveNightlySent(slot);
+          nightlyTries[slot] = 0;
+          nightlyRetryAt[slot] = 0;
+        } else {
+          nightlyRetryAt[slot] = millis() + NIGHTLY_RETRY_MS;
+          if (nightlyRetryAt[slot] == 0) nightlyRetryAt[slot] = 1;
+        }
+      }
+      return;   // one blocking send per pass
+    }
+  }
+
+  // Low-stock alert queued by a sale, sent here rather than at detection so
+  // the blocking send happens on an idle machine. Only reached when no daily
+  // report was due this pass. Cleared either way: a failure is logged and
+  // reported on the admin screen rather than retried every second.
   if (lowStockAlertPending) {
     lowStockAlertPending = false;
     Serial.println("Schedule: sending queued low-stock alert");
@@ -168,38 +255,5 @@ void maintainReportSchedule() {
       Serial.printf("Schedule: low-stock alert failed: %s", reportLastStatus);
       Serial.println();
     }
-    return;   // one blocking send per pass
-  }
-
-  int nowMin = currentMinutesOfDay();
-  if (nowMin < 0) return;
-
-  const char* slotTimes[2] = { nightlyTime1, nightlyTime2 };
-  for (int slot = 0; slot < 2; slot++) {
-    int target = parseScheduleTime(slotTimes[slot]);
-    if (target < 0) continue;                    // slot disabled
-    if (nightlySentDate[slot] == today) continue; // already sent today
-    if (nowMin < target) continue;                // not time yet
-
-    if (!emailConfigured()) {
-      // Mark it done anyway — without a recipient it can never succeed, and
-      // retrying every loop would stall the UI all evening.
-      nightlySentDate[slot] = today;
-      saveNightlySent(slot);
-      continue;
-    }
-
-    Serial.printf("Schedule: nightly slot %d firing (%s)\n", slot + 1, slotTimes[slot]);
-    // With the attachment: that day's transactions in full, which is small
-    // enough to carry even over cellular.
-    bool ok = sendReportEmail(REPORT_DAILY, today, true);
-
-    // Recorded whether or not it succeeded, so a persistent failure (no
-    // signal, bad credentials) doesn't retry in a tight loop. The admin sees
-    // the failure in reportLastStatus on the Report screen.
-    nightlySentDate[slot] = today;
-    saveNightlySent(slot);
-    if (!ok) Serial.printf("Schedule: nightly slot %d failed: %s\n", slot + 1, reportLastStatus);
-    return;   // one send per pass, so the second slot waits for the next tick
   }
 }

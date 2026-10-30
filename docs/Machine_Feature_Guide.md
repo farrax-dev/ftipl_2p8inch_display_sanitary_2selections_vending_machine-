@@ -85,9 +85,9 @@ This document catalogues every feature of the machine end to end: what a custome
 - Automatically falls back from WiFi to the 4G modem if WiFi is down and a modem is fitted and enabled — checked fresh at the moment payment is started, not decided once at boot.
 
 ### 2.6 Cash Payment (Coin Acceptor)
-- Live "Total / Paid / Remaining" display updates with every accepted coin, plus a line listing exactly which denominations this machine currently accepts (built once when the screen opens, so it never needs to redraw mid-transaction).
-- Accepts ₹1, ₹2, ₹5, and ₹10 coins (each denomination individually enable/disable-able by the admin); an unrecognized or admin-disabled coin is not credited. The acceptor's recognition tolerates the normal mechanical wear/jitter a coin validator sees over time rather than demanding a perfectly exact reading for every single coin.
-- Every accepted coin gets an immediate on-screen confirmation ("+Rs N credited"); an unrecognized or currently-disabled coin gets an equally immediate, distinct message ("Coin not recognized" / "That coin is not accepted") — the customer is never left wondering whether their coin registered at all.
+- Live "Total / Paid / Remaining" display updates with every accepted coin.
+- Accepts whichever coins the acceptor itself is set up to recognise; an unrecognized coin is not credited. There is no admin control for individual denominations and the screen does not list them. The acceptor's recognition tolerates the normal mechanical wear/jitter a coin validator sees over time rather than demanding a perfectly exact reading for every single coin.
+- Every accepted coin gets an immediate on-screen confirmation ("+Rs N credited"); an unrecognized coin gets an equally immediate, distinct message ("Coin not recognized") — the customer is never left wondering whether their coin registered at all.
 - **No change is given** — this is stated clearly on screen ("No change given – pay exact amount"), and overpayment is accepted without issuing change.
 - Once the first coin is accepted, the transaction can no longer be cancelled — the Back button is replaced with a static "Paying, no refund" notice, since an inserted coin cannot be mechanically returned.
 - 90-second inactivity timeout (from the last accepted coin, not from screen entry) returns to Payment Method if the customer walks away mid-payment — this covers both "never inserted anything" and "paid partway then gave up."
@@ -134,10 +134,10 @@ The hub every admin task starts from: six large tiles, each with a live one-line
 |------|---------------|-------|
 | Products | "2 of 2 on sale" | product grid, then the product editor (§3.3, 3.4) |
 | Stock | "14 units left" | per-motor refilling (§3.5) |
-| Payments | "Free vend", or the enabled methods ("UPI/Cash") | Free Vend, method switches, coins, RFID (§3.6, 3.7, 3.11, 3.13, 3.14) |
+| Payments | "Free vend", or the enabled methods ("UPI/Cash") | Free Vend, method switches, UPI, RFID (§3.6, 3.7, 3.13, 3.14) |
 | Network | "WiFi connected" / "4G connected" / "Offline" | WiFi and 4G (§3.8, 3.9) |
 | Reports | "Today Rs.120" | sales, schedule, e-mail setup (§3.12) |
-| Machine | the machine ID | max quantity, machine ID, PIN, clock (§3.6a, 3.15) |
+| Machine | the machine ID | max quantity, machine ID, store ID, PIN, clock (§3.6a, 3.15) |
 
 **Look and feel (every admin screen):** the Welcome screen's serif typeface in four sizes (the smallest text is 12px tall, versus 7px before), finger-sized controls (buttons are at least 26px high, usually 32-38px), and one shared control set: switches that read ON/OFF, `[-] value [+]` steppers, a bottom bar of one to three buttons, and tap-anywhere-on-the-row for anything that opens something. Text that would not fit its box shrinks one size and is then clipped with "..", so a long machine name or e-mail address can never run off a card.
 
@@ -153,6 +153,7 @@ The hub every admin task starts from: six large tiles, each with a live one-line
 - Assigning a motor to one product automatically takes it away from whichever product owned it before — a motor can only ever belong to one product at a time.
 
 ### 3.5 Motor Stock (Refilling)
+- **Refill Trays** (bottom bar) sets every motor that has a product assigned to the maximum quantity, instantly, with no confirmation. Unassigned motors are left alone, and the low-stock alert re-arms.
 - Per-motor stock counter, 0 up to the commissioned ceiling (3 units on this build).
 - Each row shows the product name over "Motor n", a **Test** button, and a `[-] qty [+]` stepper. Tapping the quantity itself opens a keypad (with Save / Cancel beside it) for typing an exact figure.
 - A quantity at or below the low-stock alert level is drawn in red, so a nearly empty motor stands out without opening anything.
@@ -164,11 +165,17 @@ The hub every admin task starts from: six large tiles, each with a live one-line
 - **Free Vend switch** — when turned on, the machine stops charging for anything: every completed cart is dispensed for free and the customer never sees a payment method screen at all (not even a "no payment methods" dead end — that screen is skipped entirely). The Select and Cart Review "Proceed"/"Pay" buttons relabel themselves to "Get Free" so the change is obvious to a shopper. This is separate from RFID's own free-vend-for-a-registered-card feature below — this one waives payment for everyone, machine-wide.
 - One ON/OFF toggle per payment method actually built into this machine (UPI, Cash, RFID) — hidden methods never show a toggle at all, and this whole section disappears while Free Vend is on, since those toggles would have nothing left to control.
 - "Show Prices" switch — appears whenever a customer never actually pays anything: with Free Vend on, or on an RFID-only free-vend machine. Lets the admin choose whether a reference price still shows on the Select screen even though nothing is charged.
-- Each method row carries its own shortcut: UPI has **Setup** (§3.7), Cash has **Coins** (§3.11), RFID has **Cards** (§3.13) and **Reset** (§3.14).
+- Each method row carries its own shortcut: UPI has **Setup** (§3.7), RFID has **Cards** (§3.13) and **Reset** (§3.14).
 
 ### 3.6a Machine
-- Max items per order — `[-] n [+]`, floor of 1, and a ceiling fixed at whatever this machine was commissioned with; the stepper simply cannot be pushed past that ceiling from the touchscreen, no matter how many times it's tapped.
+- **Customer** (opens Customer Screens):
+  - Max items per order — `[-] n [+]`, floor of 1, and a ceiling fixed at whatever this machine was commissioned with; the stepper cannot be pushed past that ceiling from the touchscreen.
+  - **Auto timeout** switch — when on, a customer who stops touching Select Products, Your Cart or Payment Method is sent back to Welcome. The Cash / UPI / RFID payment screens are excluded: they keep their own timeouts.
+  - **Seconds** — how long "idle" is, 10 to 300 in steps of 5 (default 60).
+  - **Show countdown** switch — draws the remaining seconds between the Back and Proceed buttons (red for the last 10). Turning it off only hides the number; the timer still runs and still times the customer out.
+  - When it fires, a "Time Out! — Returning to the home screen" warning shows for 2 seconds, the cart is cleared, and the Welcome screen returns. Any touch restarts the countdown.
 - Machine ID (used in report emails to identify this specific unit).
+- Store ID — which store/site the machine belongs to. Printed on its own line directly under the machine ID in every report e-mail (omitted from the e-mail while blank).
 - Admin PIN — the value itself is never displayed, always shown as fixed "****" for security. Changing it asks for the new PIN twice.
 - Clock — shows the current time and opens Date & Time (§3.15).
 
@@ -199,9 +206,6 @@ The hub every admin task starts from: six large tiles, each with a live one-line
 - Field-specific rules are enforced automatically: e.g. the Gmail app password field strips spaces on save (Google displays it in 4 groups but accepts it either way); nightly send times are validated as real "HH:MM" values and rejected (keeping the old value) if malformed; the admin PIN must be 4–8 digits only, because the login keypad can only ever type digits — anything looser would risk locking an admin out of their own machine.
 - A manually-typed RFID card number gets the same "already registered" / "added" feedback as a real scan, so the two entry paths behave identically from the admin's point of view.
 - Masked fields (passwords, PIN) have a "Show" toggle to verify what was typed before committing, and every field has a plain "Cancel" that discards the edit and returns to wherever it was opened from without saving anything.
-
-### 3.11 Coin Denomination Control
-- One ON/OFF row per accepted coin value (₹1, ₹2, ₹5, ₹10) — directly controls what the coin acceptor will credit on the Cash payment screen, and what the accepted-denominations line on that screen advertises to the customer. Switching a denomination off here doesn't stop the acceptor physically taking that coin, only whether it gets credited — the same "a coin, once taken, can't be returned" limitation described in §7 still applies.
 
 ### 3.12 Reports (5 tabs)
 A tab strip across the top jumps straight to any page:
@@ -286,7 +290,8 @@ If the admin turns on **Free Vend** (§3.6), none of the rows above are ever sho
 
 ### 6.2 Email Reports
 - **Daily summary** — sent automatically at up to two configured times per day, with that day's transaction spreadsheet attached.
-- **Low-stock alert** — sent automatically the moment any product's stock crosses the configured threshold, with no attachment (kept lightweight and fast). Only fires once per drop below threshold, not on every subsequent sale, and re-arms automatically once restocked above the threshold.
+- **Daily report and low stock together** — the scheduled report (Report time 1 and 2) is always the daily report, and whenever any motor is at or below the threshold that same mail opens with a LOW STOCK table and its subject ends "| LOW STOCK"; Send Today does the same. A failed scheduled send is retried every 10 minutes (up to 6 tries) instead of being skipped for the day, and changing a time on the picker re-arms that slot for today.
+- **Low-stock alert** — a stand-alone alert, sent only when no daily report is due, the moment any product's stock crosses the configured threshold, with no attachment (kept lightweight and fast). Only fires once per drop below threshold, not on every subsequent sale, and re-arms automatically once restocked above the threshold.
 - **Full report** — sent on demand from the admin Report screen: complete 60-day figures, a day-by-day breakdown table, and the full transaction spreadsheet.
 - Every email subject line identifies the exact machine by ID (and name, if set) and the report type/date, e.g. *"VM-A4C21F | Ladies Room 1 | Daily Sales Summary - 09-09-2026"* — built so a customer or operator managing several machines can tell them apart instantly. If a machine has no name set, the subject simply omits that segment rather than leaving a blank space where it would have gone.
 - Reports are sent over WiFi if available, automatically falling back to the 4G modem if not, using the same email-sending logic either way — nothing about the report content or format changes depending on which link carried it.

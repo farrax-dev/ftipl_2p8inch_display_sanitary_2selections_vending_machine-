@@ -227,17 +227,13 @@ int pollCoinAcceptor() {
     Serial.printf("coin acceptor: %d pulses -> unrecognized\n", pulses);
     return -1;
   }
-  if (!isCoinValueEnabled(value)) {
-    Serial.printf("coin acceptor: %d pulses -> Rs %d (disabled by admin)\n", pulses, value);
-    return -2;
-  }
   Serial.printf("coin acceptor: %d pulses -> Rs %d\n", pulses, value);
   return value;
 }
 
 // Total / Paid chips plus the big "Remaining" card — they all change together
 // every time a coin is credited, so they are wiped and redrawn as one region
-// (y=36..125; the accepted-coins line below starts at y=127).
+// (y=36..125).
 void drawCashChip(int x, int w, const char* text, uint16_t textColor) {
   tft.fillRoundRect(x, 38, w, 22, 6, COL_CARD);
   tft.drawRoundRect(x, 38, w, 22, 6, COL_CARD_BRD);
@@ -269,26 +265,6 @@ void drawCashProgressLines() {
   char amountBuf[16];
   snprintf(amountBuf, sizeof(amountBuf), "Rs. %d", remaining);
   drawSerifLine(amountBuf, RX, RW, RY + 41, COL_ACCENT, 0);
-}
-
-// Built once when the screen opens — the admin's accepted-denomination list
-// doesn't change mid-transaction, so this doesn't need to be in the redraw
-// path that runs on every coin.
-void drawAcceptedCoinsLine() {
-  char buf[48];
-  snprintf(buf, sizeof(buf), "Accepts Rs. ");
-  bool first = true, any = false;
-  for (int d = 0; d < COIN_DENOM_COUNT; d++) {
-    if (!coinDenomEnabled[d]) continue;
-    any = true;
-    char tmp[8];
-    snprintf(tmp, sizeof(tmp), first ? "%d" : ", %d", COIN_DENOM_VALUES[d]);
-    strncat(buf, tmp, sizeof(buf) - strlen(buf) - 1);
-    first = false;
-  }
-  if (!any) snprintf(buf, sizeof(buf), "Accepts: none");
-
-  drawSerifLine(buf, 0, tft.width(), 137, COL_TEXT, 1);
 }
 
 // CASH_TIMEOUT_MS is otherwise invisible to the customer — unlike the UPI
@@ -354,7 +330,6 @@ void drawPaymentCashScreen() {
   drawScreenTitle("Insert Coins");
 
   drawCashProgressLines();
-  drawAcceptedCoinsLine();
 
   drawCashStatusLine();
   drawCashTimeoutLine();
@@ -385,22 +360,13 @@ void handlePaymentCashScreen() {
       coinAcceptorListen(false);
       bool dispensedOk = dispenseCart("Cash", false);
 
-      drawGradientBackground();
-      tft.setTextSize(3);
       if (dispensedOk) {
-        tft.setTextColor(COL_SUCCESS, COL_BG_BOTTOM);
-        centerText("Product", 70);
-        centerText("Dispensed!", 100);
-        tft.setTextSize(2);
-        tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
-        centerText("Please collect your item", 140);
+        drawDispensedScreen();
       } else {
-        tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
-        centerText("Dispense", 70);
-        centerText("Failed", 100);
-        tft.setTextSize(2);
-        tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
-        centerText("Please contact support", 140);
+        drawGradientBackground();
+        drawSerifLine("Dispense", 0, tft.width(), 70, COL_DANGER, 0);
+        drawSerifLine("Failed", 0, tft.width(), 108, COL_DANGER, 0);
+        drawSerifLine("Please contact support", 0, tft.width(), 150, COL_TEXT, 1);
       }
       delay(2500);
 
@@ -413,11 +379,6 @@ void handlePaymentCashScreen() {
     drawCashProgressLines();
     drawCashStatusLine();
     if (firstCoin) drawCashBackButtonArea();
-  } else if (credited == -2) {
-    // A real denomination, just not one the admin currently accepts.
-    snprintf(cashStatusMsg, sizeof(cashStatusMsg), "That coin is not accepted");
-    cashStatusColor = COL_DANGER;
-    drawCashStatusLine();
   } else if (credited < 0) {
     // Burst finished but didn't match a known coin value; the acceptor has
     // already mechanically kept the coin, there's nothing to credit it as.
@@ -441,14 +402,12 @@ void handlePaymentCashScreen() {
     // above — any coins already credited are forfeited either way (no
     // hardware refund path), so there's nothing left for the customer to do
     // here but see why the screen is clearing.
+    // Drawn exactly like drawUPITimeoutScreen() (Screen_05_PaymentUPI.ino) so
+    // every payment timeout looks the same: the Welcome screen's serif face.
     drawGradientBackground();
-    tft.setTextSize(3);
-    tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
-    centerText("Payment", 70);
-    centerText("Timed Out", 100);
-    tft.setTextSize(1);
-    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
-    centerText("No payment was received in time.", 140);
+    drawSerifLine("Payment", 0, tft.width(), 70, COL_DANGER, 0);
+    drawSerifLine("Timed Out", 0, tft.width(), 108, COL_DANGER, 0);
+    drawSerifLine("No payment was received in time.", 0, tft.width(), 150, COL_TEXT, 1);
     delay(2000);
 
     resetCart();
@@ -478,7 +437,15 @@ void handlePaymentCashScreen() {
 // Settings > Cards, Screen_18_AdminRFIDCards.ino) vends for free; anything
 // else is refused. See dispenseCart()'s freeVend flag in Core_11_Dispense.ino
 // for how that's kept out of revenue reporting.
-const unsigned long RFID_PAY_TIMEOUT_MS = (unsigned long)CFG_RFID_TIMEOUT_SEC * 1000UL;  // give up and return to Payment Method if nothing's tapped
+// How long the Tap RFID Card screen waits before giving up. Follows the
+// admin's Customer Screens timeout (Admin > Machine > Customer, seconds and
+// show-countdown) so every customer screen times out by the same rule; when
+// the admin has switched the timeout off, Config.h's CFG_RFID_TIMEOUT_SEC
+// still applies so this screen can never sit open forever.
+unsigned long rfidPayTimeoutMs() {
+  int sec = idleTimeoutOn ? idleTimeoutSec : CFG_RFID_TIMEOUT_SEC;
+  return (unsigned long)sec * 1000UL;
+}
 
 // Independent of the idle timeout above, which an actual tap — even a
 // rejected one — resets (see "an actual tap counts as activity" below).
@@ -489,7 +456,7 @@ const unsigned long RFID_PAY_TIMEOUT_MS = (unsigned long)CFG_RFID_TIMEOUT_SEC * 
 // added), could keep this screen open indefinitely with the idle clock
 // never allowed to expire. This caps the session at a fixed wall-clock
 // ceiling no amount of activity can push back.
-const unsigned long RFID_PAY_HARD_CAP_MS = RFID_PAY_TIMEOUT_MS * 3;
+unsigned long rfidPayHardCapMs() { return rfidPayTimeoutMs() * 3; }
 
 unsigned long rfidPayEnteredMs = 0;
 unsigned long rfidPaySessionStartMs = 0;   // set once on entry, never reset by activity
@@ -521,7 +488,8 @@ void drawRFIDStatusLine() {
 // apart from "this is broken and never will."
 void drawRFIDTimeoutLine() {
   tft.fillRect(0, 170, tft.width(), 18, COL_BG_BOTTOM);
-  int remainingSec = (int)((RFID_PAY_TIMEOUT_MS - (millis() - rfidPayEnteredMs)) / 1000);
+  if (!idleShowTimer) return;   // hidden by the admin; the timeout itself still runs
+  int remainingSec = (int)((rfidPayTimeoutMs() - (millis() - rfidPayEnteredMs)) / 1000);
   if (remainingSec < 0) remainingSec = 0;
   char buf[24];
   snprintf(buf, sizeof(buf), "Time left: %ds", remainingSec);
@@ -593,11 +561,10 @@ void handlePaymentRFIDScreen() {
       // they never got, with no way to refund it back onto the card.
       if (dispensedOk) addRFIDCardUsage(cardIdx, qty);
 
-      drawGradientBackground();
       if (dispensedOk) {
-        drawSerifLine("Card Accepted", 0, tft.width(), 80, COL_SUCCESS, 0);
-        drawSerifLine("Please collect your item", 0, tft.width(), 125, COL_TEXT, 1);
+        drawDispensedScreen();
       } else {
+        drawGradientBackground();
         drawSerifLine("Dispense Failed", 0, tft.width(), 80, COL_DANGER, 0);
         drawSerifLine("Please contact support", 0, tft.width(), 125, COL_TEXT, 1);
       }
@@ -620,8 +587,8 @@ void handlePaymentRFIDScreen() {
     drawRFIDStatusLine();
   }
 
-  if (millis() - rfidPayEnteredMs > RFID_PAY_TIMEOUT_MS
-      || millis() - rfidPaySessionStartMs > RFID_PAY_HARD_CAP_MS) {
+  if (millis() - rfidPayEnteredMs > rfidPayTimeoutMs()
+      || millis() - rfidPaySessionStartMs > rfidPayHardCapMs()) {
     drawGradientBackground();
     drawSerifLine("Payment", 0, tft.width(), 70, COL_DANGER, 0);
     drawSerifLine("Timed Out", 0, tft.width(), 108, COL_DANGER, 0);

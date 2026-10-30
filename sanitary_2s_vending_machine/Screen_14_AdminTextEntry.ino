@@ -113,6 +113,13 @@ void openTextEntry(TextEntryTarget target) {
       textEntryTitle = "Machine ID";
       textEntryReturnScreen = SCREEN_ADMIN_MACHINE;
       break;
+    case TE_STORE_ID:
+      strncpy(textEntryBuffer, storeId, sizeof(textEntryBuffer));
+      textEntryMaxLen = sizeof(storeId) - 1;
+      textEntryMask = false;
+      textEntryTitle = "Store ID";
+      textEntryReturnScreen = SCREEN_ADMIN_MACHINE;
+      break;
     case TE_MACHINE_NAME:
       strncpy(textEntryBuffer, machineName, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(machineName) - 1;
@@ -385,6 +392,11 @@ bool commitTextEntry() {
       strncpy(machineId, textEntryBuffer, sizeof(machineId));
       machineId[sizeof(machineId) - 1] = '\0';
       saveMachineId();
+      break;
+    case TE_STORE_ID:
+      strncpy(storeId, textEntryBuffer, sizeof(storeId));
+      storeId[sizeof(storeId) - 1] = '\0';
+      saveStoreId();
       break;
     case TE_MACHINE_NAME:
       strncpy(machineName, textEntryBuffer, sizeof(machineName));

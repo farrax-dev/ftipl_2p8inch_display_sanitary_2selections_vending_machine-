@@ -52,7 +52,7 @@ String reportSubject(ReportKind kind, uint32_t dateNum) {
 
   switch (kind) {
     case REPORT_DAILY:
-      return who + " | Daily Sales Summary - " + String(d);
+      return who + " | Daily Sales Summary - " + String(d) + (anyLowStock() ? " | LOW STOCK" : "");
     case REPORT_LOWSTOCK:
       return who + " | LOW STOCK ALERT - Refill Required";
     default:
@@ -70,8 +70,9 @@ String htmlHeader(const char* title) {
   salesTimestamp(ts, sizeof(ts));
   String h = "<html><body style='font-family:Arial,sans-serif;font-size:13px'>";
   h += "<h2>" + String(title) + "</h2>";
-  h += "<p><b>Machine:</b> " + String(machineId) +
-       "<br><b>Generated:</b> " + String(ts) + "</p>";
+  h += "<p><b>Machine:</b> " + String(machineId);
+  if (strlen(storeId) > 0) h += "<br><b>Store ID:</b> " + String(storeId);
+  h += "<br><b>Generated:</b> " + String(ts) + "</p>";
   return h;
 }
 
@@ -123,6 +124,25 @@ String payMixForProduct(int slot, int productIdx) {
 
 // The daily email. Answers, in order: what period is this, how did the day go
 // overall, what happened to each product, and how did people pay.
+// The "refill these" table, shared by the stand-alone alert and the daily
+// report (which opens with it whenever anything is low).
+String htmlLowStockBlock() {
+  String h = "<p style='color:#c00'><b>LOW STOCK - refill required.</b> "
+             "At or below " + String(lowStockThreshold) + " unit(s):</p>";
+  h += "<table border=1 cellpadding=5 cellspacing=0>";
+  h += "<tr style='background:#eee'><th>Motor</th><th>Product</th>"
+       "<th>Current Stock</th></tr>";
+  for (int m = 0; m < MAX_MOTORS; m++) {
+    int owner = productForMotor(m);
+    if (!motorIsActive(m) || motorStock[m] > lowStockThreshold) continue;
+    h += "<tr><td>M" + String(m + 1) + "</td>";
+    h += "<td>" + String(products[owner].name) + "</td>";
+    h += "<td align=right style='color:#c00'><b>" + String(motorStock[m]) + "</b></td></tr>";
+  }
+  h += "</table>";
+  return h;
+}
+
 String buildDailyHTML(uint32_t dateNum, bool hasCsv) {
   int slot = findDailySlot(dateNum);
   char d[12], now[28];
@@ -132,6 +152,10 @@ String buildDailyHTML(uint32_t dateNum, bool hasCsv) {
   String h;
   h.reserve(4000);
   h += htmlHeader("Daily Sales Summary");
+
+  // Low stock goes first, where it can't be missed: this one mail replaces the
+  // separate alert whenever a scheduled or manual daily report goes out.
+  if (anyLowStock()) h += htmlLowStockBlock();
 
   // 1. The window this report covers, stated explicitly so a reader never has
   //    to guess whether "today" means a calendar day or a rolling 24 hours.
@@ -229,19 +253,7 @@ String buildLowStockHTML() {
   String h;
   h.reserve(1800);
   h += htmlHeader("Low Stock Alert");
-  h += "<p>The following are at or below " + String(lowStockThreshold) +
-       " unit(s) and need refilling:</p>";
-  h += "<table border=1 cellpadding=5 cellspacing=0>";
-  h += "<tr style='background:#eee'><th>Motor</th><th>Product</th>"
-       "<th>Current Stock</th></tr>";
-  for (int m = 0; m < MAX_MOTORS; m++) {
-    int owner = productForMotor(m);
-    if (!motorIsActive(m) || motorStock[m] > lowStockThreshold) continue;
-    h += "<tr><td>M" + String(m + 1) + "</td>";
-    h += "<td>" + String(products[owner].name) + "</td>";
-    h += "<td align=right style='color:#c00'><b>" + String(motorStock[m]) + "</b></td></tr>";
-  }
-  h += "</table>";
+  h += htmlLowStockBlock();
   h += htmlInventoryTable();
   h += "</body></html>";
   return h;

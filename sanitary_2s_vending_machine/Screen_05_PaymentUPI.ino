@@ -256,6 +256,14 @@ bool upiVendPending = false;
 bool upiDispenseFailed = false;
 
 void drawUPISuccessScreen() {
+  // Vend finished OK: the same three-line screen as every other payment
+  // method, plus the Done button.
+  if (!upiVendPending && !upiDispenseFailed) {
+    drawDispensedScreen();
+    drawProceedButton("Done");
+    return;
+  }
+
   drawGradientBackground();
 
   drawSerifLine("Payment", 0, tft.width(), 50, COL_SUCCESS, 0);
@@ -269,9 +277,6 @@ void drawUPISuccessScreen() {
     drawSerifLine("Preparing your item...", 0, tft.width(), 165, COL_TEXT, 1);
   } else if (upiDispenseFailed) {
     drawSerifLine("Dispense failed - contact support", 0, tft.width(), 165, COL_DANGER, 1);
-    drawProceedButton("Done");
-  } else {
-    drawSerifLine("Please collect your item", 0, tft.width(), 165, COL_TEXT, 1);
     drawProceedButton("Done");
   }
 }

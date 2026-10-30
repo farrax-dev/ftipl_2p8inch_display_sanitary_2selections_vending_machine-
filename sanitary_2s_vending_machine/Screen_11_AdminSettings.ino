@@ -11,7 +11,7 @@
 //
 //   Free Vend      - the machine never asks for payment (see below)
 //   UPI     [Setup]   -> Screen_12_AdminUPIConfig.ino
-//   Cash    [Coins]   -> Screen_15_AdminCoin.ino
+//   Cash
 //   RFID    [Reset] [Cards]  -> Screen_21 / Screen_18
 //   Show Prices    - only while nobody pays (Free Vend, or RFID-only)
 //
@@ -85,7 +85,6 @@ void drawAdminSettingsScreen() {
       auiOnOff(PAY_RIGHT, cy, paymentEnabled[p]);
 
       if (p == PAY_IDX_UPI)  auiRowButton(payChipX(0), cy, PAY_CHIP_W, "Setup", ABTN_SECONDARY);
-      if (p == PAY_IDX_CASH) auiRowButton(payChipX(0), cy, PAY_CHIP_W, "Coins", ABTN_SECONDARY);
       if (p == PAY_IDX_RFID) {
         auiRowButton(payChipX(0), cy, PAY_CHIP_W, "Cards", ABTN_SECONDARY);
         auiRowButton(payChipX(1), cy, PAY_CHIP_W, "Reset", ABTN_SECONDARY);
@@ -140,11 +139,6 @@ void handleAdminSettingsScreen() {
         if (p == PAY_IDX_UPI && auiRowButtonHit(sx, sy, payChipX(0), cy, PAY_CHIP_W)) {
           currentScreen = SCREEN_ADMIN_UPI;
           drawAdminUPIScreen();
-          return;
-        }
-        if (p == PAY_IDX_CASH && auiRowButtonHit(sx, sy, payChipX(0), cy, PAY_CHIP_W)) {
-          currentScreen = SCREEN_ADMIN_COIN;
-          drawAdminCoinScreen();
           return;
         }
         if (p == PAY_IDX_RFID) {

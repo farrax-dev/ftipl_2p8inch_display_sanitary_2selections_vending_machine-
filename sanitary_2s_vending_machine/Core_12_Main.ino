@@ -91,9 +91,6 @@ void loop() {
     case SCREEN_ADMIN_UPI:
       handleAdminUPIScreen();
       break;
-    case SCREEN_ADMIN_COIN:
-      handleAdminCoinScreen();
-      break;
     case SCREEN_ADMIN_LTE:
       handleAdminLTEScreen();
       break;
@@ -121,8 +118,12 @@ void loop() {
     case SCREEN_ADMIN_MACHINE:
       handleAdminMachineScreen();
       break;
+    case SCREEN_ADMIN_CUSTOMER:
+      handleAdminCustomerScreen();
+      break;
   }
 
+  maintainIdleTimeout();     // Core_21: Select / Cart / Payment Method only
   maintainWiFiIndicator();
   if (wifiEnabled) maintainNTP();
   if (lteEnabled) {

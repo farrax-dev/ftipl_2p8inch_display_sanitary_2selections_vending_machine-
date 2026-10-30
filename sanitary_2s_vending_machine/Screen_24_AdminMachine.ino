@@ -4,15 +4,16 @@
 // The machine-level settings that aren't about products, payments or the
 // network:
 //
-//   Max items  - most units one order may hold         [-] n [+]
 //   Machine ID - identifies the unit in reports        value  [Edit]
+//   Store ID   - printed under the machine ID in e-mails value [Edit]
 //   Admin PIN  - never shown, only changed             ****   [Change]
 //   Clock      - current time; opens Screen_20          value  [Set]
+//   Customer   - max items + idle timeout; Screen_25     value  [Open]
 //
 // On the old Settings screen these were squeezed in beside the payment
 // toggles, with Machine ID and PIN sharing a single 20px strip.
-const int MACH_ROW_X = 16, MACH_ROW_W = 288, MACH_ROW_H = 32;
-const int MACH_ROW_Y0 = 40, MACH_ROW_GAP = 6;
+const int MACH_ROW_X = 16, MACH_ROW_W = 288, MACH_ROW_H = 28;
+const int MACH_ROW_Y0 = 40, MACH_ROW_GAP = 3;
 const int MACH_RIGHT = MACH_ROW_X + MACH_ROW_W - 8;
 const int MACH_BTN_W = 72;
 const int MACH_BTN_X = MACH_RIGHT - MACH_BTN_W;
@@ -34,17 +35,13 @@ void drawAdminMachineScreen() {
   drawGradientBackground();
   drawScreenTitle("Machine");
 
-  // ---- Max items per order ----
-  int cy = machRowCY(0);
-  auiRow(MACH_ROW_X, machRowY(0), MACH_ROW_W, MACH_ROW_H);
-  auiRowLabel(MACH_ROW_X + 12, cy, auiStepLeftX(MACH_RIGHT) - MACH_ROW_X - 20, "Max items");
-  char qbuf[8];
-  snprintf(qbuf, sizeof(qbuf), "%d", maxCartQty);
-  auiStepper(MACH_RIGHT, cy, qbuf, COL_ACCENT);
-
   // ---- Machine ID ----
-  drawMachineValueRow(1, "Machine ID", strlen(machineId) > 0 ? machineId : "(not set)",
+  drawMachineValueRow(0, "Machine ID", strlen(machineId) > 0 ? machineId : "(not set)",
                       COL_ACCENT, "Edit", FACE_MD);
+
+  // ---- Store ID (printed under the machine ID in report e-mails) ----
+  drawMachineValueRow(1, "Store ID", strlen(storeId) > 0 ? storeId : "(not set)",
+                      strlen(storeId) > 0 ? COL_ACCENT : COL_TEXT_DIM, "Edit", FACE_MD);
 
   // ---- Admin PIN: a fixed placeholder, never the value — it's a credential,
   // not something to glance at ----
@@ -57,6 +54,12 @@ void drawAdminMachineScreen() {
   else
     snprintf(clockBuf, sizeof(clockBuf), "not set");
   drawMachineValueRow(3, "Clock", clockBuf, COL_ACCENT, "Set", FACE_SM);
+
+  // ---- Customer screens: max items per order + idle timeout ----
+  char cust[24];
+  if (idleTimeoutOn) snprintf(cust, sizeof(cust), "Timeout %ds", idleTimeoutSec);
+  else               snprintf(cust, sizeof(cust), "Timeout off");
+  drawMachineValueRow(4, "Customer", cust, COL_ACCENT, "Open", FACE_SM);
 
   auiBarButton(0, 1, "Back", ABTN_SECONDARY);
 }
@@ -75,25 +78,12 @@ void handleAdminMachineScreen() {
         return;
       }
 
-      int step = auiStepTouch(sx, sy, MACH_RIGHT, machRowCY(0));
-      if (step < 0) {
-        if (maxCartQty > 1) maxCartQty--;
-        saveMaxCartQty();
-        drawAdminMachineScreen();
-        return;
-      }
-      if (step > 0) {
-        // Capped at Config.h's seed, not an arbitrary 99 — CFG_MAX_CART_QTY
-        // is the ceiling a technician flashed for this machine, and the
-        // admin screen shouldn't be able to exceed what was commissioned.
-        if (maxCartQty < CFG_MAX_CART_QTY) maxCartQty++;
-        saveMaxCartQty();
-        drawAdminMachineScreen();
-        return;
-      }
-
-      if (pointInRect(sx, sy, MACH_ROW_X, machRowY(1), MACH_ROW_W, MACH_ROW_H)) {
+      if (pointInRect(sx, sy, MACH_ROW_X, machRowY(0), MACH_ROW_W, MACH_ROW_H)) {
         openTextEntry(TE_MACHINE_ID);
+        return;
+      }
+      if (pointInRect(sx, sy, MACH_ROW_X, machRowY(1), MACH_ROW_W, MACH_ROW_H)) {
+        openTextEntry(TE_STORE_ID);
         return;
       }
       if (pointInRect(sx, sy, MACH_ROW_X, machRowY(2), MACH_ROW_W, MACH_ROW_H)) {
@@ -102,6 +92,11 @@ void handleAdminMachineScreen() {
       }
       if (pointInRect(sx, sy, MACH_ROW_X, machRowY(3), MACH_ROW_W, MACH_ROW_H)) {
         openAdminDateTimeScreen();
+        return;
+      }
+      if (pointInRect(sx, sy, MACH_ROW_X, machRowY(4), MACH_ROW_W, MACH_ROW_H)) {
+        currentScreen = SCREEN_ADMIN_CUSTOMER;
+        drawAdminCustomerScreen();
         return;
       }
     }

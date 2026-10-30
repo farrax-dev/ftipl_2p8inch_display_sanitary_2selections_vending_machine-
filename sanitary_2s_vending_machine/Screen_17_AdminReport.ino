@@ -288,6 +288,7 @@ void handleReportTimePicker(int sx, int sy) {
     if (rptTimeOn) snprintf(t, 6, "%02d:%02d", rptTimeH, rptTimeM);
     else           t[0] = '\0';
     saveScheduleSettings();
+    rearmNightlySlot(rptTimeSlot);   // a new time applies today, even if this slot already sent
     rptTimeSlot = -1;
     drawAdminReportScreen();
     return;

@@ -21,6 +21,19 @@ void saveMaxCartQty() {
   prefs.putInt("maxcartqty", maxCartQty);
 }
 
+// ---------- Customer-screen idle timeout (Admin > Machine > Customer Screens) ----------
+// See Core_21_IdleTimeout.ino. Defaults: on, 60 seconds, countdown shown.
+bool idleTimeoutOn = true;
+int  idleTimeoutSec = 60;
+bool idleShowTimer = true;
+const int IDLE_TIMEOUT_MIN_SEC = 10, IDLE_TIMEOUT_MAX_SEC = 300;
+
+void saveIdleSettings() {
+  prefs.putInt("idleon", idleTimeoutOn ? 1 : 0);
+  prefs.putInt("idlesec", idleTimeoutSec);
+  prefs.putInt("idleshow", idleShowTimer ? 1 : 0);
+}
+
 // ---------- Machine ID ----------
 // Shown on the Welcome screen and editable from Admin > Settings, so a site
 // with several machines can be identified from the front panel without
@@ -32,8 +45,16 @@ char machineId[17] = "";
 // machine is, which is what someone reading a low-stock alert actually needs.
 char machineName[40] = "";   // long enough for a full product/location name
 
+// Which store/site the machine belongs to. Printed on the line after the
+// machine ID in every report e-mail. Blank until the admin sets it.
+char storeId[24] = "";
+
 void saveMachineId() {
   prefs.putString("machineid", machineId);
+}
+
+void saveStoreId() {
+  prefs.putString("storeid", storeId);
 }
 
 void saveMachineName() {
@@ -409,26 +430,6 @@ char rfidCardsMsg[32] = "";
 uint16_t rfidCardsMsgColor = COL_TEXT_DIM;
 unsigned long rfidCardsMsgUntil = 0;
 
-// ---------- Coin acceptor denomination config (Admin Coin screen) ----------
-const int COIN_DENOM_COUNT = 4;
-const int COIN_DENOM_VALUES[COIN_DENOM_COUNT] = { 1, 2, 5, 10 };
-bool coinDenomEnabled[COIN_DENOM_COUNT];
-
-void saveCoinDenomEnabled(int d) {
-  char key[10];
-  snprintf(key, sizeof(key), "coinEnab%d", d);
-  prefs.putInt(key, coinDenomEnabled[d] ? 1 : 0);
-}
-
-// -1 if value isn't one of COIN_DENOM_VALUES, else true/false for whether
-// the admin currently accepts that denomination.
-bool isCoinValueEnabled(int value) {
-  for (int d = 0; d < COIN_DENOM_COUNT; d++) {
-    if (COIN_DENOM_VALUES[d] == value) return coinDenomEnabled[d];
-  }
-  return false;
-}
-
 // ---------- Product data ----------
 Product products[MAX_PRODUCTS];
 char productNames[MAX_PRODUCTS][13];
@@ -550,15 +551,14 @@ void loadPersistedProductData() {
   loadRFIDCards();
   loadRFIDResetSchedule();
 
-  for (int d = 0; d < COIN_DENOM_COUNT; d++) {
-    char key[12];
-    snprintf(key, sizeof(key), "coinEnab%d", d);
-    coinDenomEnabled[d] = prefs.getInt(key, 1) != 0;
-  }
+  idleTimeoutOn  = prefs.getInt("idleon", 1) != 0;
+  idleTimeoutSec = constrain(prefs.getInt("idlesec", 60), IDLE_TIMEOUT_MIN_SEC, IDLE_TIMEOUT_MAX_SEC);
+  idleShowTimer  = prefs.getInt("idleshow", 1) != 0;
 
   char idFallback[sizeof(machineId)];
   defaultMachineId(idFallback, sizeof(idFallback));
   prefs.getString("machineid", idFallback).toCharArray(machineId, sizeof(machineId));
+  prefs.getString("storeid", "").toCharArray(storeId, sizeof(storeId));
   prefs.getString("machname", CFG_MACHINE_NAME).toCharArray(machineName, sizeof(machineName));
   prefs.getString("adminpin", CFG_ADMIN_PIN).toCharArray(adminPin, sizeof(adminPin));
 

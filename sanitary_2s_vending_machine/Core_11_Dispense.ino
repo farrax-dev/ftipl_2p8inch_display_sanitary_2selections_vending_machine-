@@ -87,13 +87,12 @@ bool dispenseProduct(int i, int qty) {
 }
 
 void drawDispensingScreen() {
+  // Welcome screen's 18pt serif in the accent colour, matching the dispensed
+  // and failed screens. Two lines because "Product Dispensing..." in one is
+  // wider than the screen at this size.
   drawGradientBackground();
-  tft.setTextSize(3);
-  tft.setTextColor(COL_ACCENT, COL_BG_BOTTOM);
-  centerText("Dispensing", 90);
-  tft.setTextSize(2);
-  tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
-  centerText("Please wait...", 130);
+  drawSerifLine("Product", 0, tft.width(), 85, COL_ACCENT, 0);
+  drawSerifLine("Dispensing...", 0, tft.width(), 130, COL_ACCENT, 0);
 }
 
 // paymentMethod is recorded against every line of the order in the sales log
@@ -161,24 +160,26 @@ bool dispenseCart(const char* paymentMethod, bool freeVend) {
 // than introducing a new AppScreen state — dispenseCart() already blocks for
 // the whole dispense, so there is nothing for a separate screen state to do
 // that this synchronous sequence doesn't already cover.
+// The screen every successful dispense ends on (cash, RFID, free vend, UPI):
+// three lines in the Welcome screen's 18pt serif — green for the result, the
+// accent colour for the instruction, plain text for the thanks.
+void drawDispensedScreen() {
+  drawGradientBackground();
+  drawSerifLine("Product Dispensed!", 0, tft.width(), 70, COL_SUCCESS, 0);
+  drawSerifLine("Collect!", 0, tft.width(), 116, COL_ACCENT, 0);
+  drawSerifLine("Thank You!", 0, tft.width(), 162, COL_TEXT, 0);
+}
+
 void runFreeVendCheckout() {
   bool dispensedOk = dispenseCart("Free", true);  // freeVend — logged at Rs 0, see dispenseCart() above
 
-  drawGradientBackground();
-  tft.setTextSize(3);
   if (dispensedOk) {
-    tft.setTextColor(COL_SUCCESS, COL_BG_BOTTOM);
-    centerText("Enjoy!", 80);
-    tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
-    centerText("Please collect your item", 130);
+    drawDispensedScreen();
   } else {
-    tft.setTextColor(COL_DANGER, COL_BG_BOTTOM);
-    centerText("Dispense", 70);
-    centerText("Failed", 100);
-    tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
-    centerText("Please contact support", 140);
+    drawGradientBackground();
+    drawSerifLine("Dispense", 0, tft.width(), 70, COL_DANGER, 0);
+    drawSerifLine("Failed", 0, tft.width(), 108, COL_DANGER, 0);
+    drawSerifLine("Please contact support", 0, tft.width(), 150, COL_TEXT, 1);
   }
   delay(2000);
 
