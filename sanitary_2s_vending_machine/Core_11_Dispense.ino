@@ -91,8 +91,8 @@ void drawDispensingScreen() {
   // and failed screens. Two lines because "Product Dispensing..." in one is
   // wider than the screen at this size.
   drawGradientBackground();
-  drawSerifLine("Product", 0, tft.width(), 85, COL_ACCENT, 0);
-  drawSerifLine("Dispensing...", 0, tft.width(), 130, COL_ACCENT, 0);
+  drawSerifLine("Product", 0, tft.width(), 85, COL_MSG_TITLE, 0);
+  drawSerifLine("Dispensing...", 0, tft.width(), 130, COL_MSG_TITLE, 0);
 }
 
 // paymentMethod is recorded against every line of the order in the sales log
@@ -165,9 +165,9 @@ bool dispenseCart(const char* paymentMethod, bool freeVend) {
 // accent colour for the instruction, plain text for the thanks.
 void drawDispensedScreen() {
   drawGradientBackground();
-  drawSerifLine("Product Dispensed!", 0, tft.width(), 70, COL_SUCCESS, 0);
-  drawSerifLine("Collect!", 0, tft.width(), 116, COL_ACCENT, 0);
-  drawSerifLine("Thank You!", 0, tft.width(), 162, COL_TEXT, 0);
+  drawSerifLine("Product Dispensed!", 0, tft.width(), 70, COL_OK_TEXT, 0);
+  drawSerifLine("Collect!", 0, tft.width(), 116, COL_MSG_TITLE, 0);
+  drawSerifLine("Thank You!", 0, tft.width(), 162, COL_MSG_BODY, 0);
 }
 
 void runFreeVendCheckout() {
@@ -177,9 +177,9 @@ void runFreeVendCheckout() {
     drawDispensedScreen();
   } else {
     drawGradientBackground();
-    drawSerifLine("Dispense", 0, tft.width(), 70, COL_DANGER, 0);
-    drawSerifLine("Failed", 0, tft.width(), 108, COL_DANGER, 0);
-    drawSerifLine("Please contact support", 0, tft.width(), 150, COL_TEXT, 1);
+    drawSerifLine("Dispense", 0, tft.width(), 70, COL_ERR_TEXT, 0);
+    drawSerifLine("Failed", 0, tft.width(), 108, COL_ERR_TEXT, 0);
+    drawSerifLine("Please contact support", 0, tft.width(), 150, COL_MSG_BODY, 1);
   }
   delay(2000);
 

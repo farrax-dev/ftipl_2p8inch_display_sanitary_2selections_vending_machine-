@@ -62,8 +62,8 @@ void drawPaymentMethodScreen() {
   int count = getEnabledPaymentMethods(idx);
 
   if (count == 0) {
-    drawSerifLine("No payment methods", 0, tft.width(), 100, COL_TEXT, 1);
-    drawSerifLine("available", 0, tft.width(), 135, COL_TEXT, 1);
+    drawSerifLine("No payment methods", 0, tft.width(), 100, COL_MSG_BODY, 1);
+    drawSerifLine("available", 0, tft.width(), 135, COL_MSG_BODY, 1);
   } else {
     // Largest bold face at which every method name fits one line of a card.
     int cx, cy, cw, ch;
@@ -89,8 +89,8 @@ void drawPaymentMethodScreen() {
       int p = idx[k];
 
       drawCardShadow(x, y, w, h, 10);
-      tft.fillRoundRect(x, y, w, h, 10, COL_CARD);
-      tft.drawRoundRect(x, y, w, h, 10, COL_CARD_BRD);
+      tft.fillRoundRect(x, y, w, h, 10, COL_CARD_FILL);
+      tft.drawRoundRect(x, y, w, h, 10, COL_CARD_BORDER);
 
       // Heading in the bold serif face (same family as the screen titles and
       // the Welcome card), measured with the description and drawn as one
@@ -113,15 +113,15 @@ void drawPaymentMethodScreen() {
       int blockY = y + (h - (nameH + PM_RULE_GAP * 2 + 1 + descH)) / 2;
 
       tft.setFont(nameFont);
-      tft.setTextColor(COL_ACCENT, COL_CARD);
+      tft.setTextColor(COL_METHOD_NAME, COL_CARD_FILL);
       tft.setCursor(innerX + (innerW - (int)bw) / 2 - bx, blockY - by);
       tft.print(PAYMENT_NAMES[p]);
       tft.setFont();
 
       int ruleW = innerW / 2;
-      tft.fillRect(innerX + (innerW - ruleW) / 2, blockY + nameH + PM_RULE_GAP, ruleW, 2, COL_CARD_BRD);
+      tft.fillRect(innerX + (innerW - ruleW) / 2, blockY + nameH + PM_RULE_GAP, ruleW, 2, COL_METHOD_RULE);
 
-      tft.setTextColor(COL_TEXT, COL_CARD);
+      tft.setTextColor(COL_METHOD_DESC, COL_CARD_FILL);
       wrapFontInBox(descFont, PM_DESCRIPTIONS[p], innerX, innerW,
                     blockY + nameH + PM_RULE_GAP * 2 + 1, true);
     }

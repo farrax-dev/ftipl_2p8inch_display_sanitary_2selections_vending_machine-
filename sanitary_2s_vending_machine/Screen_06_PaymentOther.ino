@@ -158,7 +158,7 @@ bool cashAnyCoinAccepted = false;
 unsigned long cashEnteredTime = 0;
 unsigned long cashLastTimeoutLineUpdate = 0;
 char cashStatusMsg[32] = "";
-uint16_t cashStatusColor = COL_TEXT;
+uint16_t cashStatusColor = COL_MSG_BODY;
 
 void resetCoinAcceptorState() {
   noInterrupts();
@@ -235,8 +235,8 @@ int pollCoinAcceptor() {
 // every time a coin is credited, so they are wiped and redrawn as one region
 // (y=36..125).
 void drawCashChip(int x, int w, const char* text, uint16_t textColor) {
-  tft.fillRoundRect(x, 38, w, 22, 6, COL_CARD);
-  tft.drawRoundRect(x, 38, w, 22, 6, COL_CARD_BRD);
+  tft.fillRoundRect(x, 38, w, 22, 6, COL_CARD_FILL);
+  tft.drawRoundRect(x, 38, w, 22, 6, COL_CARD_BORDER);
   drawSerifLine(text, x, w, 38 + 11, textColor, 1);
 }
 
@@ -248,23 +248,23 @@ void drawCashProgressLines() {
 
   char buf[24];
   snprintf(buf, sizeof(buf), "Total Rs. %d", orderTotal);
-  drawCashChip(10, 148, buf, COL_TEXT);
+  drawCashChip(10, 148, buf, COL_MSG_BODY);
   snprintf(buf, sizeof(buf), "Paid Rs. %d", paid);
-  drawCashChip(162, 148, buf, COL_SUCCESS);
+  drawCashChip(162, 148, buf, COL_OK_TEXT);
 
   // Remaining card: a label strip over the amount, in the accent colour that
   // marks "this is the thing to act on" everywhere else in the app.
   const int RX = 10, RY = 64, RW = 300, RH = 58;
   drawCardShadow(RX, RY, RW, RH, 10);
-  tft.fillRoundRect(RX, RY, RW, RH, 10, COL_CARD);
-  tft.drawRoundRect(RX, RY, RW, RH, 10, COL_CARD_BRD);
-  tft.drawRoundRect(RX + 1, RY + 1, RW - 2, RH - 2, 9, COL_ACCENT);
+  tft.fillRoundRect(RX, RY, RW, RH, 10, COL_CARD_FILL);
+  tft.drawRoundRect(RX, RY, RW, RH, 10, COL_CARD_BORDER);
+  tft.drawRoundRect(RX + 1, RY + 1, RW - 2, RH - 2, 9, COL_CARD_RING);
 
-  drawSerifLine("Remaining", RX, RW, RY + 14, COL_TEXT, 1);
+  drawSerifLine("Remaining", RX, RW, RY + 14, COL_MSG_BODY, 1);
 
   char amountBuf[16];
   snprintf(amountBuf, sizeof(amountBuf), "Rs. %d", remaining);
-  drawSerifLine(amountBuf, RX, RW, RY + 41, COL_ACCENT, 0);
+  drawSerifLine(amountBuf, RX, RW, RY + 41, COL_PRICE_TEXT, 0);
 }
 
 // CASH_TIMEOUT_MS is otherwise invisible to the customer — unlike the UPI
@@ -278,7 +278,7 @@ void drawCashTimeoutLine() {
   if (remainingSec < 0) remainingSec = 0;
   char buf[24];
   snprintf(buf, sizeof(buf), "Time left: %ds", remainingSec);
-  drawSerifLine(buf, 0, tft.width(), 179, COL_TEXT, 1);
+  drawSerifLine(buf, 0, tft.width(), 179, COL_MSG_BODY, 1);
 }
 
 void drawCashStatusLine() {
@@ -299,7 +299,7 @@ void drawCashStatusLine() {
     tft.setFont();
     int tw = min((int)mw + 20, (int)tft.width() - 4);
     int tx = (tft.width() - tw) / 2;
-    tft.fillRoundRect(tx, 147, tw, 22, 6, COL_CARD);
+    tft.fillRoundRect(tx, 147, tw, 22, 6, COL_CARD_FILL);
     tft.drawRoundRect(tx, 147, tw, 22, 6, cashStatusColor);
     drawSerifLine(cashStatusMsg, tx, tw, 158, cashStatusColor, 1);
   }
@@ -310,7 +310,7 @@ void drawCashStatusLine() {
 void drawCashBackButtonArea() {
   if (cashAnyCoinAccepted) {
     tft.fillRoundRect(BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H, 8, COL_BG_TOP);
-    drawSerifLine("Paying, no refund", BTN_BACK_X, BTN_BACK_W, BTN_Y + BTN_H / 2, COL_TEXT, 2);
+    drawSerifLine("Paying, no refund", BTN_BACK_X, BTN_BACK_W, BTN_Y + BTN_H / 2, COL_MSG_BODY, 2);
   } else {
     drawBackButton("< Back");
   }
@@ -320,7 +320,7 @@ void drawPaymentCashScreen() {
   cashAmountDue = orderTotal;
   cashAnyCoinAccepted = false;
   cashStatusMsg[0] = '\0';
-  cashStatusColor = COL_TEXT;
+  cashStatusColor = COL_MSG_BODY;
   cashEnteredTime = millis();
   cashLastTimeoutLineUpdate = millis();
   resetCoinAcceptorState();
@@ -350,7 +350,7 @@ void handlePaymentCashScreen() {
     cashAnyCoinAccepted = true;
     cashEnteredTime = millis();  // coins are still coming in, keep the session alive
     snprintf(cashStatusMsg, sizeof(cashStatusMsg), "+Rs. %d credited", credited);
-    cashStatusColor = COL_SUCCESS;
+    cashStatusColor = COL_OK_TEXT;
 
     if (cashAmountDue <= 0) {
       Serial.printf("coin acceptor: payment complete, Rs %d order paid (Rs %d overpaid, no change given)\n",
@@ -364,9 +364,9 @@ void handlePaymentCashScreen() {
         drawDispensedScreen();
       } else {
         drawGradientBackground();
-        drawSerifLine("Dispense", 0, tft.width(), 70, COL_DANGER, 0);
-        drawSerifLine("Failed", 0, tft.width(), 108, COL_DANGER, 0);
-        drawSerifLine("Please contact support", 0, tft.width(), 150, COL_TEXT, 1);
+        drawSerifLine("Dispense", 0, tft.width(), 70, COL_ERR_TEXT, 0);
+        drawSerifLine("Failed", 0, tft.width(), 108, COL_ERR_TEXT, 0);
+        drawSerifLine("Please contact support", 0, tft.width(), 150, COL_MSG_BODY, 1);
       }
       delay(2500);
 
@@ -383,7 +383,7 @@ void handlePaymentCashScreen() {
     // Burst finished but didn't match a known coin value; the acceptor has
     // already mechanically kept the coin, there's nothing to credit it as.
     snprintf(cashStatusMsg, sizeof(cashStatusMsg), "Coin not recognized");
-    cashStatusColor = COL_DANGER;
+    cashStatusColor = COL_ERR_TEXT;
     drawCashStatusLine();
   }
 
@@ -405,9 +405,9 @@ void handlePaymentCashScreen() {
     // Drawn exactly like drawUPITimeoutScreen() (Screen_05_PaymentUPI.ino) so
     // every payment timeout looks the same: the Welcome screen's serif face.
     drawGradientBackground();
-    drawSerifLine("Payment", 0, tft.width(), 70, COL_DANGER, 0);
-    drawSerifLine("Timed Out", 0, tft.width(), 108, COL_DANGER, 0);
-    drawSerifLine("No payment was received in time.", 0, tft.width(), 150, COL_TEXT, 1);
+    drawSerifLine("Payment", 0, tft.width(), 70, COL_ERR_TEXT, 0);
+    drawSerifLine("Timed Out", 0, tft.width(), 108, COL_ERR_TEXT, 0);
+    drawSerifLine("No payment was received in time.", 0, tft.width(), 150, COL_MSG_BODY, 1);
     delay(2000);
 
     resetCart();
@@ -462,7 +462,7 @@ unsigned long rfidPayEnteredMs = 0;
 unsigned long rfidPaySessionStartMs = 0;   // set once on entry, never reset by activity
 unsigned long rfidLastTimeoutLineUpdate = 0;
 char rfidStatusMsg[32] = "";
-uint16_t rfidStatusColor = COL_TEXT;
+uint16_t rfidStatusColor = COL_MSG_BODY;
 unsigned long rfidStatusUntilMs = 0;  // rejection message clears itself, same as the coin screen
 
 void drawRFIDStatusLine() {
@@ -476,7 +476,7 @@ void drawRFIDStatusLine() {
     tft.setFont();
     int tw = min((int)mw + 20, (int)tft.width() - 4);
     int tx = (tft.width() - tw) / 2;
-    tft.fillRoundRect(tx, 147, tw, 22, 6, COL_CARD);
+    tft.fillRoundRect(tx, 147, tw, 22, 6, COL_CARD_FILL);
     tft.drawRoundRect(tx, 147, tw, 22, 6, rfidStatusColor);
     drawSerifLine(rfidStatusMsg, tx, tw, 158, rfidStatusColor, 1);
   }
@@ -493,7 +493,7 @@ void drawRFIDTimeoutLine() {
   if (remainingSec < 0) remainingSec = 0;
   char buf[24];
   snprintf(buf, sizeof(buf), "Time left: %ds", remainingSec);
-  drawSerifLine(buf, 0, tft.width(), 179, COL_TEXT, 1);
+  drawSerifLine(buf, 0, tft.width(), 179, COL_MSG_BODY, 1);
 }
 
 void drawPaymentRFIDScreen() {
@@ -509,13 +509,13 @@ void drawPaymentRFIDScreen() {
   // Remaining card: accent heading lines over a dark instruction line.
   const int CX = 10, CY = 44, CW = 300, CH = 96;
   drawCardShadow(CX, CY, CW, CH, 10);
-  tft.fillRoundRect(CX, CY, CW, CH, 10, COL_CARD);
-  tft.drawRoundRect(CX, CY, CW, CH, 10, COL_CARD_BRD);
-  tft.drawRoundRect(CX + 1, CY + 1, CW - 2, CH - 2, 9, COL_ACCENT);
+  tft.fillRoundRect(CX, CY, CW, CH, 10, COL_CARD_FILL);
+  tft.drawRoundRect(CX, CY, CW, CH, 10, COL_CARD_BORDER);
+  tft.drawRoundRect(CX + 1, CY + 1, CW - 2, CH - 2, 9, COL_CARD_RING);
 
-  drawSerifLine("No charge for", CX, CW, CY + 22, COL_ACCENT, 0);
-  drawSerifLine("registered cards", CX, CW, CY + 51, COL_ACCENT, 0);
-  drawSerifLine("Hold your card near the reader", CX, CW, CY + 80, COL_TEXT, 1);
+  drawSerifLine("No charge for", CX, CW, CY + 22, COL_MSG_TITLE, 0);
+  drawSerifLine("registered cards", CX, CW, CY + 51, COL_MSG_TITLE, 0);
+  drawSerifLine("Hold your card near the reader", CX, CW, CY + 80, COL_MSG_BODY, 1);
   drawRFIDStatusLine();
   drawRFIDTimeoutLine();
   drawBackButton("< Back");
@@ -565,8 +565,8 @@ void handlePaymentRFIDScreen() {
         drawDispensedScreen();
       } else {
         drawGradientBackground();
-        drawSerifLine("Dispense Failed", 0, tft.width(), 80, COL_DANGER, 0);
-        drawSerifLine("Please contact support", 0, tft.width(), 125, COL_TEXT, 1);
+        drawSerifLine("Dispense Failed", 0, tft.width(), 80, COL_ERR_TEXT, 0);
+        drawSerifLine("Please contact support", 0, tft.width(), 125, COL_MSG_BODY, 1);
       }
       delay(2000);
 
@@ -581,7 +581,7 @@ void handlePaymentRFIDScreen() {
     } else {
       snprintf(rfidStatusMsg, sizeof(rfidStatusMsg), "Limit reached (%d left)", remaining < 0 ? 0 : remaining);
     }
-    rfidStatusColor = COL_DANGER;
+    rfidStatusColor = COL_ERR_TEXT;
     rfidStatusUntilMs = millis() + 1800;
     rfidPayEnteredMs = millis();  // an actual tap counts as activity, same as a coin
     drawRFIDStatusLine();
@@ -590,9 +590,9 @@ void handlePaymentRFIDScreen() {
   if (millis() - rfidPayEnteredMs > rfidPayTimeoutMs()
       || millis() - rfidPaySessionStartMs > rfidPayHardCapMs()) {
     drawGradientBackground();
-    drawSerifLine("Payment", 0, tft.width(), 70, COL_DANGER, 0);
-    drawSerifLine("Timed Out", 0, tft.width(), 108, COL_DANGER, 0);
-    drawSerifLine("No card was tapped in time.", 0, tft.width(), 150, COL_TEXT, 1);
+    drawSerifLine("Payment", 0, tft.width(), 70, COL_ERR_TEXT, 0);
+    drawSerifLine("Timed Out", 0, tft.width(), 108, COL_ERR_TEXT, 0);
+    drawSerifLine("No card was tapped in time.", 0, tft.width(), 150, COL_MSG_BODY, 1);
     delay(2000);
 
     resetCart();

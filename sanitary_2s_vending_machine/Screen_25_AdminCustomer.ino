@@ -31,14 +31,14 @@ void drawAdminCustomerScreen() {
 
   snprintf(buf, sizeof(buf), "%d", maxCartQty);
   auiRowLabel(CUS_ROW_X + 12, cusRowCY(0), stepLabelW, "Max items");
-  auiStepper(CUS_RIGHT, cusRowCY(0), buf, COL_ACCENT);
+  auiStepper(CUS_RIGHT, cusRowCY(0), buf, COL_STEP_VALUE_TEXT);
 
   auiRowLabel(CUS_ROW_X + 12, cusRowCY(1), 170, "Auto timeout");
   auiOnOff(CUS_RIGHT, cusRowCY(1), idleTimeoutOn);
 
   snprintf(buf, sizeof(buf), "%d", idleTimeoutSec);
   auiRowLabel(CUS_ROW_X + 12, cusRowCY(2), stepLabelW, "Seconds");
-  auiStepper(CUS_RIGHT, cusRowCY(2), buf, idleTimeoutOn ? COL_ACCENT : COL_TEXT_DIM);
+  auiStepper(CUS_RIGHT, cusRowCY(2), buf, idleTimeoutOn ? COL_STEP_VALUE_TEXT : COL_STEP_VALUE_OFF);
 
   auiRowLabel(CUS_ROW_X + 12, cusRowCY(3), 170, "Show countdown");
   auiOnOff(CUS_RIGHT, cusRowCY(3), idleShowTimer);

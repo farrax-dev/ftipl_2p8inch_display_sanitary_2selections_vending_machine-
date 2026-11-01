@@ -32,9 +32,9 @@ const int UPI_TIMEOUT_MAX_MINUTES = 10;
 void drawUPIFieldRow(int index, const char* caption, const char* value) {
   int y = upiRowY(index);
   auiRow(UPI_ROW_X, y, UPI_ROW_W, UPI_ROW_H);
-  auiPut(caption, AL_LEFT, UPI_ROW_X + 12, 150, y + 12, COL_TEXT_DIM, FACE_XS);
+  auiPut(caption, AL_LEFT, UPI_ROW_X + 12, 150, y + 12, COL_CARD_CAPTION, FACE_XS);
   auiPut(strlen(value) > 0 ? value : "(not set)", AL_LEFT, UPI_ROW_X + 12,
-         UPI_EDIT_X - 8 - (UPI_ROW_X + 12), y + 30, COL_TEXT, FACE_MD);
+         UPI_EDIT_X - 8 - (UPI_ROW_X + 12), y + 30, COL_CARD_TITLE, FACE_MD);
   auiRowButton(UPI_EDIT_X, upiRowCY(index), UPI_EDIT_W, "Edit", ABTN_PRIMARY);
 }
 
@@ -50,7 +50,7 @@ void drawAdminUPIScreen() {
   auiRowLabel(UPI_ROW_X + 12, cy2, auiStepLeftX(UPI_RIGHT) - UPI_ROW_X - 20, "Timeout (min)");
   char tbuf[8];
   snprintf(tbuf, sizeof(tbuf), "%d", (int)(upiTimeoutMs / 60000));
-  auiStepper(UPI_RIGHT, cy2, tbuf, COL_ACCENT);
+  auiStepper(UPI_RIGHT, cy2, tbuf, COL_STEP_VALUE_TEXT);
 
   auiBarButton(0, 1, "Back", ABTN_SECONDARY);
 }

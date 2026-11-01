@@ -13,8 +13,8 @@ void drawLTEStatusCard(const char* busy) {
   drawCard(x, y, w, h, 8);
 
   if (busy != NULL) {
-    auiPut(busy, AL_CENTER, x + 12, w - 24, y + h / 2 - 10, COL_ACCENT, FACE_MD);
-    auiPut("This can take 20+ seconds", AL_CENTER, x + 12, w - 24, y + h / 2 + 16, COL_TEXT_DIM, FACE_XS);
+    auiPut(busy, AL_CENTER, x + 12, w - 24, y + h / 2 - 10, COL_MSG_TITLE, FACE_MD);
+    auiPut("This can take 20+ seconds", AL_CENTER, x + 12, w - 24, y + h / 2 + 16, COL_CARD_CAPTION, FACE_XS);
     return;
   }
 
@@ -25,38 +25,38 @@ void drawLTEStatusCard(const char* busy) {
   // switched off. Neutral colour when off — a deliberate choice, not a fault.
   char state[48];
   uint16_t stateCol;
-  if (!lteEnabled)                { snprintf(state, sizeof(state), "Turned off");     stateCol = COL_TEXT_DIM; }
-  else if (connected)             { snprintf(state, sizeof(state), "Connected");      stateCol = COL_SUCCESS; }
-  else if (lteLastError[0] != '\0') { snprintf(state, sizeof(state), "%s", lteLastError); stateCol = COL_DANGER; }
-  else                            { snprintf(state, sizeof(state), "Not connected");  stateCol = COL_DANGER; }
+  if (!lteEnabled)                { snprintf(state, sizeof(state), "Turned off");     stateCol = COL_CARD_CAPTION; }
+  else if (connected)             { snprintf(state, sizeof(state), "Connected");      stateCol = COL_OK_TEXT; }
+  else if (lteLastError[0] != '\0') { snprintf(state, sizeof(state), "%s", lteLastError); stateCol = COL_ERR_TEXT; }
+  else                            { snprintf(state, sizeof(state), "Not connected");  stateCol = COL_ERR_TEXT; }
   auiPut(state, AL_LEFT, x + 14, w - 28, y + 18, stateCol, FACE_MD);
 
   char buf[56];
   snprintf(buf, sizeof(buf), "APN: %s", LTE_APN);
-  auiPut(buf, AL_LEFT, x + 14, w - 28, y + 46, COL_TEXT, FACE_XS);
-  auiPut("Used as the backup link when WiFi is down", AL_LEFT, x + 14, w - 28, y + 66, COL_TEXT_DIM, FACE_XS);
+  auiPut(buf, AL_LEFT, x + 14, w - 28, y + 46, COL_CARD_TITLE, FACE_XS);
+  auiPut("Used as the backup link when WiFi is down", AL_LEFT, x + 14, w - 28, y + 66, COL_CARD_CAPTION, FACE_XS);
 
   int bars = lteSignalBars();
   if (connected) snprintf(buf, sizeof(buf), "Signal: %s", wifiQualityLabel(bars));
   else           snprintf(buf, sizeof(buf), "Signal: -");
-  auiPut(buf, AL_LEFT, x + 14, w - 28 - 48, y + 92, COL_TEXT, FACE_XS);
+  auiPut(buf, AL_LEFT, x + 14, w - 28 - 48, y + 92, COL_CARD_TITLE, FACE_XS);
   drawCellularBars(x + w - 14 - 36, y + 100, 2, connected ? bars : 0,
-                   connected ? COL_SUCCESS : COL_TEXT_DIM);
+                   connected ? COL_WIFI_GOOD : COL_WIFI_OFF);
 
   // L5: last test. !lteEnabled takes priority over whatever the last real
   // test said — otherwise turning LTE off would leave an old "Test OK" or
   // "Test failed" line sitting there looking current.
-  uint16_t resCol = COL_TEXT_DIM;
+  uint16_t resCol = COL_CARD_CAPTION;
   if (!lteEnabled) {
     snprintf(buf, sizeof(buf), "Test: 4G is turned off");
   } else if (!ltePingAttempted) {
     snprintf(buf, sizeof(buf), "Test: not tested yet");
   } else if (ltePingSuccess) {
     snprintf(buf, sizeof(buf), "Test OK - HTTP %d in %lums", ltePingHttpCode, ltePingMs);
-    resCol = COL_SUCCESS;
+    resCol = COL_OK_TEXT;
   } else {
     snprintf(buf, sizeof(buf), "Test failed - could not reach the internet");
-    resCol = COL_DANGER;
+    resCol = COL_ERR_TEXT;
   }
   auiPut(buf, AL_LEFT, x + 14, w - 28, y + 124, resCol, FACE_SM);
 }

@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vending Theme Designer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Tinos:wght@400;700&display=swap">
+<style>
+/* Layout: sticky controls on the left, a grid of 320x240 screen previews on the right.
+   Neutral slate chrome so the screens carry all the colour. Works offline: the web fonts are optional. */
+:root{
+  --bg:#eef0f3; --panel:#ffffff; --ink:#1b2430; --muted:#5d6978; --line:#d5dae1;
+  --accent:#2457c5; --accent-ink:#ffffff; --good:#1f7a43; --warn:#9a6700; --bad:#b3261e;
+  --code:#101722; --code-ink:#dbe4f0;
+  --sans:"IBM Plex Sans",system-ui,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171e; --panel:#1a212b; --ink:#e6ebf2; --muted:#9aa6b6; --line:#2d3744;
+  --accent:#7ba3ff; --accent-ink:#0d1625; --good:#5cc88a; --warn:#e0b04a; --bad:#ff8a80;
+  --code:#0b0f15; --code-ink:#dbe4f0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171e; --panel:#1a212b; --ink:#e6ebf2; --muted:#9aa6b6; --line:#2d3744;
+  --accent:#7ba3ff; --accent-ink:#0d1625; --good:#5cc88a; --warn:#e0b04a; --bad:#ff8a80;
+  --code:#0b0f15; --code-ink:#dbe4f0; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans);padding-inline:16px;padding-block:20px}
+h1{font-size:22px;font-weight:600;margin:0;letter-spacing:-.01em}
+h2{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+code{font-family:var(--mono);font-size:12px}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;margin-bottom:16px}
+.top p{margin:0;color:var(--muted);max-width:70ch}
+.wrap{display:grid;grid-template-columns:minmax(300px,350px) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:860px){.wrap{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.controls{display:flex;flex-direction:column;gap:14px}
+@media(min-width:861px){.controls{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;padding-right:2px}}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+select,input[type=text],input[type=number]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0;width:100%}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.scope{display:flex;flex-direction:column;gap:8px}
+.scope .now{font-size:13px}
+.scope .now b{font-weight:600}
+.colors{display:flex;flex-direction:column}
+.crow{display:grid;grid-template-columns:34px minmax(0,1fr) 92px 24px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)}
+.crow:last-child{border-bottom:0}
+.crow input[type=color]{width:34px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
+.crow .nm{font-family:var(--mono);font-size:12px;font-weight:500}
+.crow.ov .nm::after{content:" ●";color:var(--accent)}
+.crow .role{font-size:11.5px;color:var(--muted);line-height:1.3}
+.crow .val{display:flex;flex-direction:column;gap:3px}
+.crow .val input{font-family:var(--mono);font-size:11.5px;text-align:right;padding:3px 6px;border-radius:5px}
+.crow .val input.hexin{color:var(--ink);font-weight:500}
+.crow .val input.rawin{color:var(--muted)}
+.crow .val input.bad{border-color:var(--bad);color:var(--bad)}
+.crow .rs{padding:0;width:24px;height:24px;line-height:1;border-radius:6px;visibility:hidden}
+.crow.ov .rs{visibility:visible}
+.checks{display:flex;flex-direction:column;gap:5px}
+.chk{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;font-size:12.5px}
+.pill{font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid currentColor}
+.pill.good{color:var(--good)}.pill.warn{color:var(--warn)}.pill.bad{color:var(--bad)}
+.chk .sw{width:22px;height:16px;border-radius:4px;border:1px solid var(--line);display:grid;place-items:center;font:700 10px var(--sans)}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,.btn{font:inherit;font-weight:500;border-radius:6px;padding:6px 11px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.note{font-size:12px;color:var(--muted);margin:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:12px}
+.toolbar .grp{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.toolbar .lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.toolbar select{width:auto}
+.chip{padding:4px 10px;border-radius:999px;font-size:12.5px}
+.chk2{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;cursor:pointer}
+
+.grp-h{grid-column:1/-1;margin:10px 0 0;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px;--z:1}
+.grid[data-size="actual"]{grid-template-columns:repeat(auto-fill,minmax(calc(57.6mm + 24px),1fr))}
+.grid[data-size="z1"]{grid-template-columns:repeat(auto-fill,minmax(calc(320px + 24px),1fr))}
+.grid[data-size="z2"]{grid-template-columns:repeat(auto-fill,minmax(calc(640px + 24px),1fr))}
+.grid[data-size="z3"]{grid-template-columns:repeat(auto-fill,minmax(calc(960px + 24px),1fr))}
+figure{margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.shot{display:block;width:100%;padding:0;border:2px solid transparent;border-radius:10px;background:none;cursor:pointer;text-align:left}
+.shot:hover{border-color:var(--line)}
+.shot[aria-pressed="true"]{border-color:var(--accent)}
+.bz{padding:0;border-radius:6px;overflow:hidden;line-height:0}
+.bezel .bz{padding:9px;background:#0b0c0e;border-radius:12px;box-shadow:inset 0 0 0 1px #2a2d33}
+.bezel .bz svg{border-radius:2px}
+.bz svg{width:100%;height:auto;display:block;aspect-ratio:4/3}
+.grid[data-size="actual"] .bz svg{width:57.6mm;height:43.2mm}
+.grid[data-size="z1"] .bz svg{width:320px;height:240px}
+.grid[data-size="z2"] .bz svg{width:640px;height:480px}
+.grid[data-size="z3"] .bz svg{width:960px;height:720px}
+.grid[data-size="actual"] .bz,.grid[data-size="z1"] .bz,.grid[data-size="z2"] .bz,.grid[data-size="z3"] .bz{width:max-content;max-width:100%;overflow:auto}
+.crisp svg{shape-rendering:crispEdges;text-rendering:optimizeSpeed}
+figcaption{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;padding-inline:2px}
+figcaption b{color:var(--ink);font-weight:600}
+.badge{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+pre{margin:0;background:var(--code);color:var(--code-ink);border-radius:8px;padding:12px;overflow-x:auto;font:12px/1.5 var(--mono);white-space:pre}
+.steps{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:12.5px}
+.steps li{margin:2px 0}
+.exp{margin-top:20px;display:flex;flex-direction:column;gap:10px}
+.exprow{display:grid;grid-template-columns:90px minmax(0,1fr);gap:10px}
+.warnbox{border:1px solid var(--warn);color:var(--ink);border-radius:8px;padding:8px 10px;font-size:12.5px}
+
+.sub{font-size:12px;font-weight:600;margin:14px 0 6px;color:var(--ink);display:flex;gap:8px;align-items:center}
+.sub:first-child{margin-top:0}
+.cnt{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 7px}
+#q{margin:6px 0 8px;width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+#comps details{border-top:1px solid var(--line)}
+#comps summary{cursor:pointer;padding:8px 0;font-size:13px;font-weight:600;display:flex;gap:8px;align-items:center}
+.lnk{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.crow.unl .lnk,.crow.ov .lnk{color:var(--accent)}
+.crow.unl .nm::after{content:" ◆";color:var(--accent)}
+.crow .rs{visibility:hidden}
+.crow.canreset .rs{visibility:visible}
+.crow[hidden],#comps details[hidden]{display:none}
+.info{margin-bottom:16px;font-size:13px}
+.info summary{cursor:pointer;font-weight:600}
+.info ul{margin:8px 0 0;padding-left:18px;color:var(--muted)}
+.info li{margin:3px 0}
+.info code,.info b{color:var(--ink)}
+.top{position:sticky;top:0;z-index:20;background:var(--bg);padding-block:10px;margin-top:-10px;border-bottom:1px solid var(--line)}
+.topsave{display:flex;gap:10px;align-items:center;margin-left:auto}
+.topsave .note{max-width:34ch}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Vending Theme Designer</h1>
+  <p>Works offline from this file. Edit the colours for every screen at once, or pick one screen and give it its own colours. Previews use the firmware's own coordinates and fonts on a 320 × 240 panel.</p>
+  <div class="topsave">
+    <button class="primary" id="saveTop" type="button">Save config</button>
+    <span class="note" id="msgTop" role="status"></span>
+  </div>
+</div>
+
+
+<details class="panel info" open>
+  <summary>What the new component colours change in the firmware</summary>
+  <ul>
+    <li><b>Custom theme:</b> Config.h now offers Blossom, Ocean Blue, Mint Fresh and <b>Custom (3)</b>. Custom reads every colour from <code>custom_theme.h</code>, which <b>Save config</b> writes from this page.</li>
+    <li>Every part of the UI now has its own colour macro in <code>Core_03_Theme.ino</code>: <b>119 component colours</b> (buttons, header, cards, switches, steppers, tabs, tables, keyboard, price text, messages and more), on top of the 11 base colours.</li>
+    <li>Each component colour is <b>linked</b> to a base colour by default, so the 3 built-in themes look exactly as they did. <code>COL_BG_TOP</code> no longer drives button labels, headers or switch knobs on its own.</li>
+    <li><b>Unlink</b> a component by changing its colour. Unlinked colours are written as hex values in the saved config; linked ones point to their base colour. ↺ links it back.</li>
+    <li>Price text (<code>COL_PRICE_TEXT</code>) is separate from the button colour. Buttons have their own fill, label, border, shadow and disabled colours.</li>
+    <li>The QR code stays black on white. Changing that would stop payments scanning.</li>
+    <li>A few spots that only mimic the background gradient still use <code>COL_BG_TOP</code> and <code>COL_BG_BOTTOM</code>, and the RFID status message keeps <code>COL_TEXT_DIM</code>.</li>
+  </ul>
+</details>
+
+<div class="wrap">
+  <div class="controls">
+    <section class="panel scope">
+      <h2>Editing</h2>
+      <label class="fld" for="scope">Apply colour changes to
+        <select id="scope"></select>
+      </label>
+      <div class="now" id="scopeNote"></div>
+      <label class="fld" for="preset">Load a ready-made theme into this scope
+        <select id="preset"></select>
+      </label>
+    </section>
+
+    <section class="panel">
+      <h2>Colours</h2>
+      <div id="colors">
+        <h3 class="sub">Base palette <span class="cnt">11</span></h3>
+        <div class="colors" id="baseColors"></div>
+        <h3 class="sub">Component colours <span class="cnt">119</span></h3>
+        <p class="note" id="unlinkNote"></p>
+        <input id="q" type="search" placeholder="Search: button, price, header, switch…" aria-label="Search component colours">
+        <div id="comps"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Legibility</h2>
+      <div class="checks" id="checks"></div>
+      <p class="note" style="margin-top:8px">4.5 or more reads well at small sizes. 3 to 4.5 is fine for bold or large text only. Checked for the scope you are editing.</p>
+    </section>
+  </div>
+
+  <div>
+    <div class="toolbar" role="toolbar" aria-label="Preview options">
+      <div class="grp"><span class="lbl">Show</span><span id="filters" class="grp"></span></div>
+      <div class="grp"><span class="lbl">Size</span>
+        <select id="size" aria-label="Preview size">
+          <option value="fit">Fit to window</option>
+          <option value="actual">Real size (2.8″ panel)</option>
+          <option value="z1">1× (320 px)</option>
+          <option value="z2">2× (640 px)</option>
+          <option value="z3">3× (960 px)</option>
+        </select>
+      </div>
+      <label class="chk2"><input type="checkbox" id="bezel" checked> Bezel</label>
+      <label class="chk2"><input type="checkbox" id="crisp"> Pixel-sharp</label>
+      <label class="chk2"><input type="checkbox" id="pxgrid"> Pixel grid</label>
+    </div>
+    <div class="grid bezel" id="screens"></div>
+
+    <section class="panel exp">
+      <h2>Config file for the machine</h2>
+      <p class="note">Press <b>Save config</b> to write <code>custom_theme.h</code>. It holds every colour you chose, so the firmware needs nothing else. It also stores your design, so <b>Open config</b> can bring it back here.</p>
+      <label class="fld" for="expmode">What to write
+        <select id="expmode">
+          <option value="all">Every colour (unchanged ones point to their base colour)</option>
+          <option value="changed">Only the 11 base colours and colours I changed</option>
+        </select>
+      </label>
+      <pre id="out"></pre>
+      <div class="btnrow">
+        <button class="primary" id="saveConfig" type="button">Save config (custom_theme.h)</button>
+        <label class="btn" for="loadConfig">Open config…</label><input id="loadConfig" type="file" accept=".h,.json,text/plain,application/json" hidden>
+        <button id="copy" type="button">Copy text</button>
+        <button id="saveJson" type="button">Save as .json</button>
+        <button id="resetAll" type="button">Reset everything</button>
+        <span class="note" id="msg" role="status"></span>
+      </div>
+      <div class="warnbox" id="ovWarn" hidden></div>
+      <ol class="steps">
+        <li>Save the file as <code>custom_theme.h</code> in the sketch folder <code>sanitary_2s_vending_machine</code>, replacing the one there.</li>
+        <li>In <code>Config.h</code>, set <code>#define CFG_COLOR_THEME 3</code> (3 is Custom).</li>
+        <li>Compile and flash. The machine uses the colours in that file.</li>
+      </ol>
+      <p class="note">Your work is also kept in this browser automatically.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+const THEMES=[
+  [0,"Blossom (pink / rose)",{BG_TOP:0xFF7E,BG_BOTTOM:0xFE1B,CARD:0xFF3D,CARD_BRD:0xD1AD,ACCENT:0xE0F1,TEXT:0x4886,TEXT_DIM:0x9B4F,SHADOW:0xE5B9,DANGER:0xE1CA,SUCCESS:0x350B,WARNING:0xB421}],
+  [1,"Ocean Blue",{BG_TOP:0xEFBF,BG_BOTTOM:0x8E9F,CARD:0xE79F,CARD_BRD:0x1373,ACCENT:0x13D9,TEXT:0x0968,TEXT_DIM:0x5BF2,SHADOW:0xC6FD,DANGER:0xE1CA,SUCCESS:0x350B,WARNING:0xB421}],
+  [2,"Mint Fresh",{BG_TOP:0xEFDE,BG_BOTTOM:0x8718,CARD:0xDFBD,CARD_BRD:0x0C6D,ACCENT:0x0D0F,TEXT:0x09C5,TEXT_DIM:0x5C4F,SHADOW:0xC75B,DANGER:0xE1CA,SUCCESS:0x4D6A,WARNING:0xB421}]
+];
+/* The 11 base colours every theme sets. Every component colour below is linked to one of these (or to another component) until you unlink it. */
+const BASE=[
+ ["BG_TOP","Page background, top of the gradient. Keep light."],
+ ["BG_BOTTOM","Page background, bottom of the gradient."],
+ ["CARD","Card and button fill. Keep pale."],
+ ["CARD_BRD","Card border and glow."],
+ ["ACCENT","Buttons, prices, highlights."],
+ ["TEXT","Main text. Keep dark."],
+ ["TEXT_DIM","Secondary text and captions."],
+ ["SHADOW","Drop shadow under cards."],
+ ["DANGER","Errors, cancel, low stock."],
+ ["SUCCESS","Paid, connected, in stock."],
+ ["WARNING","Cautions and limits."]
+];
+/* [group, name, linked-to by default, what it colours]  (mirrors the #ifndef block in Core_03_Theme.ino) */
+const COMP=[["Header and Welcome strip", "HDR_BG", "BG_TOP", "Band behind every screen title"], ["Header and Welcome strip", "HDR_TITLE", "TEXT", "Screen title text"], ["Header and Welcome strip", "HDR_RULE", "ACCENT", "Line under the title"], ["Header and Welcome strip", "HDR_RULE_FADE", "HDR_BG", "Colour the title line fades into"], ["Header and Welcome strip", "HDR_NOTE", "ACCENT", "Hint in the header (Tap to select)"], ["Header and Welcome strip", "HDR_COUNT", "TEXT", "Counter in the header (1 / 5)"], ["Header and Welcome strip", "HDR_COUNT_DIM", "TEXT_DIM", "Dim counter in the header (RFID card count)"], ["Header and Welcome strip", "STRIP_BG", "BG_TOP", "Welcome top strip"], ["Header and Welcome strip", "STRIP_LINE", "CARD_BRD", "Line under the Welcome strip"], ["Header and Welcome strip", "STRIP_TIME", "TEXT", "Clock text"], ["Header and Welcome strip", "STRIP_DATE", "ACCENT", "Date text"], ["Header and Welcome strip", "WELCOME_SUB", "ACCENT", "Subtitle on the Welcome card"], ["Header and Welcome strip", "PILL_FILL", "ACCENT", "Touch to Continue pill"], ["Header and Welcome strip", "PILL_TEXT", "BG_TOP", "Text on the pill"], ["Header and Welcome strip", "PILL_HOLLOW", "BG_TOP", "Pill fill while it blinks to outline"], ["Cards, rows and tiles", "CARD_FILL", "CARD", "Card, row and tile fill"], ["Cards, rows and tiles", "CARD_BORDER", "CARD_BRD", "Card, row and tile border"], ["Cards, rows and tiles", "CARD_SHADOW", "SHADOW", "Shadow under cards"], ["Cards, rows and tiles", "CARD_RING", "ACCENT", "Inner highlight ring on key cards"], ["Cards, rows and tiles", "CARD_RULE", "CARD_BRD", "Divider line inside a card"], ["Cards, rows and tiles", "CARD_TITLE", "TEXT", "Main text on cards and rows"], ["Cards, rows and tiles", "CARD_CAPTION", "TEXT_DIM", "Small caption text on cards and rows"], ["Cards, rows and tiles", "VALUE_TEXT", "ACCENT", "Editable values in rows (name, ID, clock)"], ["Cards, rows and tiles", "HINT_TEXT", "TEXT", "Hint lines on the background"], ["Cards, rows and tiles", "TILE_STRIPE", "ACCENT", "Stripe on Admin tiles"], ["Cards, rows and tiles", "TILE_STRIPE_OFF", "TEXT_DIM", "Stripe on disabled tiles"], ["Cards, rows and tiles", "TILE_STRIPE_OK", "SUCCESS", "Stripe on a connected network tile"], ["Cards, rows and tiles", "TILE_LABEL", "TEXT_DIM", "Caption on Reports tiles"], ["Cards, rows and tiles", "TILE_VALUE", "TEXT", "Number on Reports tiles"], ["Cards, rows and tiles", "TILE_VALUE_HI", "ACCENT", "Highlighted number on Reports tiles"], ["Products, price and cart", "PRODUCT_NAME", "TEXT", "Product name"], ["Products, price and cart", "PRICE_TEXT", "ACCENT", "Price (Rs. 10) on cards, cart and totals"], ["Products, price and cart", "STOCK_TEXT", "SUCCESS", "Qty Avail text"], ["Products, price and cart", "PRODUCT_FILL", "CARD", "Product card fill"], ["Products, price and cart", "PRODUCT_OOS_FILL", "BG_TOP", "Out-of-stock card fill"], ["Products, price and cart", "PRODUCT_BORDER", "CARD_BRD", "Product card border"], ["Products, price and cart", "PRODUCT_SEL_BORDER", "ACCENT", "Border of a product in the cart"], ["Products, price and cart", "PRODUCT_LIMIT_BORDER", "WARNING", "Border when the cart is full"], ["Products, price and cart", "PRODUCT_ERR_BORDER", "DANGER", "Flash border on a refused tap"], ["Products, price and cart", "QTY_BTN_FILL", "ACCENT", "Cart minus and plus buttons"], ["Products, price and cart", "QTY_BTN_GLYPH", "BG_TOP", "Minus and plus symbols"], ["Products, price and cart", "QTY_BOX_FILL", "CARD", "Cart quantity box"], ["Products, price and cart", "QTY_TEXT", "TEXT", "Cart quantity number"], ["Products, price and cart", "METHOD_NAME", "ACCENT", "UPI and Cash card names"], ["Products, price and cart", "METHOD_RULE", "CARD_BRD", "Line under the payment name"], ["Products, price and cart", "METHOD_DESC", "TEXT", "Payment card description"], ["Buttons", "BTN_PRI_FILL", "ACCENT", "Primary button fill (Pay, Save, Done)"], ["Buttons", "BTN_PRI_TEXT", "BG_TOP", "Primary button label"], ["Buttons", "BTN_SEC_FILL", "CARD", "Normal button fill (Back, Cancel, keypad)"], ["Buttons", "BTN_SEC_BORDER", "CARD_BRD", "Normal button border"], ["Buttons", "BTN_SEC_TEXT", "TEXT", "Normal button label"], ["Buttons", "BTN_DANGER_FILL", "DANGER", "Danger button fill"], ["Buttons", "BTN_DANGER_TEXT", "BG_TOP", "Danger button label"], ["Buttons", "BTN_OFF_FILL", "CARD", "Disabled button fill"], ["Buttons", "BTN_OFF_BORDER", "CARD_BRD", "Disabled button border"], ["Buttons", "BTN_OFF_TEXT", "TEXT_DIM", "Disabled button label"], ["Buttons", "BTN_SHADOW", "SHADOW", "Shadow under buttons"], ["Switch and stepper", "SW_ON_FILL", "ACCENT", "Switch track when on"], ["Switch and stepper", "SW_ON_BORDER", "ACCENT", "Switch outline and knob ring when on"], ["Switch and stepper", "SW_ON_TEXT", "BG_TOP", "ON label"], ["Switch and stepper", "SW_OFF_FILL", "SHADOW", "Switch track when off"], ["Switch and stepper", "SW_OFF_BORDER", "CARD_BRD", "Switch outline and knob ring when off"], ["Switch and stepper", "SW_OFF_TEXT", "TEXT_DIM", "OFF label"], ["Switch and stepper", "SW_KNOB", "BG_TOP", "Switch knob"], ["Switch and stepper", "STEP_BTN_FILL", "ACCENT", "Stepper minus and plus buttons"], ["Switch and stepper", "STEP_BTN_GLYPH", "BG_TOP", "Minus and plus symbols"], ["Switch and stepper", "STEP_VALUE_FILL", "BG_TOP", "Stepper value box"], ["Switch and stepper", "STEP_VALUE_BORDER", "CARD_BRD", "Stepper value box border"], ["Switch and stepper", "STEP_VALUE_TEXT", "ACCENT", "Stepper number"], ["Switch and stepper", "STEP_VALUE_OFF", "TEXT_DIM", "Stepper number when disabled"], ["Switch and stepper", "STEP_VALUE_LOW", "DANGER", "Stock number when low"], ["Tabs, tables and pickers", "TAB_ON_FILL", "ACCENT", "Selected tab"], ["Tabs, tables and pickers", "TAB_ON_TEXT", "BG_TOP", "Selected tab label"], ["Tabs, tables and pickers", "TAB_OFF_FILL", "CARD", "Other tabs"], ["Tabs, tables and pickers", "TAB_OFF_BORDER", "CARD_BRD", "Other tabs border"], ["Tabs, tables and pickers", "TAB_OFF_TEXT", "TEXT", "Other tabs label"], ["Tabs, tables and pickers", "TBL_HEAD_FILL", "ACCENT", "Items table header"], ["Tabs, tables and pickers", "TBL_HEAD_TEXT", "BG_TOP", "Items table header text"], ["Tabs, tables and pickers", "TBL_ROW_A", "BG_TOP", "Items table odd rows"], ["Tabs, tables and pickers", "TBL_ROW_B", "CARD", "Items table even rows"], ["Tabs, tables and pickers", "TBL_TEXT", "TEXT", "Items table text"], ["Tabs, tables and pickers", "TBL_FRAME", "CARD_BRD", "Items table frame"], ["Tabs, tables and pickers", "ROW_CHEVRON", "TEXT_DIM", "Arrow on tappable rows"], ["Tabs, tables and pickers", "PICK_VALUE_FILL", "CARD", "Hour, minute and date value boxes"], ["Tabs, tables and pickers", "PICK_VALUE_BORDER", "CARD_BRD", "Value box border"], ["Tabs, tables and pickers", "PICK_VALUE_TEXT", "ACCENT", "Value box number"], ["Tabs, tables and pickers", "PICK_LABEL", "TEXT", "Field label (Hour, Day)"], ["Tabs, tables and pickers", "PICK_LABEL_OFF", "TEXT_DIM", "Field label when off"], ["PIN, keyboard and text field", "PIN_FIELD_FILL", "CARD", "PIN box"], ["PIN, keyboard and text field", "PIN_FIELD_BORDER", "CARD_BRD", "PIN box border"], ["PIN, keyboard and text field", "PIN_DOT", "ACCENT", "Entered PIN dots"], ["PIN, keyboard and text field", "PIN_PLACEHOLDER", "TEXT_DIM", "Enter PIN prompt"], ["PIN, keyboard and text field", "PIN_TEXT", "TEXT", "PIN box message"], ["PIN, keyboard and text field", "KEY_FILL", "CARD", "Letter key fill"], ["PIN, keyboard and text field", "KEY_BORDER", "CARD_BRD", "Key border"], ["PIN, keyboard and text field", "KEY_TEXT", "TEXT", "Letter key text"], ["PIN, keyboard and text field", "KEY_MOD_FILL", "BG_TOP", "DEL, SPACE and ?123 key fill"], ["PIN, keyboard and text field", "KEY_MOD_TEXT", "ACCENT", "DEL, SPACE and ?123 key text"], ["PIN, keyboard and text field", "FIELD_FILL", "CARD", "Text preview field"], ["PIN, keyboard and text field", "FIELD_BORDER", "CARD_BRD", "Text preview field border"], ["PIN, keyboard and text field", "FIELD_TEXT", "ACCENT", "Typed text"], ["PIN, keyboard and text field", "FIELD_EMPTY", "TEXT_DIM", "(empty) placeholder"], ["PIN, keyboard and text field", "FIELD_COUNT", "TEXT_DIM", "12/30 counter"], ["PIN, keyboard and text field", "FIELD_ERROR", "DANGER", "Error shown in the field"], ["Indicators, messages and status", "DOT_ON", "SUCCESS", "Status dot on"], ["Indicators, messages and status", "DOT_OFF_FILL", "BG_TOP", "Status dot off"], ["Indicators, messages and status", "DOT_OFF_RING", "TEXT_DIM", "Status dot off ring"], ["Indicators, messages and status", "WIFI_GOOD", "SUCCESS", "Signal icon, strong"], ["Indicators, messages and status", "WIFI_FAIR", "WARNING", "Signal icon, fair"], ["Indicators, messages and status", "WIFI_BAD", "DANGER", "Signal icon, weak or none"], ["Indicators, messages and status", "WIFI_OFF", "TEXT_DIM", "Signal icon, unlit bars"], ["Indicators, messages and status", "WIFI_BG", "HDR_BG", "Behind the signal icon"], ["Indicators, messages and status", "MSG_TITLE", "ACCENT", "Big message headline"], ["Indicators, messages and status", "MSG_BODY", "TEXT", "Message body text"], ["Indicators, messages and status", "OK_TEXT", "SUCCESS", "Success text (paid, connected)"], ["Indicators, messages and status", "ERR_TEXT", "DANGER", "Error text (failed, timed out)"], ["Indicators, messages and status", "WARN_TEXT", "WARNING", "Warning text"], ["Indicators, messages and status", "COUNTDOWN_TEXT", "TEXT", "Idle countdown"], ["Indicators, messages and status", "COUNTDOWN_URGENT", "DANGER", "Idle countdown in the last 10 seconds"]];
+const COMP_GROUPS=Array.from(new Set(COMP.map(c=>c[0])));
+const ALL=[...BASE.map(b=>b[0]),...COMP.map(c=>c[1])];
+const isBase=k=>BASE.some(b=>b[0]===k);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* ---------- colour maths (RGB565 is what the panel can show) ---------- */
+function to565(r,g,b){return ((r>>3)<<11)|((g>>2)<<5)|(b>>3)}
+function from565(v){const r=(v>>11)&31,g=(v>>5)&63,b=v&31;return [Math.floor(r*255/31),Math.floor(g*255/63),Math.floor(b*255/31)]}
+const hx=v=>"#"+from565(v).map(x=>x.toString(16).padStart(2,"0")).join("").toUpperCase();
+const h565=v=>"0x"+v.toString(16).toUpperCase().padStart(4,"0");
+function fromHex(h){const n=parseInt(h.slice(1),16);return to565(n>>16&255,n>>8&255,n&255)}
+function lum(v){const c=from565(v).map(c=>{c/=255;return c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+function ratioOf(p,a,b){const x=lum(p[a]),y=lum(p[b]);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
+
+/* ---------- state ---------- */
+let G={};            // base palette: key -> RGB565
+let GC={};           // component colours you have unlinked for the whole theme: name -> RGB565
+let O={};            // per-screen overrides (base or component): screenId -> {name: RGB565}
+let scope="all";
+const ui={size:"fit",bezel:true,crisp:false,pxgrid:false,filter:"All",expmode:"all"};
+/* the same resolution order the firmware uses: an explicit value, else the colour it defaults to */
+function resolveWith(o){
+  const v={};BASE.forEach(([k])=>v[k]=(k in o)?o[k]:G[k]);
+  COMP.forEach(([,n,d])=>{v[n]=(n in o)?o[n]:(n in GC)?GC[n]:v[d]});return v}
+const resolve=id=>resolveWith(id?(O[id]||{}):{});
+const scopeP=()=>resolve(scope==="all"?null:scope);
+function setPreset(t,target){BASE.forEach(([k])=>target[k]=t[k])}
+setPreset(THEMES[0][2],G);
+
+const STORE="vmThemeDesigner.v2";
+function save(){try{localStorage.setItem(STORE,JSON.stringify({G,GC,O,scope,ui}))}catch(e){}}
+function restore(){try{const s=JSON.parse(localStorage.getItem(STORE)||"null");if(!s)return;
+  if(s.G&&BASE.every(([k])=>Number.isInteger(s.G[k])))G=s.G;
+  if(s.GC&&typeof s.GC==="object")GC=s.GC;
+  if(s.O&&typeof s.O==="object")O=s.O;
+  if(s.scope)scope=s.scope;
+  if(s.ui)Object.assign(ui,s.ui);}catch(e){}}
+
+/* ---------- text measuring: same faces the firmware picks ---------- */
+const SERIF="'Tinos','FreeSerif','Liberation Serif','Times New Roman',Times,serif";
+const MONO="Consolas,'DejaVu Sans Mono','Courier New',monospace";
+const FACES={XS:{sz:18,w:"normal",cap:12},SM:{sz:18,w:"bold",cap:12},MD:{sz:24,w:"bold",cap:16},LG:{sz:36,w:"bold",cap:24},R12:{sz:24,w:"normal",cap:16}};
+const mctx=document.createElement("canvas").getContext("2d");
+function tw(s,f){const F=FACES[f];mctx.font=`${F.w} ${F.sz}px ${SERIF}`;return Math.round(mctx.measureText(s).width)}
+
+/* ---------- drawing primitives (push into `out`, colours from `P`: every COL_* the firmware has) ---------- */
+let out=[],P={},uid=0;
+const E=s=>out.push(s);
+const r1=n=>Math.round(n*10)/10;
+function rect(x,y,w,h,r=0,fill="none",stroke=null){
+  if(stroke)E(`<rect x="${x+.5}" y="${y+.5}" width="${w-1}" height="${h-1}" rx="${Math.max(r-.5,0)}" fill="${fill}" stroke="${stroke}"/>`);
+  else E(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${fill}"/>`)}
+function circ(cx,cy,r,fill="none",stroke=null){E(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"${stroke?` stroke="${stroke}"`:""}/>`)}
+function line(x1,y1,x2,y2,col,sw=1){E(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${sw}"/>`)}
+function txt(s,x,y,sz,wt,fill,anchor="start",fam=SERIF,tl){if(s==="")return;E(`<text x="${x}" y="${y}" font-family="${fam}" font-size="${sz}" font-weight="${wt}" fill="${fill}" text-anchor="${anchor}"${tl?` textLength="${tl}" lengthAdjust="spacingAndGlyphs"`:""}>${esc(s)}</text>`)}
+function fitFace(s,mw,f){const o=["XS","SM","MD","LG"];let i=o.indexOf(f);if(i<0)return f;while(i>0&&tw(s,o[i])>mw)i--;return o[i]}
+function clipTxt(s,mw,f){if(tw(s,f)<=mw)return s;let n=s.length;while(n>0){n--;if(tw(s.slice(0,n)+"..",f)<=mw)return s.slice(0,n)+".."}return ".."}
+/* auiPut(): shrink the face, then clip, then place by cap height */
+function put(s,al,bx,bw,cy,col,face){
+  if(!s)return;face=fitFace(s,bw,face);s=clipTxt(s,bw,face);
+  const w=tw(s,face),F=FACES[face];
+  const x=al==="c"?bx+(bw-w)/2:al==="r"?bx+bw-w:bx;
+  txt(s,r1(x),r1(cy+F.cap/2+.5),F.sz,F.w,col)}
+/* drawSerifLine(): 18pt, 12pt, 9pt bold stepping down to fit */
+function serifLine(s,bx,bw,cy,col,maxface){
+  const faces=["LG","MD","SM"];let i=maxface;while(i<2&&tw(s,faces[i])>bw-4)i++;
+  const f=faces[i],w=tw(s,f),F=FACES[f];
+  txt(s,r1(bx+(bw-w)/2),r1(cy+F.cap/2+.5),F.sz,F.w,col)}
+/* the built-in 5x7 bitmap font: 6x8 cell per character, times size */
+function bmp(s,x,y,size,col,anchor="start",w){
+  const cw=6*size;if(anchor==="middle"&&w!=null)x=x+(w-cw*s.length)/2;else if(anchor==="end")x=x-cw*s.length;
+  txt(s,r1(x),y+7*size,10*size,"bold",col,"start",MONO,cw*s.length)}
+
+const cardShadow=(x,y,w,h,r)=>rect(x+3,y+3,w,h,r,P.CARD_SHADOW);
+const btnShadow=(x,y,w,h,r)=>rect(x+3,y+3,w,h,r,P.BTN_SHADOW);
+function card(x,y,w,h,r){cardShadow(x,y,w,h,r);rect(x,y,w,h,r,P.CARD_FILL,P.CARD_BORDER)}
+const ring=(x,y,w,h,r)=>rect(x+1,y+1,w-2,h-2,r-1,"none",P.CARD_RING);
+function button(x,y,w,h,label,style,face){
+  const r=h>=30?8:6;let fill,tx,bd=null;
+  if(style==="pri"){fill=P.BTN_PRI_FILL;tx=P.BTN_PRI_TEXT}
+  else if(style==="dan"){fill=P.BTN_DANGER_FILL;tx=P.BTN_DANGER_TEXT}
+  else if(style==="off"){fill=P.BTN_OFF_FILL;tx=P.BTN_OFF_TEXT;bd=P.BTN_OFF_BORDER}
+  else{fill=P.BTN_SEC_FILL;tx=P.BTN_SEC_TEXT;bd=P.BTN_SEC_BORDER}
+  if(style!=="off")btnShadow(x,y,w,h,r);
+  rect(x,y,w,h,r,fill,bd);put(label,"c",x+4,w-8,y+h/2,tx,face)}
+const BAR_Y=196,BAR_H=36;
+const slotW=n=>Math.floor((288-(n-1)*8)/n),slotX=(i,n)=>16+i*(slotW(n)+8);
+const bar=labels=>labels.forEach(([l,s],i)=>button(slotX(i,labels.length),BAR_Y,slotW(labels.length),BAR_H,l,s,"MD"));
+function backBtn(l="< Back"){btnShadow(20,190,120,35,8);rect(20,190,120,35,8,P.BTN_SEC_FILL,P.BTN_SEC_BORDER);bmp(l,20,190+(35-16)/2|0,2,P.BTN_SEC_TEXT,"middle",120)}
+function goBtn(l){btnShadow(180,190,120,35,8);rect(180,190,120,35,8,P.BTN_PRI_FILL);bmp(l,180,190+(35-16)/2|0,2,P.BTN_PRI_TEXT,"middle",120)}
+function wifiGlyph(cx,apex,scale,bars,connected){
+  const on=bars>=3?P.WIFI_GOOD:bars===2?P.WIFI_FAIR:P.WIFI_BAD,off=P.WIFI_OFF;
+  circ(cx,apex-scale,scale,connected&&bars>=1?on:off);
+  [4*scale,7*scale,10*scale].forEach((rad,k)=>{const lit=connected&&bars>=k+2,a=55*Math.PI/180;
+    const x0=cx-Math.sin(a)*rad,y0=apex-Math.cos(a)*rad,x1=cx+Math.sin(a)*rad;
+    E(`<path d="M${r1(x0)} ${r1(y0)} A${rad} ${rad} 0 0 1 ${r1(x1)} ${r1(y0)}" fill="none" stroke="${lit?on:off}" stroke-width="${scale+1}"/>`)})}
+function cellBars(x,base,scale,bars,col){for(let i=0;i<4;i++){const h=(i+1)*2*scale,bx=x+i*(3*scale+scale);rect(bx,base-h,3*scale,h,0,i<bars?col:P.WIFI_OFF)}}
+function header(title,reserved=30){
+  rect(0,0,320,30,0,P.HDR_BG);
+  const avail=320-Math.max(reserved,30)-16,face=tw(title,"MD")<=avail?"MD":"SM",w=tw(title,face),F=FACES[face];
+  txt(title,16,r1(3+27/2+F.cap/2+.5),F.sz,F.w,P.HDR_TITLE);
+  const solid=Math.min(16+w+10,320),id="rl"+(++uid);
+  E(`<defs><linearGradient id="${id}"><stop offset="0" stop-color="${P.HDR_RULE}"/><stop offset="1" stop-color="${P.HDR_RULE_FADE}"/></linearGradient></defs>`);
+  rect(0,30,solid,2,0,P.HDR_RULE);rect(solid,30,320-solid,2,0,`url(#${id})`);
+  wifiGlyph(308,17,1,3,true)}
+const hdrRight=(s,col,face="SM")=>put(s,"r",150,286-150,16.5,col,face);
+
+/* admin kit */
+const row=(x,y,w,h)=>card(x,y,w,h,6);
+function onoff(right,cy,on,w=66){
+  const x=right-w,y=cy-12,kr=9;
+  rect(x,y,w,24,12,on?P.SW_ON_FILL:P.SW_OFF_FILL,on?P.SW_ON_BORDER:P.SW_OFF_BORDER);
+  circ(on?x+w-3-kr:x+3+kr,cy,kr,P.SW_KNOB,on?P.SW_ON_BORDER:P.SW_OFF_BORDER);
+  const t=w-2*kr-12;if(on)put("ON","c",x+6,t,cy,P.SW_ON_TEXT,"SM");else put("OFF","c",x+2*kr+6,t,cy,P.SW_OFF_TEXT,"SM")}
+function stepper(right,cy,value,col){
+  col=col||P.STEP_VALUE_TEXT;const bw=34,vw=58,gap=4,h=28,px=right-bw,vx=px-gap-vw,mx=vx-gap-bw,y=cy-14;
+  [[mx,false],[px,true]].forEach(([x,plus])=>{btnShadow(x,y,bw,h,6);rect(x,y,bw,h,6,P.STEP_BTN_FILL);const c=x+(bw>>1);rect(c-7,cy-1,15,3,0,P.STEP_BTN_GLYPH);if(plus)rect(c-1,cy-7,3,15,0,P.STEP_BTN_GLYPH)});
+  rect(vx,y,vw,h,6,P.STEP_VALUE_FILL,P.STEP_VALUE_BORDER);put(value,"c",vx+3,vw-6,cy,col,"MD");return mx}
+const rowBtn=(x,cy,w,label,style="pri")=>button(x,cy-13,w,26,label,style,"SM");
+const label=(x,cy,mw,s)=>put(s,"l",x,mw,cy,P.CARD_TITLE,"MD");
+const hint=(s,cy)=>put(s,"c",12,296,cy,P.HINT_TEXT,"XS");
+const tab=(x,y,w,h,s,active)=>{rect(x,y,w,h,6,active?P.TAB_ON_FILL:P.TAB_OFF_FILL,active?null:P.TAB_OFF_BORDER);put(s,"c",x+2,w-4,y+h/2,active?P.TAB_ON_TEXT:P.TAB_OFF_TEXT,"SM")};
+const dot=(cx,cy,on)=>on?circ(cx,cy,6,P.DOT_ON):circ(cx,cy,6,P.DOT_OFF_FILL,P.DOT_OFF_RING);
+const idle=(s,cy=207)=>put(s,"c",144,34,cy,parseInt(s)<=10?P.COUNTDOWN_URGENT:P.COUNTDOWN_TEXT,"XS");
+const msgLines=a=>a.forEach(([t,cy,col,f])=>serifLine(t,0,320,cy,col,f));
+function tile(x,y,title,cap,stripe,tcol,ccol){card(x,y,141,44,8);rect(x+8,y+9,4,26,2,stripe||P.TILE_STRIPE);put(title,"l",x+20,113,y+16,tcol||P.CARD_TITLE,"MD");put(cap,"l",x+20,115,y+33,ccol||P.CARD_CAPTION,"XS")}
+
+/* ---------- screens ---------- */
+const PRODUCTS=[{name:"Regular",price:10,motors:"1",on:true},{name:"XL Overnight",price:15,motors:"2",on:true}];
+function wrapWords(t,w,face){const ws=t.split(" "),L=[];let c="";ws.forEach(x=>{const n=(c+" "+x).trim();if(tw(n,face)>w&&c){L.push(c);c=x}else c=n});if(c)L.push(c);return L}
+function productCard(i,x,y,w,h,sel){
+  cardShadow(x,y,w,h,10);rect(x,y,w,h,10,P.PRODUCT_FILL,sel?P.PRODUCT_SEL_BORDER:P.PRODUCT_BORDER);
+  if(sel){rect(x+1,y+1,w-2,h-2,9,"none",P.PRODUCT_SEL_BORDER);rect(x+2,y+2,w-4,h-4,8,"none",P.PRODUCT_SEL_BORDER)}
+  const ix=x+6,iw=w-12,lines=wrapWords(PRODUCTS[i].name,iw,"MD"),nh=lines.length*29,block=nh+3+16+3+48;let cy=y+((h-block)>>1);
+  lines.forEach((ln,k)=>put(ln,"c",ix,iw,cy+k*29+14.5,P.PRODUCT_NAME,"MD"));cy+=nh+3;
+  bmp("Rs. "+PRODUCTS[i].price,ix,cy,2,P.PRICE_TEXT,"middle",iw);cy+=19;
+  put("Qty Avail:","c",ix,iw,cy+12,P.STOCK_TEXT,"R12");put("25","c",ix,iw,cy+36,P.STOCK_TEXT,"R12")}
+function selectScreen(inCart){
+  header("Select Products",Math.max(110,30+4+tw("Tap to select","SM")+10));
+  if(inCart)bmp("1 / 5",286,8,2,P.HDR_COUNT,"end");else hdrRight("Tap to select",P.HDR_NOTE);
+  productCard(0,15,40,141,145,inCart);productCard(1,164,40,141,145,false);
+  backBtn();goBtn(inCart?"Cart(1) >":"Cart >");if(inCart)idle("42s",207)}
+function qr(){
+  rect(12,34,134,134,0,"#FFFFFF");let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280,n=61,px=2;
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){const fin=(x<8&&y<8)||(x>n-9&&y<8)||(x<8&&y>n-9);if(!fin&&rnd()<.5)rect(18+x*px,40+y*px,px,px,0,"#000")}
+  [[0,0],[n-7,0],[0,n-7]].forEach(([a,b])=>{rect(18+a*px,40+b*px,14,14,0,"#000");rect(18+a*px+2,40+b*px+2,10,10,0,"#FFF");rect(18+a*px+4,40+b*px+4,6,6,0,"#000")})}
+function keyboard(layer,title,masked){
+  const U=[["Q","W","E","R","T","Y","U","I","O","P"],["A","S","D","F","G","H","J","K","L","DEL"],["aA","Z","X","C","V","B","N","M","-","_"],[["?123",2],["SPACE",5],"@",".","?"]];
+  const L=[["q","w","e","r","t","y","u","i","o","p"],["a","s","d","f","g","h","j","k","l","DEL"],["Aa","z","x","c","v","b","n","m","-","_"],[["?123",2],["SPACE",5],"@",".","?"]];
+  const S=[["1","2","3","4","5","6","7","8","9","0"],["!","@","#","$","%","&","*","(",")","DEL"],["~","+","-","=","/","\\",":",";","'","\""],[["ABC",2],["SPACE",5],",",".","?"]];
+  const rows=layer==="sym"?S:layer==="low"?L:U;
+  header(title);cardShadow(6,36,308,26,6);rect(6,36,308,26,6,P.FIELD_FILL,P.FIELD_BORDER);
+  put(masked?"*********":"Vending-01","l",14,308-16-50,49,P.FIELD_TEXT,"MD");put(masked?"9/30":"10/20","r",6+308-8-50,50,49,P.FIELD_COUNT,"XS");
+  rows.forEach((r,ri)=>{let x=1;r.forEach(k=>{const lab=Array.isArray(k)?k[0]:k,u=Array.isArray(k)?k[1]:1,w=u*30+(u-1)*2,y=66+ri*33,mod=lab.length>1;
+    rect(x,y,w,30,5,mod?P.KEY_MOD_FILL:P.KEY_FILL,P.KEY_BORDER);put(lab,"c",x+1,w-2,y+15,mod?P.KEY_MOD_TEXT:P.KEY_TEXT,mod?"SM":"MD");x+=w+2})});
+  const bw=slotW(3);button(slotX(0,3),200,bw,34,"Cancel","sec","MD");
+  if(masked)button(slotX(1,3),200,bw,34,"Show","sec","MD");
+  button(slotX(2,3),200,bw,34,"Done","pri","MD")}
+function rptTabs(k){["Sales","Items","Auto","Email","Data"].forEach((t,i)=>tab(16+i*58,35,56,22,t,i===k))}
+function rptRow(i,lab,val,vcol,chev){
+  const y=62+i*30,cy=y+14;row(16,y,288,28);const lw=tw(lab,"MD");
+  put(lab,"l",28,lw+2,cy,P.CARD_TITLE,"MD");const right=292-(chev?14:0),vx=28+lw+12;put(val,"r",vx,right-vx,cy,vcol,"SM");
+  if(chev){const cx=288;[0,-1].forEach(d=>{line(cx-4+d,cy-5,cx+d,cy,P.ROW_CHEVRON);line(cx-4+d,cy+5,cx+d,cy,P.ROW_CHEVRON)})}}
+function rptBottom(status,ok,send){
+  put(status,"c",12,296,188,ok?P.OK_TEXT:P.HINT_TEXT,"XS");
+  button(16,196,56,36,"Back","sec","MD");button(80,196,108,36,"Send Today",send?"pri":"off","XS");button(196,196,108,36,"Send 60 Days",send?"pri":"off","XS")}
+function reportTile(c,r,lab,val,acc){const x=16+c*146,y=62+r*39;card(x,y,142,36,6);put(lab,"l",x+10,122,y+10,P.TILE_LABEL,"XS");put(val,"l",x+10,122,y+26,acc?P.TILE_VALUE_HI:P.TILE_VALUE,"MD")}
+function tableRow(y,h,i,name,sold,rs,left,head){
+  rect(16,y,288,h,0,head?P.TBL_HEAD_FILL:(i%2?P.TBL_ROW_B:P.TBL_ROW_A));const face=h>=24?"SM":"XS",cy=y+h/2,tc=head?P.TBL_HEAD_TEXT:P.TBL_TEXT;
+  put(name,"l",24,106,cy,tc,face);put(sold,"r",134,46,cy,tc,face);put(rs,"r",188,54,cy,tc,face);put(left,"r",250,46,cy,tc,face)}
+function pickBtn(x,y,w,h,plus,on){
+  if(on){btnShadow(x,y,w,h,8);rect(x,y,w,h,8,P.STEP_BTN_FILL)}else rect(x,y,w,h,8,P.BTN_OFF_FILL,P.BTN_OFF_BORDER);
+  const g=on?P.STEP_BTN_GLYPH:P.BTN_OFF_TEXT,cx=x+(w>>1),cy=y+(h>>1);rect(cx-7,cy-1,15,3,0,g);if(plus)rect(cx-1,cy-7,3,15,0,g)}
+function timeColumn(x,lab,val,on){
+  put(lab,"c",x,80,86,on?P.PICK_LABEL:P.PICK_LABEL_OFF,"SM");pickBtn(x,94,80,30,true,on);pickBtn(x,158,80,30,false,on);
+  rect(x,127,80,28,6,P.PICK_VALUE_FILL,P.PICK_VALUE_BORDER);put(val,"c",x+2,76,141,on?P.PICK_VALUE_TEXT:P.PICK_LABEL_OFF,"LG")}
+
+const SCREENS=[
+/* ===== Customer ===== */
+{id:"welcome",group:"Customer",name:"Welcome",fn(){
+  rect(0,0,320,30,0,P.STRIP_BG);rect(0,31,320,1,0,P.STRIP_LINE);bmp("10:42 PM",10,8,2,P.STRIP_TIME);bmp("Mon 26 Oct",284,8,2,P.STRIP_DATE,"end");wifiGlyph(308,17,1,3,true);
+  cardShadow(16,40,288,138,16);rect(16,40,288,138,16,P.CARD_FILL,P.CARD_BORDER);rect(17,41,286,136,15,"none",P.CARD_RING);
+  serifLine("SANITARY",16,288,64,P.CARD_TITLE,0);serifLine("NAPKIN",16,288,106,P.CARD_TITLE,0);bmp("VENDING MACHINE",16,146,2,P.WELCOME_SUB,"middle",288);
+  rect(40,190,240,36,18,P.PILL_FILL,P.PILL_FILL);bmp("Touch to Continue",40,201,2,P.PILL_TEXT,"middle",240)}},
+{id:"select",group:"Customer",name:"Select products",fn(){selectScreen(false)}},
+{id:"select2",group:"Customer",name:"Select products (item in cart)",fn(){selectScreen(true)}},
+{id:"cart",group:"Customer",name:"Your cart",fn(){
+  header("Your Cart",110);bmp("Rs. 10",286,8,2,P.PRICE_TEXT,"end");
+  const x=15,y=78,w=290,h=64;card(x,y,w,h,8);const btn=30,plus=x+w-10-btn,qb=plus-6-34,minus=qb-6-btn,by=y+((h-btn)>>1),block=y+((h-59)>>1);
+  put("Regular","l",x+10,158,block+14.5,P.PRODUCT_NAME,"MD");bmp("Rs. 10",x+10,block+35,3,P.PRICE_TEXT);
+  rect(minus,by,btn,btn,5,P.QTY_BTN_FILL);bmp("-",minus,by+3,3,P.QTY_BTN_GLYPH,"middle",btn);
+  rect(qb,by,34,btn,5,P.QTY_BOX_FILL);bmp("1",qb,by+3,3,P.QTY_TEXT,"middle",34);
+  rect(plus,by,btn,btn,5,P.QTY_BTN_FILL);bmp("+",plus,by+3,3,P.QTY_BTN_GLYPH,"middle",btn);
+  backBtn();goBtn("Pay >");idle("42s")}},
+{id:"paymethod",group:"Customer",name:"Select payment",fn(){
+  header("Select Payment");
+  [["UPI","Scan the QR code"],["Cash","Insert exact change"]].forEach(([nm,ds],k)=>{
+    const x=15+k*149,y=40,w=141,h=145;card(x,y,w,h,10);const inner=w-12,lines=wrapWords(ds,inner,"SM"),bh=42+18+1+lines.length*22,by=y+((h-bh)>>1);
+    put(nm,"c",x+6,inner,by+21,P.METHOD_NAME,"LG");rect(x+6+(inner>>2),by+51,inner>>1,2,0,P.METHOD_RULE);
+    lines.forEach((ln,j)=>put(ln,"c",x+6,inner,by+61+j*22+11,P.METHOD_DESC,"SM"))});
+  backBtn();idle("42s")}},
+{id:"upi",group:"Payment",name:"UPI scan to pay",fn(){
+  header("Scan to Pay");qr();const X=156,Y=34,W=154,H=134;card(X,Y,W,H,10);ring(X,Y,W,H,10);
+  serifLine("Amount to pay",X,W,Y+20,P.MSG_BODY,1);serifLine("Rs. 10",X,W,Y+52,P.PRICE_TEXT,0);rect(X+(W>>2),Y+72,W>>1,2,0,P.CARD_RULE);
+  serifLine("Scan with any",X,W,Y+88,P.MSG_BODY,2);serifLine("UPI app",X,W,Y+104,P.MSG_BODY,2);serifLine("Waiting... 118s",X,W,Y+122,P.OK_TEXT,2);backBtn("< Cancel")}},
+{id:"upiok",group:"Payment",name:"UPI payment successful",fn(){msgLines([["Payment",50,P.OK_TEXT,0],["Successful!",86,P.OK_TEXT,0],["Rs. 10",128,P.PRICE_TEXT,0],["Preparing your item...",165,P.MSG_BODY,1]])}},
+{id:"upierr",group:"Payment",name:"UPI payment error",fn(){msgLines([["Payment Error",70,P.ERR_TEXT,0],["Could not reach the payment server",112,P.MSG_BODY,1]])}},
+{id:"cash",group:"Payment",name:"Cash: insert coins",fn(){
+  header("Insert Coins");
+  [[10,"Total Rs. 10",P.MSG_BODY],[162,"Paid Rs. 5",P.OK_TEXT]].forEach(([x,t,c])=>{rect(x,38,148,22,6,P.CARD_FILL,P.CARD_BORDER);serifLine(t,x,148,49,c,1)});
+  card(10,64,300,58,10);ring(10,64,300,58,10);serifLine("Remaining",10,300,78,P.MSG_BODY,1);serifLine("Rs. 5",10,300,105,P.PRICE_TEXT,0);
+  const m="+Rs. 5 credited",w=Math.min(tw(m,"MD")+20,316),x=(320-w)>>1;rect(x,147,w,22,6,P.CARD_FILL,P.OK_TEXT);serifLine(m,x,w,158,P.OK_TEXT,1);
+  serifLine("Time left: 84s",0,320,179,P.MSG_BODY,1);rect(20,190,120,35,8,P.BG_TOP);serifLine("Paying, no refund",20,120,207,P.MSG_BODY,2)}},
+{id:"rfid",group:"Payment",name:"RFID: tap card",fn(){
+  header("Tap RFID Card");const X=10,Y=44,W=300,H=96;card(X,Y,W,H,10);ring(X,Y,W,H,10);
+  serifLine("No charge for",X,W,Y+22,P.MSG_TITLE,0);serifLine("registered cards",X,W,Y+51,P.MSG_TITLE,0);serifLine("Hold your card near the reader",X,W,Y+80,P.MSG_BODY,1);
+  serifLine("Time left: 52s",0,320,179,P.MSG_BODY,1);backBtn()}},
+{id:"dispensing",group:"Payment",name:"Dispensing",fn(){msgLines([["Product",85,P.MSG_TITLE,0],["Dispensing...",130,P.MSG_TITLE,0]])}},
+{id:"dispensed",group:"Payment",name:"Product dispensed",fn(){msgLines([["Product Dispensed!",70,P.OK_TEXT,0],["Collect!",116,P.MSG_TITLE,0],["Thank You!",162,P.MSG_BODY,0]])}},
+{id:"dispfail",group:"Payment",name:"Dispense failed",fn(){msgLines([["Dispense",70,P.ERR_TEXT,0],["Failed",108,P.ERR_TEXT,0],["Please contact support",150,P.MSG_BODY,1]])}},
+{id:"paytimeout",group:"Payment",name:"Payment timed out",fn(){msgLines([["Payment",70,P.ERR_TEXT,0],["Timed Out",108,P.ERR_TEXT,0],["No payment was received in time.",150,P.MSG_BODY,1]])}},
+{id:"idleout",group:"Payment",name:"Idle time out",fn(){msgLines([["Time Out!",75,P.ERR_TEXT,0],["No activity for a while",125,P.MSG_BODY,1],["Returning to the home screen",155,P.MSG_BODY,1]])}},
+/* ===== Admin ===== */
+{id:"login",group:"Admin",name:"Admin login",fn(){
+  header("Admin Login",102);button(218,5,68,22,"Cancel","sec","SM");rect(60,38,200,30,8,P.PIN_FIELD_FILL,P.PIN_FIELD_BORDER);for(let k=0;k<4;k++)circ(130+k*20,53,5,P.PIN_DOT);
+  ["1","2","3","4","5","6","7","8","9","Clear","0","OK"].forEach((l,k)=>button(28+(k%3)*90,74+((k/3)|0)*38,84,34,l,k===11?"pri":"sec",k===9?"SM":k===11?"MD":"LG"))}},
+{id:"loginbad",group:"Admin",name:"Admin login: wrong PIN",fn(){
+  header("Admin Login",102);button(218,5,68,22,"Cancel","sec","SM");rect(60,38,200,30,8,P.PIN_FIELD_FILL,P.PIN_FIELD_BORDER);put("Wrong PIN","c",66,188,53,P.ERR_TEXT,"MD");
+  ["1","2","3","4","5","6","7","8","9","Clear","0","OK"].forEach((l,k)=>button(28+(k%3)*90,74+((k/3)|0)*38,84,34,l,k===11?"pri":"sec",k===9?"SM":k===11?"MD":"LG"))}},
+{id:"panel",group:"Admin",name:"Admin panel",fn(){
+  header("Admin Panel");[["Products","2 of 2 on sale"],["Stock","50 units left"],["Payments","UPI/Cash"],["Network","WiFi connected"],["Reports","Today Rs.120"],["Machine","ID VM-A4C21F"]]
+    .forEach(([t,c],k)=>tile(16+(k%2)*147,38+((k/2)|0)*50,t,c));bar([["Exit Admin","sec"]])}},
+{id:"products",group:"Admin",name:"Products",fn(){
+  header("Products");PRODUCTS.forEach((p,k)=>{const x=16+k*147,y=38;card(x,y,141,44,8);rect(x+8,y+9,4,26,2,P.TILE_STRIPE);put(p.name,"l",x+20,97,y+16,P.CARD_TITLE,"MD");put(`Rs. ${p.price} | M${p.motors}`,"l",x+20,115,y+33,P.CARD_CAPTION,"XS");dot(x+125,y+16,true)});
+  const x=16,y=88;card(x,y,141,44,8);rect(x+8,y+9,4,26,2,P.TILE_STRIPE_OFF);put("Spare","l",x+20,97,y+16,P.CARD_CAPTION,"MD");put("Rs. 20 | M3","l",x+20,115,y+33,P.CARD_CAPTION,"XS");dot(x+125,y+16,false);bar([["Back","sec"]])}},
+{id:"editprod",group:"Admin",name:"Edit product",fn(){
+  header("Edit Product 1");for(let r=0;r<4;r++)row(16,40+r*38,288,32);
+  let cy=56;label(28,cy,80,"Name");let vx=16+12+tw("Name","MD")+12;put("Regular","l",vx,224-8-vx,cy,P.VALUE_TEXT,"MD");rowBtn(224,cy,72,"Edit");
+  cy=94;label(28,cy,134,"Price (Rs.)");stepper(296,cy,"10");
+  cy=132;label(28,cy,90,"Motors");vx=16+12+tw("Motors","MD")+12;put("1","l",vx,224-8-vx,cy,P.VALUE_TEXT,"MD");rowBtn(224,cy,72,"Assign");
+  cy=170;label(28,cy,140,"Visible");onoff(296,cy,true);bar([["Back","sec"]])}},
+{id:"assign",group:"Admin",name:"Assign motors",fn(){
+  header("Motors: Regular");[[true,"Selected"],[false,"XL Overnight"]].forEach(([sel,cap],m)=>{const x=16+m*98,y=40,w=92,h=62;
+    btnShadow(x,y,w,h,8);rect(x,y,w,h,8,sel?P.BTN_PRI_FILL:P.BTN_SEC_FILL,P.BTN_SEC_BORDER);put("M"+(m+1),"c",x+4,w-8,y+h/2-9,sel?P.BTN_PRI_TEXT:P.BTN_SEC_TEXT,"MD");put(cap,"c",x+4,w-8,y+h/2+12,sel?P.BTN_PRI_TEXT:P.BTN_OFF_TEXT,"XS")});
+  hint("Tap a motor to assign or release it",116);bar([["Done","pri"]])}},
+{id:"stock",group:"Admin",name:"Motor stock",fn(){
+  header("Motor Stock");for(let r=0;r<2;r++){const y=40+r*38,cy=y+17;row(16,y,288,34);put(PRODUCTS[r].name,"l",26,76,y+11,P.CARD_TITLE,"MD");put("Motor "+(r+1),"l",26,76,y+26,P.CARD_CAPTION,"XS");rowBtn(112,cy,44,"Edit");stepper(296,cy,r?"2":"25",r?P.STEP_VALUE_LOW:P.STEP_VALUE_TEXT)}
+  hint("Tap Edit to type an exact quantity",124);bar([["Back","sec"],["Refill Trays","pri"]])}},
+{id:"keypad",group:"Admin",name:"Stock keypad",fn(){
+  header("Motor 1 Stock");rect(16,38,288,34,8,P.FIELD_FILL,P.FIELD_BORDER);put("25","c",24,272,55,P.FIELD_TEXT,"LG");put("max 25","r",200,96,55,P.FIELD_COUNT,"XS");
+  ["1","2","3","4","5","6","7","8","9","Clear","0","Del"].forEach((l,k)=>button(16+(k%3)*68,78+((k/3)|0)*36,62,32,l,"sec",k===9||k===11?"SM":"MD"));
+  button(226,78,78,44,"Save","pri","MD");button(226,126,78,44,"Fill Max","pri","MD");button(226,174,78,44,"Cancel","sec","MD")}},
+{id:"payments",group:"Admin",name:"Payments",fn(){
+  header("Payments");[["Free Vend",0],["UPI",1],["Cash",1],["RFID",1]].forEach(([l,on],r)=>{const y=40+r*38,cy=y+16;row(16,y,288,32);label(28,cy,150,l);onoff(296,cy,!!on);
+    if(l==="UPI")rowBtn(166,cy,56,"Setup","sec");if(l==="RFID"){rowBtn(166,cy,56,"Cards","sec");rowBtn(104,cy,56,"Reset","sec")}});bar([["Back","sec"]])}},
+{id:"upicfg",group:"Admin",name:"UPI configuration",fn(){
+  header("UPI Configuration");[["Merchant ID","MERCHANT123456"],["Store ID","STORE-0042"]].forEach(([cap,val],r)=>{const y=40+r*50;row(16,y,288,44);put(cap,"l",28,150,y+12,P.CARD_CAPTION,"XS");put(val,"l",28,232-8-28,y+30,P.CARD_TITLE,"MD");rowBtn(232,y+22,64,"Edit")});
+  row(16,140,288,44);label(28,162,126,"Timeout (min)");stepper(296,162,"5");bar([["Back","sec"]])}},
+{id:"network",group:"Admin",name:"Network",fn(){
+  const nc=(k,t,st,sc,l1,l2,style,stripe)=>{const y=40+k*74;card(16,y,288,68,8);rect(24,y+9,4,50,2,stripe);put(t,"l",38,120,y+17,style==="off"?P.CARD_CAPTION:P.CARD_TITLE,"MD");put(st,"r",146,288-130-14,y+17,sc,"SM");put(l1,"l",38,288-22-70-24,y+41,P.CARD_TITLE,"XS");put(l2,"l",38,288-22-70-24,y+57,P.CARD_CAPTION,"XS");rowBtn(304-10-70,y+48,70,"Setup",style)};
+  header("Network");nc(0,"WiFi","Connected",P.OK_TEXT,"Network: ShopWiFi","Signal: Good (-62 dBm)","pri",P.TILE_STRIPE_OK);nc(1,"4G / LTE","Not fitted",P.CARD_CAPTION,"APN: airtelgprs.com","Backup link when WiFi is down","off",P.TILE_STRIPE_OFF);bar([["Back","sec"]])}},
+{id:"wifi",group:"Admin",name:"WiFi setup",fn(){
+  header("WiFi Setup",104);onoff(288,16.5,true);
+  [["Network","ShopWiFi"],["Password",null]].forEach(([lab,val],r)=>{const y=40+r*34,cy=y+15;row(16,y,288,30);label(28,cy,100,lab);const vx=16+12+tw(lab,"MD")+12;
+    if(val)put(val,"l",vx,232-8-vx,cy,P.VALUE_TEXT,"MD");else for(let k=0;k<8;k++)circ(vx+5+k*12,cy,4,P.VALUE_TEXT);rowBtn(232,cy,64,"Edit")});
+  card(16,110,288,78,8);put("Connected","l",28,264,124,P.OK_TEXT,"MD");put("IP: 192.168.1.45","l",28,216,143,P.CARD_TITLE,"XS");put("Signal: Good (-62 dBm)","l",28,216,160,P.CARD_TITLE,"XS");wifiGlyph(270,158,2,3,true);put("Ping OK - HTTP 200 in 84ms","l",28,264,177,P.OK_TEXT,"XS");
+  bar([["Back","sec"],["Test","pri"]])}},
+{id:"lte",group:"Admin",name:"4G / LTE setup",fn(){
+  header("4G / LTE Setup",320-(288-66-6));onoff(288,16.5,true);const x=16,y=40,w=288;card(x,y,w,140,8);
+  put("Connected","l",x+14,w-28,y+18,P.OK_TEXT,"MD");put("APN: airtelgprs.com","l",x+14,w-28,y+46,P.CARD_TITLE,"XS");put("Used as the backup link when WiFi is down","l",x+14,w-28,y+66,P.CARD_CAPTION,"XS");
+  put("Signal: Good","l",x+14,w-28-48,y+92,P.CARD_TITLE,"XS");cellBars(x+w-14-36,y+108,2,3,P.WIFI_GOOD);put("Test OK - HTTP 200 in 412ms","l",x+14,w-28,y+124,P.OK_TEXT,"SM");
+  bar([["Back","sec"],["Test 4G","pri"]])}},
+{id:"machine",group:"Admin",name:"Machine",fn(){
+  header("Machine");const R=(i,l,v,c,b,f)=>{const y=40+i*31,h=28;row(16,y,288,h);label(28,y+14,110,l);const vx=28+tw(l,"MD")+12;put(v,"l",vx,216-vx,y+14,c,f);rowBtn(224,y+14,72,b)};
+  R(0,"Machine ID","VM-A4C21F",P.VALUE_TEXT,"Edit","MD");R(1,"Store ID","(not set)",P.CARD_CAPTION,"Edit","MD");R(2,"Admin PIN","****",P.VALUE_TEXT,"Change","MD");R(3,"Clock","10:42 PM  26 Oct",P.VALUE_TEXT,"Set","SM");R(4,"Customer","Timeout 60s",P.VALUE_TEXT,"Open","SM");bar([["Back","sec"]])}},
+{id:"customer",group:"Admin",name:"Customer screens",fn(){
+  header("Customer Screens");for(let r=0;r<4;r++)row(16,40+r*38,288,32);
+  label(28,56,126,"Max items");stepper(296,56,"3");label(28,94,170,"Auto timeout");onoff(296,94,true);label(28,132,126,"Seconds");stepper(296,132,"60");label(28,170,170,"Show countdown");onoff(296,170,false);bar([["Back","sec"]])}},
+{id:"datetime",group:"Admin",name:"Date & time",fn(){
+  header("Date & Time");const W=[44,44,72,54,54],N=["Day","Month","Year","Hour","Minute"],V=["26","10","2026","10","42"];let x=16;
+  W.forEach((w,f)=>{put(N[f],"c",x-2,w+4,47,P.PICK_LABEL,"SM");pickBtn(x,56,w,34,true,true);pickBtn(x,126,w,34,false,true);
+    rect(x,93,w,30,6,P.PICK_VALUE_FILL,P.PICK_VALUE_BORDER);put(V[f],"c",x+2,w-4,108,P.PICK_VALUE_TEXT,"MD");if(f===3)button(x,164,w,26,"AM","sec","SM");x+=w+5});
+  bar([["Cancel","sec"],["12 hour","sec"],["Save","pri"]])}},
+{id:"rfidcards",group:"RFID",name:"RFID cards",fn(){
+  header("RFID Cards",70);put("2 / 20","r",200,286-200,16.5,P.HDR_COUNT_DIM,"SM");
+  [["Priya","04A1B2C3D4","3/5",false],["","04E5F60718","5/5",true],["Meena","0499AA11FF","",false]].forEach(([n,uid,lim,full],i)=>{const y=38+i*38;row(16,y,288,34);let tw_=264-8-28;
+    if(lim){put(lim,"r",264-8-56,56,y+17,full?P.ERR_TEXT:P.VALUE_TEXT,"SM");tw_-=62}
+    if(n){put(n,"l",28,tw_,y+11,P.CARD_TITLE,"MD");put(uid,"l",28,tw_,y+26,P.CARD_CAPTION,"XS")}else put(uid,"l",28,tw_,y+17,P.CARD_TITLE,"MD");button(264,y+4,32,26,"X","dan","SM")});
+  put("Card added","c",12,296,157,P.OK_TEXT,"SM");button(16,166,142,26,"Scan Card","pri","SM");button(162,166,142,26,"Enter Number","pri","SM");bar([["Back","sec"],["Page 1/2","pri"]])}},
+{id:"rfidscan",group:"RFID",name:"RFID: scan new card",fn(){
+  header("Scan New Card");put("Hold the card near","c",10,300,90,P.MSG_TITLE,"MD");put("the reader","c",10,300,116,P.MSG_TITLE,"MD");hint("Cancels automatically after 30 seconds",150);bar([["Cancel","sec"]])}},
+{id:"rfidedit",group:"RFID",name:"Edit RFID card",fn(){
+  header("Edit Card");for(let r=0;r<4;r++)row(16,40+r*38,288,32);
+  let cy=56,vx=16+12+tw("Name","MD")+12;label(28,cy,80,"Name");put("Priya","l",vx,224-8-vx,cy,P.VALUE_TEXT,"MD");rowBtn(224,cy,72,"Edit");
+  cy=94;vx=16+12+tw("Card ID","MD")+12;label(28,cy,100,"Card ID");put("04A1B2C3D4","l",vx,296-vx,cy,P.CARD_TITLE,"SM");
+  cy=132;label(28,cy,100,"Limit");stepper(296,cy,"5");
+  cy=170;vx=16+12+tw("Used","MD")+12;label(28,cy,80,"Used");put("3","l",vx,60,cy,P.VALUE_TEXT,"MD");rowBtn(224,cy,72,"Reset","dan");bar([["Back","sec"]])}},
+{id:"rfidreset",group:"RFID",name:"RFID auto-reset",fn(){
+  header("RFID Auto-Reset");row(16,40,288,40);label(28,54,170,"Monthly reset");put("Last run 2026-10","l",28,190,71,P.CARD_CAPTION,"XS");onoff(296,60,true);
+  [["Day of month","01"],["Hour (24h)","01"],["Minute","00"]].forEach(([l,v],i)=>{const y=84+i*34,cy=y+15;row(16,y,288,30);label(28,cy,126,l);stepper(296,cy,v)});bar([["Back","sec"]])}},
+/* ===== Reports ===== */
+{id:"rptsales",group:"Reports",name:"Reports: Sales",fn(){
+  header("Reports");rptTabs(0);reportTile(0,0,"Transactions","148");reportTile(1,0,"Products sold","212");reportTile(0,1,"Total sales (Rs.)","2480",true);reportTile(1,1,"Units in stock","50");reportTile(0,2,"Today (Rs.)","120",true);reportTile(1,2,"Today units/txns","12 / 9");
+  rptBottom("Last send: OK 10:32 PM",true,true)}},
+{id:"rptitems",group:"Reports",name:"Reports: Items",fn(){
+  header("Reports");rptTabs(1);const h=28;tableRow(62,h,0,"Product","Sold","Rs.","Left",true);
+  tableRow(62+h,h,1,"Regular","138","1380","25");tableRow(62+2*h,h,2,"XL Overnight","74","1100","2");rect(16,62,288,3*h,0,"none",P.TBL_FRAME);rptBottom("Last send: OK 10:32 PM",true,true)}},
+{id:"rptauto",group:"Reports",name:"Reports: Auto",fn(){
+  header("Reports");rptTabs(2);rptRow(0,"Report time 1","10:00 PM",P.VALUE_TEXT,true);rptRow(1,"Report time 2","Off",P.CARD_CAPTION,true);
+  row(16,122,288,28);label(28,136,160,"Low-stock alert");onoff(292,136,true);row(16,152,288,28);label(28,166,122,"Alert below");stepper(292,166,"3");rptBottom("Last send: OK 10:32 PM",true,true)}},
+{id:"rptemail",group:"Reports",name:"Reports: Email",fn(){
+  header("Reports");rptTabs(3);rptRow(0,"Gmail","vending@gmail.com",P.VALUE_TEXT,true);rptRow(1,"Password","16 chars set",P.VALUE_TEXT,true);rptRow(2,"Send to","owner@example.com",P.VALUE_TEXT,true);rptRow(3,"Name","(not set)",P.VALUE_TEXT,true);
+  rptBottom("Last send: failed (no WiFi)",false,false)}},
+{id:"rptdata",group:"Reports",name:"Reports: Data",fn(){
+  header("Reports");rptTabs(4);rptRow(0,"History stored","24 of 60 days",P.CARD_CAPTION,false);rptRow(1,"Sending via","WiFi",P.CARD_CAPTION,false);
+  row(16,122,288,28);put("Tap again to erase","l",28,190,136,P.ERR_TEXT,"MD");rowBtn(292-70+4,136,70,"Confirm","dan");rptBottom("Last send: OK 10:32 PM",true,true)}},
+{id:"rpttime",group:"Reports",name:"Report time picker",fn(){
+  header("Daily Report 1");row(16,40,288,32);label(28,56,170,"Send this report");onoff(292,56,true);
+  timeColumn(33,"Hour","10",true);timeColumn(137,"Minute","00",true);put(":","c",113,24,125,P.PICK_LABEL,"LG");button(231,127,56,28,"PM","sec","SM");bar([["Cancel","sec"],["Save","pri"]])}},
+{id:"rptsend",group:"Reports",name:"Sending report overlay",fn(){
+  put("Sending report...","c",10,300,92,P.MSG_TITLE,"MD");put("Today's sales plus today's transactions CSV.","c",10,300,124,P.MSG_BODY,"SM");put("This can take a minute over 4G. Please wait.","c",10,300,146,P.MSG_BODY,"XS")}},
+/* ===== Keyboard ===== */
+{id:"kbupper",group:"Keyboard",name:"Keyboard: capitals",fn(){keyboard("up","Enter Name",false)}},
+{id:"kblower",group:"Keyboard",name:"Keyboard: lowercase",fn(){keyboard("low","Gmail Address",false)}},
+{id:"kbsym",group:"Keyboard",name:"Keyboard: symbols",fn(){keyboard("sym","Gmail Password",true)}},
+/* ===== Every element ===== */
+{id:"kit",group:"UI kit",name:"Every element",fn(){
+  header("UI Elements");
+  button(16,40,66,28,"Primary","pri","SM");button(88,40,66,28,"Normal","sec","SM");button(160,40,66,28,"Danger","dan","SM");button(232,40,72,28,"Disabled","off","SM");
+  onoff(82,90,true);onoff(154,90,false);stepper(304,90,"12");
+  tab(16,112,56,22,"Active",true);tab(76,112,56,22,"Tab",false);dot(160,123,true);put("On","l",170,30,123,P.CARD_TITLE,"XS");dot(214,123,false);put("Off","l",224,30,123,P.CARD_TITLE,"XS");
+  tile(16,142,"Card","with caption");rect(166,142,138,44,6,P.FIELD_FILL,P.FIELD_BORDER);put("Text field","l",176,120,155,P.FIELD_TEXT,"MD");put("hint text","l",176,120,174,P.FIELD_EMPTY,"XS");
+  put("Price","l",16,50,205,P.PRICE_TEXT,"SM");put("Value","l",64,50,205,P.VALUE_TEXT,"SM");put("Caption","l",120,60,205,P.CARD_CAPTION,"SM");put("OK","l",190,30,205,P.OK_TEXT,"SM");put("Error","l",226,50,205,P.ERR_TEXT,"SM");put("Warn","l",270,40,205,P.WARN_TEXT,"SM");
+  rect(16,218,288,2,0,P.CARD_RULE);wifiGlyph(40,232,1,3,true);wifiGlyph(70,232,1,2,true);wifiGlyph(100,232,1,1,true);cellBars(240,234,2,2,P.WIFI_FAIR)}}
+];
+const GROUPS=["All",...Array.from(new Set(SCREENS.map(s=>s.group)))];
+
+/* ---------- render ---------- */
+function screenSVG(s){
+  P={};const p=resolve(s.id);ALL.forEach(k=>P[k]=hx(p[k]));
+  out=[];uid=0;
+  const gid="bg"+s.id,stops=[0,.25,.5,.75,1].map(t=>{const k=t*t*(3-2*t),a=from565(p.BG_TOP),b=from565(p.BG_BOTTOM);return `<stop offset="${t}" stop-color="rgb(${a.map((v,i)=>Math.round(v+k*(b[i]-v))).join(",")})"/>`}).join("");
+  E(`<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient>${ui.pxgrid?`<pattern id="px${s.id}" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M1 0H0V1" fill="none" stroke="#000" stroke-width=".07" opacity=".5"/></pattern>`:""}</defs>`);
+  E(`<rect width="320" height="240" fill="url(#${gid})"/>`);
+  s.fn();
+  if(ui.pxgrid)E(`<rect width="320" height="240" fill="url(#px${s.id})"/>`);
+  return `<svg viewBox="0 0 320 240" role="img" aria-label="${esc(s.name)} preview">${out.join("")}</svg>`}
+function figHTML(s){
+  const n=O[s.id]?Object.keys(O[s.id]).length:0;
+  return `<figure id="fig_${s.id}" data-id="${s.id}"><button class="shot" type="button" data-pick="${s.id}" aria-pressed="${scope===s.id}" aria-label="Edit colours for ${esc(s.name)}"><span class="bz">${screenSVG(s)}</span></button><figcaption><b>${esc(s.name)}</b>${n?`<span class="badge">${n} custom</span>`:'<span>click to edit</span>'}</figcaption></figure>`}
+function renderScreens(){
+  const g=$("screens");g.dataset.size=ui.size;g.classList.toggle("bezel",ui.bezel);g.classList.toggle("crisp",ui.crisp);
+  let html="",last="";SCREENS.forEach(s=>{if(ui.filter!=="All"&&s.group!==ui.filter)return;if(ui.filter==="All"&&s.group!==last){html+=`<h3 class="grp-h">${s.group}</h3>`;last=s.group}html+=figHTML(s)});
+  g.innerHTML=html}
+function renderOne(id){
+  const s=SCREENS.find(x=>x.id===id),el=$("fig_"+id);if(!s||!el)return;
+  const t=document.createElement("div");t.innerHTML=figHTML(s);el.replaceWith(t.firstChild)}
+function refreshPressed(){document.querySelectorAll(".shot").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.pick===scope)))}
+
+/* ---------- controls ---------- */
+const PAIRS=[["HDR_TITLE","HDR_BG","Screen title"],["CARD_TITLE","CARD_FILL","Text on cards"],["CARD_CAPTION","CARD_FILL","Caption on cards"],["PRICE_TEXT","CARD_FILL","Price (small, on a card)"],["VALUE_TEXT","CARD_FILL","Editable values"],
+ ["MSG_BODY","BG_TOP","Message text on background"],["HINT_TEXT","BG_TOP","Hint text on background"],
+ ["BTN_PRI_TEXT","BTN_PRI_FILL","Primary button label"],["BTN_SEC_TEXT","BTN_SEC_FILL","Normal button label"],["BTN_DANGER_TEXT","BTN_DANGER_FILL","Danger button label"],["BTN_OFF_TEXT","BTN_OFF_FILL","Disabled button label"],
+ ["SW_ON_TEXT","SW_ON_FILL","Switch ON label"],["STEP_VALUE_TEXT","STEP_VALUE_FILL","Stepper number"],["TAB_ON_TEXT","TAB_ON_FILL","Selected tab"],["TBL_HEAD_TEXT","TBL_HEAD_FILL","Table header"],
+ ["FIELD_TEXT","FIELD_FILL","Typed text"],["KEY_TEXT","KEY_FILL","Keyboard keys"],["KEY_MOD_TEXT","KEY_MOD_FILL","Keyboard DEL and SPACE"],
+ ["OK_TEXT","CARD_FILL","Success text"],["ERR_TEXT","CARD_FILL","Error text"],["WARN_TEXT","CARD_FILL","Warning text"]];
+$("scope").innerHTML=`<option value="all">All screens (the whole theme)</option>`+GROUPS.slice(1).map(g=>`<optgroup label="${g}">${SCREENS.filter(s=>s.group===g).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</optgroup>`).join("");
+$("preset").innerHTML=`<option value="">Choose a theme…</option>`+THEMES.map(t=>`<option value="${t[0]}">${t[0]} · ${esc(t[1])}</option>`).join("");
+const dfl=Object.fromEntries(COMP.map(c=>[c[1],c[2]]));
+function rowHTML(k,desc){return `<div class="crow" id="row_${k}" data-k="${k}"><input type="color" id="c_${k}" aria-label="${k}"><div><div class="nm">COL_${k}</div><div class="role">${esc(desc)}</div><div class="lnk" id="l_${k}"></div></div><div class="val"><input type="text" class="hexin" id="h_${k}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="${k} as #RRGGBB"><input type="text" class="rawin" id="r_${k}" maxlength="6" spellcheck="false" autocomplete="off" aria-label="${k} as RGB565 0x value"></div><button class="rs" type="button" id="x_${k}" title="Link back to its default colour" aria-label="Reset ${k}">↺</button></div>`}
+$("baseColors").innerHTML=BASE.map(([k,d])=>rowHTML(k,d)).join("");
+$("comps").innerHTML=COMP_GROUPS.map(g=>`<details data-g="${esc(g)}"><summary>${esc(g)} <span class="cnt">${COMP.filter(c=>c[0]===g).length}</span></summary>${COMP.filter(c=>c[0]===g).map(c=>rowHTML(c[1],c[3])).join("")}</details>`).join("");
+$("filters").innerHTML=GROUPS.map(g=>`<button type="button" class="chip" data-f="${g}">${g}</button>`).join("");
+
+const ovOf=k=>scope!=="all"&&O[scope]&&(k in O[scope]);
+function linkText(k){
+  if(ovOf(k))return ["ov","custom on this screen"];
+  if(isBase(k))return ["",""];
+  if(k in GC)return ["unl","unlinked in this theme"];
+  return ["","linked to "+dfl[k]]}
+function setVals(k,p){const h=$("h_"+k),r=$("r_"+k);
+  if(document.activeElement!==h){h.value=hx(p[k]);h.classList.remove("bad")}
+  if(document.activeElement!==r){r.value=h565(p[k]);r.classList.remove("bad")}}
+function syncRows(skip){
+  const p=scopeP();
+  ALL.forEach(k=>{
+    if(k!==skip)$("c_"+k).value=hx(p[k]).toLowerCase();
+    setVals(k,p);
+    const [cls,txt]=linkText(k),row=$("row_"+k);
+    row.classList.toggle("ov",cls==="ov");row.classList.toggle("unl",cls==="unl");
+    $("l_"+k).textContent=txt;
+    const canReset=scope==="all"?(!isBase(k)&&(k in GC)):ovOf(k);
+    row.classList.toggle("canreset",canReset)});
+  $("checks").innerHTML=PAIRS.map(([f,b,l])=>{const r=ratioOf(p,f,b),c=r>=4.5?"good":r>=3?"warn":"bad";return `<div class="chk"><span class="sw" style="background:${hx(p[b])};color:${hx(p[f])}">Aa</span><span>${l}</span><span class="pill ${c}">${r.toFixed(1)}</span></div>`}).join("")}
+function syncControls(){
+  syncRows();
+  $("scope").value=scope;
+  const s=SCREENS.find(x=>x.id===scope),n=Object.keys(O[scope]||{}).length;
+  $("scopeNote").innerHTML=scope==="all"?`Changes apply to <b>every screen</b>, except screens you have given their own colours.`:`Changes apply to <b>${esc(s.name)}</b> only. ${n?`${n} colour${n>1?"s":""} differ from the all-screens theme (marked ●).`:"It follows the all-screens theme until you change a colour."} ${n?'<button type="button" id="clearScreen" class="chip">Remove this screen\'s custom colours</button>':""}`;
+  const cs=$("clearScreen");if(cs)cs.onclick=()=>{delete O[scope];afterChange(true)};
+  const nu=Object.keys(GC).length;$("unlinkNote").textContent=nu?`${nu} component colour${nu>1?"s are":" is"} unlinked in this theme.`:"All component colours are following the base palette.";
+  document.querySelectorAll("#filters .chip").forEach(b=>b.classList.toggle("on",b.dataset.f===ui.filter));
+  $("size").value=ui.size;$("expmode").value=ui.expmode;$("bezel").checked=ui.bezel;$("crisp").checked=ui.crisp;$("pxgrid").checked=ui.pxgrid;
+  renderOut()}
+
+let raf=0;
+function redrawScope(){if(scope==="all"){cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{renderScreens();refreshPressed()})}else renderOne(scope)}
+function afterChange(full){syncControls();if(full){cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{renderScreens();refreshPressed()})}else redrawScope();save()}
+function applyColor(k,v){
+  if(scope==="all"){if(isBase(k))G[k]=v;else GC[k]=v}
+  else{const o=O[scope]||(O[scope]={}),rest=Object.assign({},o);delete rest[k];
+    if(v===resolveWith(rest)[k])delete o[k];else o[k]=v;if(!Object.keys(o).length)delete O[scope]}
+  syncRows(k);redrawScope();save();renderOut();
+  const un=Object.keys(GC).length;$("unlinkNote").textContent=un?`${un} component colour${un>1?"s are":" is"} unlinked in this theme.`:"All component colours are following the base palette."}
+function resetKey(k){
+  if(scope==="all"){delete GC[k]}else if(O[scope]){delete O[scope][k];if(!Object.keys(O[scope]).length)delete O[scope]}
+  afterChange(true)}
+const colorsBox=$("colors");
+colorsBox.addEventListener("input",e=>{
+  const id=e.target.id||"",k=id.slice(2);if(!ALL.includes(k))return;
+  if(id.startsWith("c_"))applyColor(k,fromHex(e.target.value));
+  else if(id.startsWith("h_")){let t=e.target.value.trim().replace(/^#/,"");if(/^[0-9a-f]{3}$/i.test(t))t=t.replace(/./g,c=>c+c);
+    const ok=/^[0-9a-f]{6}$/i.test(t);e.target.classList.toggle("bad",!ok&&e.target.value!=="");if(ok){applyColor(k,fromHex("#"+t));$("c_"+k).value="#"+t.toLowerCase()}}
+  else if(id.startsWith("r_")){const t=e.target.value.trim().replace(/^0x/i,""),ok=/^[0-9a-f]{1,4}$/i.test(t);e.target.classList.toggle("bad",!ok&&e.target.value!=="");if(ok)applyColor(k,parseInt(t,16))}});
+colorsBox.addEventListener("click",e=>{const b=e.target.closest(".rs");if(b)resetKey(b.id.slice(2))});
+colorsBox.addEventListener("focusin",e=>{if(e.target.matches(".val input"))e.target.select()});
+colorsBox.addEventListener("focusout",e=>{if(e.target.matches(".val input")){e.target.classList.remove("bad");setVals(e.target.id.slice(2),scopeP())}});
+colorsBox.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches(".val input"))e.target.blur()});
+$("q").addEventListener("input",()=>{
+  const q=$("q").value.trim().toLowerCase();
+  document.querySelectorAll("#comps details").forEach(d=>{let any=false;
+    d.querySelectorAll(".crow").forEach(r=>{const k=r.dataset.k,c=COMP.find(x=>x[1]===k),hit=!q||(k+" "+c[3]+" "+c[0]).toLowerCase().includes(q);r.hidden=!hit;if(hit)any=true});
+    d.hidden=!any;if(q&&any)d.open=true})});
+
+$("scope").onchange=e=>{scope=e.target.value;syncControls();refreshPressed();save();if(scope!=="all")$("fig_"+scope)?.scrollIntoView({block:"nearest",behavior:"smooth"})};
+$("preset").onchange=e=>{const t=THEMES.find(t=>t[0]==e.target.value);e.target.value="";if(!t)return;
+  if(scope==="all"){setPreset(t[2],G);GC={}}else{const o={};BASE.forEach(([k])=>{if(t[2][k]!==G[k])o[k]=t[2][k]});if(Object.keys(o).length)O[scope]=o;else delete O[scope]}afterChange(true)};
+$("screens").addEventListener("click",e=>{const b=e.target.closest("[data-pick]");if(!b)return;scope=b.dataset.pick;syncControls();refreshPressed();save();window.scrollTo({top:0,behavior:"smooth"})});
+$("filters").addEventListener("click",e=>{const b=e.target.closest("[data-f]");if(!b)return;ui.filter=b.dataset.f;syncControls();renderScreens();refreshPressed();save()});
+$("size").onchange=e=>{ui.size=e.target.value;$("screens").dataset.size=ui.size;save()};
+$("bezel").onchange=e=>{ui.bezel=e.target.checked;$("screens").classList.toggle("bezel",ui.bezel);save()};
+$("crisp").onchange=e=>{ui.crisp=e.target.checked;$("screens").classList.toggle("crisp",ui.crisp);save()};
+$("pxgrid").onchange=e=>{ui.pxgrid=e.target.checked;renderScreens();refreshPressed();save()};
+
+/* ---------- config file: custom_theme.h ---------- */
+function themeHeader(){
+  const L=["// custom_theme.h - the Custom colour theme (CFG_COLOR_THEME 3 in Config.h).",
+    "// Written by docs/theme_designer.html (\"Save config\"). Copy the saved file over",
+    "// this one, then compile and flash. You can also edit the values by hand.",
+    "// Colours are RGB565. A component colour set to another COL_ name follows it.",""];
+  BASE.forEach(([k])=>L.push(`#define COL_${k}`.padEnd(32)+h565(G[k])+"   // "+hx(G[k])));
+  if(ui.expmode==="changed"){
+    const comp=COMP.filter(c=>c[1] in GC);
+    if(comp.length){L.push("","// Component colours set for this theme (everything else follows the base colours)");
+      comp.forEach(c=>L.push(`#define COL_${c[1]}`.padEnd(32)+h565(GC[c[1]])+"   // "+hx(GC[c[1]])+"  (default: "+c[2]+")"))}
+  }else{
+    let cur="";
+    COMP.forEach(c=>{if(c[0]!==cur){cur=c[0];L.push("","// ---------- "+cur+" ----------")}
+      const k=c[1];
+      if(k in GC)L.push(`#define COL_${k}`.padEnd(32)+h565(GC[k])+"   // "+hx(GC[k])+"  (default: "+c[2]+")");
+      else L.push(`#define COL_${k}`.padEnd(32)+`COL_${c[2]}`.padEnd(22)+"// "+c[3])});
+  }
+  L.push("","// DESIGNER-PROJECT "+JSON.stringify({version:3,G,GC,O}));
+  return L.join("\n")+"\n"}
+function renderOut(){
+  $("out").textContent=themeHeader();
+  const ids=Object.keys(O),w=$("ovWarn");
+  if(ids.length){w.hidden=false;w.innerHTML=`<b>${ids.length} screen${ids.length>1?"s have":" has"} its own colours</b> (${ids.map(i=>esc(SCREENS.find(s=>s.id===i).name)).join(", ")}). They are kept in the saved config for editing, but the firmware uses one set of colours for every screen, so only the all-screens theme reaches the machine.`}else w.hidden=true}
+$("expmode").onchange=e=>{ui.expmode=e.target.value;renderOut();save()};
+function flash(t){["msg","msgTop"].forEach(id=>{const m=$(id);m.textContent=t;setTimeout(()=>m.textContent="",7000)})}
+function download(name,text,type){const b=new Blob([text],{type}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+$("saveConfig").onclick=$("saveTop").onclick=async()=>{
+  const text=themeHeader();
+  if(window.showSaveFilePicker){
+    try{const h=await window.showSaveFilePicker({suggestedName:"custom_theme.h",types:[{description:"C header",accept:{"text/plain":[".h"]}}]});
+      const w=await h.createWritable();await w.write(text);await w.close();flash("Saved "+h.name+". It must be in the sketch folder to take effect.");return}
+    catch(e){if(e&&e.name==="AbortError")return}}
+  download("custom_theme.h",text,"text/plain");flash("Saved custom_theme.h to your downloads. Copy it into the sketch folder.")};
+$("copy").onclick=async()=>{const t=$("out").textContent;
+  try{await navigator.clipboard.writeText(t);flash("Copied.")}
+  catch(e){const r=document.createRange();r.selectNodeContents($("out"));const s=getSelection();s.removeAllRanges();s.addRange(r);flash("Press Ctrl+C to copy the selected text.")}};
+$("saveJson").onclick=()=>{download("vending-theme-project.json",JSON.stringify({version:3,G,GC,O},null,1),"application/json");flash("Saved to your downloads.")};
+$("loadConfig").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{try{
+    const txt=String(rd.result),m=txt.match(/^\/\/ DESIGNER-PROJECT (\{.*\})\s*$/m),j=JSON.parse(m?m[1]:txt);
+    if(!j.G||!BASE.every(([k])=>Number.isInteger(j.G[k])))throw 0;
+    G=j.G;GC=j.GC||{};O=j.O||{};scope="all";afterChange(true);flash("Config opened.")}
+  catch(x){flash("That file has no saved design. Use a custom_theme.h or .json saved from this page.")}};
+  rd.readAsText(f);e.target.value=""};
+let armed=false;
+$("resetAll").onclick=()=>{if(!armed){armed=true;$("resetAll").textContent="Click again to reset";setTimeout(()=>{armed=false;$("resetAll").textContent="Reset everything"},3000);return}
+  armed=false;$("resetAll").textContent="Reset everything";G={};setPreset(THEMES[0][2],G);GC={};O={};scope="all";afterChange(true)};
+
+/* ---------- start ---------- */
+restore();
+if(scope!=="all"&&!SCREENS.some(s=>s.id===scope))scope="all";
+syncControls();renderScreens();refreshPressed();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{renderScreens();refreshPressed()});
+</script>
+</body>
+</html>

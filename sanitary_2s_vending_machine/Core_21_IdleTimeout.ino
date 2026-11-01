@@ -52,14 +52,14 @@ void drawIdleCountdown(int remainingSec) {
   }
   char buf[8];
   snprintf(buf, sizeof(buf), "%ds", remainingSec);
-  auiPut(buf, AL_CENTER, gx, gw, BTN_Y + BTN_H / 2, remainingSec <= 10 ? COL_DANGER : COL_TEXT, FACE_XS);
+  auiPut(buf, AL_CENTER, gx, gw, BTN_Y + BTN_H / 2, remainingSec <= 10 ? COL_COUNTDOWN_URGENT : COL_COUNTDOWN_TEXT, FACE_XS);
 }
 
 void showIdleTimeoutWarning() {
   drawGradientBackground();
-  drawSerifLine("Time Out!", 0, tft.width(), 75, COL_DANGER, 0);
-  drawSerifLine("No activity for a while", 0, tft.width(), 125, COL_TEXT, 1);
-  drawSerifLine("Returning to the home screen", 0, tft.width(), 155, COL_TEXT, 1);
+  drawSerifLine("Time Out!", 0, tft.width(), 75, COL_ERR_TEXT, 0);
+  drawSerifLine("No activity for a while", 0, tft.width(), 125, COL_MSG_BODY, 1);
+  drawSerifLine("Returning to the home screen", 0, tft.width(), 155, COL_MSG_BODY, 1);
   delay(2000);
 }
 

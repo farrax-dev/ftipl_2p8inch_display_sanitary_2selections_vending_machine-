@@ -40,14 +40,14 @@ void drawAdminRFIDCardEditScreen() {
   int vx = RFEDIT_ROW_X + 12 + auiTextW("Name", FACE_MD) + 12;
   bool named = rfidCards[i].name[0] != '\0';
   auiPut(named ? rfidCards[i].name : "(no name)", AL_LEFT, vx, RFEDIT_BTN_X - 8 - vx, cy,
-         named ? COL_ACCENT : COL_TEXT_DIM, FACE_MD);
+         named ? COL_VALUE_TEXT : COL_CARD_CAPTION, FACE_MD);
   auiRowButton(RFEDIT_BTN_X, cy, RFEDIT_BTN_W, "Edit", ABTN_PRIMARY);
 
   // ---- UID (read-only) ----
   cy = rfeditRowCY(1);
   auiRowLabel(RFEDIT_ROW_X + 12, cy, 100, "Card ID");
   vx = RFEDIT_ROW_X + 12 + auiTextW("Card ID", FACE_MD) + 12;
-  auiPut(rfidCards[i].uid, AL_LEFT, vx, RFEDIT_RIGHT - vx, cy, COL_TEXT, FACE_SM);
+  auiPut(rfidCards[i].uid, AL_LEFT, vx, RFEDIT_RIGHT - vx, cy, COL_CARD_TITLE, FACE_SM);
 
   // ---- Withdrawal limit (0 = unlimited) ----
   cy = rfeditRowCY(2);
@@ -55,7 +55,7 @@ void drawAdminRFIDCardEditScreen() {
   char limBuf[8];
   if (rfidCards[i].withdrawLimit > 0) snprintf(limBuf, sizeof(limBuf), "%d", rfidCards[i].withdrawLimit);
   else strcpy(limBuf, "Off");
-  auiStepper(RFEDIT_RIGHT, cy, limBuf, COL_ACCENT);
+  auiStepper(RFEDIT_RIGHT, cy, limBuf, COL_STEP_VALUE_TEXT);
 
   // ---- Usage so far, and a per-card reset ----
   cy = rfeditRowCY(3);
@@ -63,7 +63,7 @@ void drawAdminRFIDCardEditScreen() {
   char usedBuf[8];
   snprintf(usedBuf, sizeof(usedBuf), "%d", rfidCards[i].withdrawUsed);
   vx = RFEDIT_ROW_X + 12 + auiTextW("Used", FACE_MD) + 12;
-  auiPut(usedBuf, AL_LEFT, vx, 60, cy, COL_ACCENT, FACE_MD);
+  auiPut(usedBuf, AL_LEFT, vx, 60, cy, COL_VALUE_TEXT, FACE_MD);
   auiRowButton(RFEDIT_BTN_X, cy, RFEDIT_BTN_W, "Reset", ABTN_DANGER);
 
   auiBarButton(0, 1, "Back", ABTN_SECONDARY);

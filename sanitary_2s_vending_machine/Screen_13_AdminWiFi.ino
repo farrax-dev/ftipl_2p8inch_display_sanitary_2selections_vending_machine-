@@ -41,21 +41,21 @@ void drawWiFiStatusCard(const char* busy) {
   drawCard(x, y, w, h, 8);
 
   if (busy != NULL) {
-    auiPut(busy, AL_CENTER, x + 12, w - 24, y + h / 2, COL_ACCENT, FACE_MD);
+    auiPut(busy, AL_CENTER, x + 12, w - 24, y + h / 2, COL_MSG_TITLE, FACE_MD);
     return;
   }
 
   // L1: state. Neutral colour when switched off — a deliberate choice, not a
   // fault.
   const char* state = !wifiEnabled ? "Turned off" : connected ? "Connected" : "Not connected";
-  uint16_t stateCol = !wifiEnabled ? COL_TEXT_DIM : connected ? COL_SUCCESS : COL_DANGER;
+  uint16_t stateCol = !wifiEnabled ? COL_CARD_CAPTION : connected ? COL_OK_TEXT : COL_ERR_TEXT;
   auiPut(state, AL_LEFT, x + 12, w - 24, y + 14, stateCol, FACE_MD);
 
   int textW = w - 24 - 48;   // leave the signal glyph's column free
   char buf[48];
   if (connected) snprintf(buf, sizeof(buf), "IP: %s", WiFi.localIP().toString().c_str());
   else           snprintf(buf, sizeof(buf), "IP: -");
-  auiPut(buf, AL_LEFT, x + 12, textW, y + 33, COL_TEXT, FACE_XS);
+  auiPut(buf, AL_LEFT, x + 12, textW, y + 33, COL_CARD_TITLE, FACE_XS);
 
   if (connected) {
     long rssi = WiFi.RSSI();
@@ -63,14 +63,14 @@ void drawWiFiStatusCard(const char* busy) {
   } else {
     snprintf(buf, sizeof(buf), "Signal: -");
   }
-  auiPut(buf, AL_LEFT, x + 12, textW, y + 50, COL_TEXT, FACE_XS);
+  auiPut(buf, AL_LEFT, x + 12, textW, y + 50, COL_CARD_TITLE, FACE_XS);
 
   int bars = connected ? wifiBarsFromRSSI(WiFi.RSSI()) : 0;
   drawWiFiSymbol(x + w - 34, y + 48, 2, bars, connected);
 
   // L4: last ping. !wifiEnabled takes priority over everything else — same
   // reasoning as the state line above, and as 4G Setup's test-result line.
-  uint16_t resCol = COL_TEXT_DIM;
+  uint16_t resCol = COL_CARD_CAPTION;
   if (!wifiEnabled) {
     snprintf(buf, sizeof(buf), "Ping: WiFi is turned off");
   } else if (strlen(wifiSSID) == 0) {
@@ -79,10 +79,10 @@ void drawWiFiStatusCard(const char* busy) {
     snprintf(buf, sizeof(buf), "Ping: not tested yet");
   } else if (wifiPingSuccess) {
     snprintf(buf, sizeof(buf), "Ping OK - HTTP %d in %lums", wifiPingHttpCode, wifiPingMs);
-    resCol = COL_SUCCESS;
+    resCol = COL_OK_TEXT;
   } else {
     snprintf(buf, sizeof(buf), "Ping failed - no internet reachable");
-    resCol = COL_DANGER;
+    resCol = COL_ERR_TEXT;
   }
   auiPut(buf, AL_LEFT, x + 12, w - 24, y + 67, resCol, FACE_XS);
 }
@@ -99,7 +99,7 @@ void drawAdminWiFiScreen() {
   auiRowLabel(WF_ROW_X + 12, cy, 90, "Network");
   int vx = WF_ROW_X + 12 + auiTextW("Network", FACE_MD) + 12;
   auiPut(strlen(wifiSSID) > 0 ? wifiSSID : "(not set)", AL_LEFT, vx, WF_BTN_X - 8 - vx, cy,
-         COL_ACCENT, FACE_MD);
+         COL_VALUE_TEXT, FACE_MD);
   auiRowButton(WF_BTN_X, cy, WF_BTN_W, "Edit", ABTN_PRIMARY);
 
   // ---- Password (never shown, only its length) ----
@@ -109,10 +109,10 @@ void drawAdminWiFiScreen() {
   vx = WF_ROW_X + 12 + auiTextW("Password", FACE_MD) + 12;
   int plen = strlen(wifiPass);
   if (plen == 0) {
-    auiPut("(none)", AL_LEFT, vx, WF_BTN_X - 8 - vx, cy, COL_TEXT_DIM, FACE_MD);
+    auiPut("(none)", AL_LEFT, vx, WF_BTN_X - 8 - vx, cy, COL_CARD_CAPTION, FACE_MD);
   } else {
     int n = min(plen, 12);
-    for (int k = 0; k < n; k++) tft.fillCircle(vx + 5 + k * 12, cy, 4, COL_ACCENT);
+    for (int k = 0; k < n; k++) tft.fillCircle(vx + 5 + k * 12, cy, 4, COL_VALUE_TEXT);
   }
   auiRowButton(WF_BTN_X, cy, WF_BTN_W, "Edit", ABTN_PRIMARY);
 

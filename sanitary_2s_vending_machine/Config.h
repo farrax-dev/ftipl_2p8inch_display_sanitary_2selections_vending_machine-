@@ -47,34 +47,22 @@
 // day-to-day setting, so there is deliberately no admin-screen equivalent.
 // Changing it needs a reflash, same as changing the welcome title.
 //
-// All 20 themes share the same light, card-based, gradient-background look
+// All the themes share the same light, card-based, gradient-background look
 // this app was designed around (near-white top fading to a saturated
-// bottom, pale cards, a vivid accent for buttons/highlights, dark text) —
-// only the hue family changes. 0 (Blossom) is the original theme this
-// machine shipped with and stays the default.
+// bottom, pale cards, a vivid accent for buttons/highlights, dark text) -
+// only the colours change. 0 (Blossom) is the original theme this machine
+// shipped with and stays the default.
 //
 //   0  = Blossom          (pink / rose)            - original default
 //   1  = Ocean Blue        (sky blue)
 //   2  = Mint Fresh         (teal-green)
-//   3  = Lavender Dream      (purple)
-//   4  = Sunset Orange        (warm orange)
-//   5  = Ruby Red               (red)
-//   6  = Emerald Forest          (deep green)
-//   7  = Golden Amber              (amber / gold)
-//   8  = Mocha Coffee                (brown / tan)
-//   9  = Slate Charcoal                (cool neutral gray-blue)
-//   10 = Aqua Cyan                       (cyan)
-//   11 = Royal Indigo                      (indigo)
-//   12 = Peach Coral                         (coral)
-//   13 = Wine Burgundy                         (burgundy)
-//   14 = Midnight Navy                           (navy)
-//   15 = Turquoise                                 (turquoise)
-//   16 = Crimson                                     (crimson)
-//   17 = Steel Blue                                    (steel blue)
-//   18 = Sage Green                                      (sage green)
-//   19 = Plum Purple                                       (plum)
+//   3  = Custom              (your own colours)
 //
-// See Core_03_Theme.ino for the exact hex values of each.
+// 3 (Custom) reads every colour from custom_theme.h in this sketch folder.
+// Design it in docs/theme_designer.html, press "Save config", and copy the
+// saved custom_theme.h over the one next to this file, then flash.
+//
+// See Core_03_Theme.ino for the exact hex values of themes 0-2.
 #define CFG_COLOR_THEME 0
 
 // ---------- Identity ----------

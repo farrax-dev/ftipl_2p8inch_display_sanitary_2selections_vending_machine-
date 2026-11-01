@@ -11,28 +11,28 @@ int lastClockMinute = -2;
 unsigned long lastClockRefresh = 0;
 
 void drawWelcomeClock() {
-  tft.fillRect(0, 0, WELCOME_CLOCK_W, WELCOME_STRIP_H, COL_BG_TOP);
+  tft.fillRect(0, 0, WELCOME_CLOCK_W, WELCOME_STRIP_H, COL_STRIP_BG);
 
   char timeBuf[16], dateBuf[24];
   if (getClockStrings(timeBuf, sizeof(timeBuf), dateBuf, sizeof(dateBuf))) {
     tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT, COL_BG_TOP);
+    tft.setTextColor(COL_STRIP_TIME, COL_STRIP_BG);
     tft.setCursor(10, 8);
     tft.print(timeBuf);
 
     tft.setTextSize(2);
-    tft.setTextColor(COL_ACCENT, COL_BG_TOP);
+    tft.setTextColor(COL_STRIP_DATE, COL_STRIP_BG);
     rightText(dateBuf, WELCOME_CLOCK_W - 8, 8);
 
     lastClockMinute = currentMinuteStamp();
   } else {
     tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT, COL_BG_TOP);
+    tft.setTextColor(COL_STRIP_TIME, COL_STRIP_BG);
     tft.setCursor(10, 8);
     tft.print("--:--");
 
     tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT, COL_BG_TOP);
+    tft.setTextColor(COL_STRIP_TIME, COL_STRIP_BG);
     rightText((WiFi.status() == WL_CONNECTED) ? "Syncing..." : "No network",
               WELCOME_CLOCK_W - 8, 8);
 
@@ -58,9 +58,9 @@ void drawWelcomeCard() {
   int x = 16, y = 40, w = tft.width() - 32, h = 138;
 
   drawCardShadow(x, y, w, h, 16);
-  tft.fillRoundRect(x, y, w, h, 16, COL_CARD);
-  tft.drawRoundRect(x, y, w, h, 16, COL_CARD_BRD);
-  tft.drawRoundRect(x + 1, y + 1, w - 2, h - 2, 15, COL_ACCENT);
+  tft.fillRoundRect(x, y, w, h, 16, COL_CARD_FILL);
+  tft.drawRoundRect(x, y, w, h, 16, COL_CARD_BORDER);
+  tft.drawRoundRect(x + 1, y + 1, w - 2, h - 2, 15, COL_CARD_RING);
 
   // Title comes from Config.h. Any of the three lines may be blank, so the
   // block is centred on whatever is actually set rather than at fixed
@@ -93,14 +93,14 @@ void drawWelcomeCard() {
   // Single draw, not the old double-offset faux-bold — FreeSerifBold is
   // already a bold weight, so stacking the faux-bold trick on top of it
   // over-thickens the strokes at this size.
-  tft.setTextColor(COL_TEXT, COL_CARD);
+  tft.setTextColor(COL_CARD_TITLE, COL_CARD_FILL);
   if (has1) { drawBigTitleLine(CFG_TITLE_LINE_1, cursorY); cursorY += BIG_H; }
   if (has2) { drawBigTitleLine(CFG_TITLE_LINE_2, cursorY); cursorY += BIG_H; }
   tft.setFont();  // back to the default font before the subtitle
 
   if (hasSub) {
     tft.setTextSize(2);
-    tft.setTextColor(COL_ACCENT, COL_CARD);
+    tft.setTextColor(COL_WELCOME_SUB, COL_CARD_FILL);
     centerText(CFG_TITLE_SUBTITLE, cursorY + 10);
   }
 }
@@ -123,12 +123,12 @@ void drawFooterPrompt(bool visible) {
   // redraws only the pill's own rect. Safe only for a draw-once card, like
   // drawWelcomeCard()'s.
   bool outOfStock = allProductsOutOfStock();
-  uint16_t accent = outOfStock ? COL_DANGER : COL_ACCENT;
-  uint16_t fill = (outOfStock || visible) ? accent : COL_BG_TOP;
+  uint16_t accent = outOfStock ? COL_BTN_DANGER_FILL : COL_PILL_FILL;
+  uint16_t fill = (outOfStock || visible) ? accent : COL_PILL_HOLLOW;
   tft.fillRoundRect(WELCOME_PILL_X, WELCOME_PILL_Y, WELCOME_PILL_W, WELCOME_PILL_H, 18, fill);
   tft.drawRoundRect(WELCOME_PILL_X, WELCOME_PILL_Y, WELCOME_PILL_W, WELCOME_PILL_H, 18, accent);
   tft.setTextSize(2);
-  tft.setTextColor((outOfStock || visible) ? COL_BG_TOP : accent, fill);
+  tft.setTextColor((outOfStock || visible) ? COL_PILL_TEXT : accent, fill);
   centerTextInBox(outOfStock ? "Out of Stock" : "Touch to Continue",
                   WELCOME_PILL_Y + 11, WELCOME_PILL_X, WELCOME_PILL_W);
 }
@@ -141,8 +141,8 @@ const unsigned long BLINK_INTERVAL = 600;
 void drawWelcomeScreen() {
   drawGradientBackground();
 
-  tft.fillRect(0, 0, tft.width(), WELCOME_STRIP_H, COL_BG_TOP);
-  tft.drawFastHLine(0, WELCOME_STRIP_H + 1, tft.width(), COL_CARD_BRD);
+  tft.fillRect(0, 0, tft.width(), WELCOME_STRIP_H, COL_STRIP_BG);
+  tft.drawFastHLine(0, WELCOME_STRIP_H + 1, tft.width(), COL_STRIP_LINE);
 
   drawWelcomeClock();
   drawWelcomeCard();

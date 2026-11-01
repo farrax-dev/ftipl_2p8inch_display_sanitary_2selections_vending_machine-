@@ -24,7 +24,13 @@ bool pointInRect(int px, int py, int rx, int ry, int rw, int rh) {
 const int CARD_SHADOW_DX = 3, CARD_SHADOW_DY = 3;
 
 void drawCardShadow(int x, int y, int w, int h, int r) {
-  tft.fillRoundRect(x + CARD_SHADOW_DX, y + CARD_SHADOW_DY, w, h, r, COL_SHADOW);
+  tft.fillRoundRect(x + CARD_SHADOW_DX, y + CARD_SHADOW_DY, w, h, r, COL_CARD_SHADOW);
+}
+
+// Same offset shadow, in its own colour: buttons and cards are separate
+// components, so COL_BTN_SHADOW and COL_CARD_SHADOW can differ.
+void drawButtonShadow(int x, int y, int w, int h, int r) {
+  tft.fillRoundRect(x + CARD_SHADOW_DX, y + CARD_SHADOW_DY, w, h, r, COL_BTN_SHADOW);
 }
 
 // Convenience for the common case: a default-styled card (COL_CARD fill,
@@ -34,8 +40,8 @@ void drawCardShadow(int x, int y, int w, int h, int r) {
 // cards for that pattern.
 void drawCard(int x, int y, int w, int h, int r) {
   drawCardShadow(x, y, w, h, r);
-  tft.fillRoundRect(x, y, w, h, r, COL_CARD);
-  tft.drawRoundRect(x, y, w, h, r, COL_CARD_BRD);
+  tft.fillRoundRect(x, y, w, h, r, COL_CARD_FILL);
+  tft.drawRoundRect(x, y, w, h, r, COL_CARD_BORDER);
 }
 
 // ---------- Screen header ----------
@@ -114,7 +120,7 @@ int drawHeaderTitle(const char* title, int availW) {
     tft.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
   }
 
-  tft.setTextColor(COL_TEXT, COL_BG_TOP);
+  tft.setTextColor(COL_HDR_TITLE, COL_HDR_BG);
   // y1 is the glyph top's offset from the baseline (negative — glyphs sit
   // above it), so subtracting it turns "desired top" into "baseline to pass
   // setCursor", the conversion centerTextInBox() doesn't need for the
@@ -141,11 +147,11 @@ int drawHeaderTitle(const char* title, int availW) {
 void drawHeaderRule(int titleRight) {
   int w = tft.width();
   int solid = min(titleRight + 10, w);
-  tft.fillRect(0, HDR_RULE_Y, solid, HDR_RULE_H, COL_ACCENT);
+  tft.fillRect(0, HDR_RULE_Y, solid, HDR_RULE_H, COL_HDR_RULE);
 
   uint8_t r1, g1, b1, r2, g2, b2;
-  color565toRGB(COL_ACCENT, r1, g1, b1);
-  color565toRGB(COL_BG_TOP, r2, g2, b2);
+  color565toRGB(COL_HDR_RULE, r1, g1, b1);
+  color565toRGB(COL_HDR_RULE_FADE, r2, g2, b2);
 
   int fadeW = w - solid;
   for (int k = 0; k < fadeW; k++) {
@@ -164,7 +170,7 @@ void drawHeaderRule(int titleRight) {
 void drawScreenTitle(const char* title, int reservedRightW) {
   // Cleared from y=0, not from HDR_Y — the few rows above the band would
   // otherwise keep the gradient and leave a faint seam along the top edge.
-  tft.fillRect(0, 0, tft.width(), HDR_RULE_Y, COL_BG_TOP);
+  tft.fillRect(0, 0, tft.width(), HDR_RULE_Y, COL_HDR_BG);
   // That clear runs over the bottom half of the WiFi/4G icon, and screens
   // that repaint only their header (Screen_02_Select.ino's refusal messages)
   // would otherwise leave it sliced in half until the next signal change.
@@ -396,21 +402,21 @@ int drawSerifLine(const char* text, int boxX, int boxW, int centerY, uint16_t co
 // largest size that still fits, and centerTextInBox() centers it instead of
 // the old fixed cursor offset, which assumed size 2.
 void drawBackButton(const char* label) {
-  drawCardShadow(BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H, 8);
-  tft.fillRoundRect(BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H, 8, COL_CARD);
-  tft.drawRoundRect(BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H, 8, COL_CARD_BRD);
+  drawButtonShadow(BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H, 8);
+  tft.fillRoundRect(BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H, 8, COL_BTN_SEC_FILL);
+  tft.drawRoundRect(BTN_BACK_X, BTN_Y, BTN_BACK_W, BTN_H, 8, COL_BTN_SEC_BORDER);
   int sz = fitTextSize(label, BTN_BACK_W - 10, 2);
   tft.setTextSize(sz);
-  tft.setTextColor(COL_TEXT, COL_CARD);
+  tft.setTextColor(COL_BTN_SEC_TEXT, COL_BTN_SEC_FILL);
   centerTextInBox(label, BTN_Y + (BTN_H - 8 * sz) / 2, BTN_BACK_X, BTN_BACK_W);
 }
 
 void drawProceedButton(const char* label) {
-  drawCardShadow(BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H, 8);
-  tft.fillRoundRect(BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H, 8, COL_ACCENT);
+  drawButtonShadow(BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H, 8);
+  tft.fillRoundRect(BTN_PROCEED_X, BTN_Y, BTN_PROCEED_W, BTN_H, 8, COL_BTN_PRI_FILL);
   int sz = fitTextSize(label, BTN_PROCEED_W - 10, 2);
   tft.setTextSize(sz);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+  tft.setTextColor(COL_BTN_PRI_TEXT, COL_BTN_PRI_FILL);
   centerTextInBox(label, BTN_Y + (BTN_H - 8 * sz) / 2, BTN_PROCEED_X, BTN_PROCEED_W);
 }
 

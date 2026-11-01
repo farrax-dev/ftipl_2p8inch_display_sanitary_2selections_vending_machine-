@@ -48,8 +48,8 @@ void drawWiFiArc(int cx, int cyApex, int r, int thickness, uint16_t color) {
 // bars 1 lights the dot, 2/3/4 light each further arc. scale 1 = status-bar
 // size (about 20x11 px), scale 2 = the larger version on the WiFi Setup screen.
 void drawWiFiSymbol(int cx, int cyApex, int scale, int bars, bool connected) {
-  uint16_t onColor  = (bars >= 3) ? COL_SUCCESS : (bars == 2) ? COL_WARNING : COL_DANGER;
-  uint16_t offColor = COL_TEXT_DIM;
+  uint16_t onColor  = (bars >= 3) ? COL_WIFI_GOOD : (bars == 2) ? COL_WIFI_FAIR : COL_WIFI_BAD;
+  uint16_t offColor = COL_WIFI_OFF;
   int radii[3] = { 4 * scale, 7 * scale, 10 * scale };
   int thickness = scale + 1;
 
@@ -63,10 +63,10 @@ void drawWiFiSymbol(int cx, int cyApex, int scale, int bars, bool connected) {
 
   if (!connected) {
     tft.drawLine(cx - 5 * scale, cyApex - scale,
-                 cx + 6 * scale, cyApex - 11 * scale, COL_DANGER);
+                 cx + 6 * scale, cyApex - 11 * scale, COL_WIFI_BAD);
     if (scale > 1) {
       tft.drawLine(cx - 5 * scale + 1, cyApex - scale,
-                   cx + 6 * scale + 1, cyApex - 11 * scale, COL_DANGER);
+                   cx + 6 * scale + 1, cyApex - 11 * scale, COL_WIFI_BAD);
     }
   }
 }
@@ -84,7 +84,7 @@ void drawWiFiIndicator() {
   }
 
   int bars = wifiConnected ? wifiBarsFromRSSI(WiFi.RSSI()) : 0;
-  tft.fillRect(WIFI_ICON_X, WIFI_ICON_Y, WIFI_ICON_W, WIFI_ICON_H, COL_BG_TOP);
+  tft.fillRect(WIFI_ICON_X, WIFI_ICON_Y, WIFI_ICON_W, WIFI_ICON_H, COL_WIFI_BG);
   drawWiFiSymbol(WIFI_ICON_X + WIFI_ICON_W / 2,
                  WIFI_ICON_Y + WIFI_ICON_H - 1, 1, bars, wifiConnected);
 }

@@ -31,24 +31,24 @@ int loginKeyY(int k) { return LOGIN_KEY_Y0 + (k / 3) * (LOGIN_KEY_H + LOGIN_KEY_
 
 // message != NULL replaces the dots (used for "Wrong PIN").
 void drawPinField(const char* message, uint16_t messageColor) {
-  tft.fillRoundRect(LOGIN_PIN_X, LOGIN_PIN_Y, LOGIN_PIN_W, LOGIN_PIN_H, 8, COL_CARD);
-  tft.drawRoundRect(LOGIN_PIN_X, LOGIN_PIN_Y, LOGIN_PIN_W, LOGIN_PIN_H, 8, COL_CARD_BRD);
+  tft.fillRoundRect(LOGIN_PIN_X, LOGIN_PIN_Y, LOGIN_PIN_W, LOGIN_PIN_H, 8, COL_PIN_FIELD_FILL);
+  tft.drawRoundRect(LOGIN_PIN_X, LOGIN_PIN_Y, LOGIN_PIN_W, LOGIN_PIN_H, 8, COL_PIN_FIELD_BORDER);
 
   int cy = LOGIN_PIN_Y + LOGIN_PIN_H / 2;
   int len = strlen(pinBuffer);
   if (message != NULL) {
     auiPut(message, AL_CENTER, LOGIN_PIN_X + 6, LOGIN_PIN_W - 12, cy, messageColor, FACE_MD);
   } else if (len == 0) {
-    auiPut("Enter PIN", AL_CENTER, LOGIN_PIN_X + 6, LOGIN_PIN_W - 12, cy, COL_TEXT_DIM, FACE_MD);
+    auiPut("Enter PIN", AL_CENTER, LOGIN_PIN_X + 6, LOGIN_PIN_W - 12, cy, COL_PIN_PLACEHOLDER, FACE_MD);
   } else {
     const int pitch = 20;
     int x0 = LOGIN_PIN_X + (LOGIN_PIN_W - (len - 1) * pitch) / 2;
-    for (int k = 0; k < len; k++) tft.fillCircle(x0 + k * pitch, cy, 5, COL_ACCENT);
+    for (int k = 0; k < len; k++) tft.fillCircle(x0 + k * pitch, cy, 5, COL_PIN_DOT);
   }
 }
 
 void drawPinLine() {
-  drawPinField(NULL, COL_TEXT);
+  drawPinField(NULL, COL_PIN_TEXT);
 }
 
 void drawAdminLoginScreen() {
@@ -96,7 +96,7 @@ void handleAdminLoginScreen() {
             currentScreen = SCREEN_ADMIN_PANEL;
             drawAdminPanelScreen();
           } else {
-            drawPinField("Wrong PIN", COL_DANGER);
+            drawPinField("Wrong PIN", COL_ERR_TEXT);
             delay(900);
             pinBuffer[0] = '\0';
             drawPinLine();

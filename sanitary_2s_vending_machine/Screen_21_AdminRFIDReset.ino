@@ -42,7 +42,7 @@ void drawRRSStepperRow(int row, const char* label, int value) {
   auiRowLabel(RRS_ROW_X + 12, cy, auiStepLeftX(RRS_RIGHT) - RRS_ROW_X - 20, label);
   char vbuf[8];
   snprintf(vbuf, sizeof(vbuf), "%02d", value);
-  auiStepper(RRS_RIGHT, cy, vbuf, COL_ACCENT);
+  auiStepper(RRS_RIGHT, cy, vbuf, COL_STEP_VALUE_TEXT);
 }
 
 void drawAdminRFIDResetScreen() {
@@ -58,7 +58,7 @@ void drawAdminRFIDResetScreen() {
              (int)(rfidResetFiredMonth / 100), (int)(rfidResetFiredMonth % 100));
   else
     snprintf(caption, sizeof(caption), "Zeroes every card's usage");
-  auiPut(caption, AL_LEFT, RRS_ROW_X + 12, 190, RRS_ROW0_Y + 31, COL_TEXT_DIM, FACE_XS);
+  auiPut(caption, AL_LEFT, RRS_ROW_X + 12, 190, RRS_ROW0_Y + 31, COL_CARD_CAPTION, FACE_XS);
   auiOnOff(RRS_RIGHT, RRS_ROW0_Y + RRS_ROW0_H / 2, rfidResetEnabled);
 
   // ---- Rows 1-3: day / hour / minute ----

@@ -17,7 +17,7 @@ void drawAdminProductsScreen() {
     bool on = productEnabled[i];
 
     drawCard(x, y, PANEL_TILE_W, PANEL_TILE_H, 8);
-    tft.fillRoundRect(x + 8, y + 9, 4, PANEL_TILE_H - 18, 2, on ? COL_ACCENT : COL_TEXT_DIM);
+    tft.fillRoundRect(x + 8, y + 9, 4, PANEL_TILE_H - 18, 2, on ? COL_TILE_STRIPE : COL_TILE_STRIPE_OFF);
 
     char motorBuf[16];
     formatMotorList(products[i].motorMask, motorBuf, sizeof(motorBuf));
@@ -26,8 +26,8 @@ void drawAdminProductsScreen() {
     else    snprintf(cap, sizeof(cap), "Hidden | Rs. %d", products[i].price);
 
     auiPut(products[i].name, AL_LEFT, x + 20, PANEL_TILE_W - 44, y + 16,
-           on ? COL_TEXT : COL_TEXT_DIM, FACE_MD);
-    auiPut(cap, AL_LEFT, x + 20, PANEL_TILE_W - 28, y + 33, COL_TEXT_DIM, FACE_XS);
+           on ? COL_CARD_TITLE : COL_CARD_CAPTION, FACE_MD);
+    auiPut(cap, AL_LEFT, x + 20, PANEL_TILE_W - 28, y + 33, COL_CARD_CAPTION, FACE_XS);
     auiDot(x + PANEL_TILE_W - 16, y + 16, on);
   }
 

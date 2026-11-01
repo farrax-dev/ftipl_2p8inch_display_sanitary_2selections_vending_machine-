@@ -148,8 +148,8 @@ void commitAdminDateTime() {
 
 void dtDrawGlyph(int x, int w, int y, int h, bool plus) {
   int cx = x + w / 2, cy = y + h / 2;
-  tft.fillRect(cx - 7, cy - 1, 15, 3, COL_BG_TOP);
-  if (plus) tft.fillRect(cx - 1, cy - 7, 3, 15, COL_BG_TOP);
+  tft.fillRect(cx - 7, cy - 1, 15, 3, COL_STEP_BTN_GLYPH);
+  if (plus) tft.fillRect(cx - 1, cy - 7, 3, 15, COL_STEP_BTN_GLYPH);
 }
 
 void drawAdminDateTimeScreen() {
@@ -159,20 +159,20 @@ void drawAdminDateTimeScreen() {
   for (int f = 0; f < DT_FIELD_COUNT; f++) {
     int x = dtColX(f), w = DT_COL_W[f];
 
-    auiPut(DT_FIELD_LABELS[f], AL_CENTER, x - 2, w + 4, DT_LABEL_CY, COL_TEXT, FACE_SM);
+    auiPut(DT_FIELD_LABELS[f], AL_CENTER, x - 2, w + 4, DT_LABEL_CY, COL_PICK_LABEL, FACE_SM);
 
-    drawCardShadow(x, DT_PLUS_Y, w, DT_PLUS_H, 8);
-    tft.fillRoundRect(x, DT_PLUS_Y, w, DT_PLUS_H, 8, COL_ACCENT);
+    drawButtonShadow(x, DT_PLUS_Y, w, DT_PLUS_H, 8);
+    tft.fillRoundRect(x, DT_PLUS_Y, w, DT_PLUS_H, 8, COL_STEP_BTN_FILL);
     dtDrawGlyph(x, w, DT_PLUS_Y, DT_PLUS_H, true);
 
-    tft.fillRoundRect(x, DT_VAL_Y, w, DT_VAL_H, 6, COL_CARD);
-    tft.drawRoundRect(x, DT_VAL_Y, w, DT_VAL_H, 6, COL_CARD_BRD);
+    tft.fillRoundRect(x, DT_VAL_Y, w, DT_VAL_H, 6, COL_PICK_VALUE_FILL);
+    tft.drawRoundRect(x, DT_VAL_Y, w, DT_VAL_H, 6, COL_PICK_VALUE_BORDER);
     char vbuf[8];
     snprintf(vbuf, sizeof(vbuf), (f == 2) ? "%04d" : "%02d", dtFieldValue(f));
-    auiPut(vbuf, AL_CENTER, x + 2, w - 4, DT_VAL_Y + DT_VAL_H / 2, COL_ACCENT, FACE_MD);
+    auiPut(vbuf, AL_CENTER, x + 2, w - 4, DT_VAL_Y + DT_VAL_H / 2, COL_PICK_VALUE_TEXT, FACE_MD);
 
-    drawCardShadow(x, DT_MINUS_Y, w, DT_MINUS_H, 8);
-    tft.fillRoundRect(x, DT_MINUS_Y, w, DT_MINUS_H, 8, COL_ACCENT);
+    drawButtonShadow(x, DT_MINUS_Y, w, DT_MINUS_H, 8);
+    tft.fillRoundRect(x, DT_MINUS_Y, w, DT_MINUS_H, 8, COL_STEP_BTN_FILL);
     dtDrawGlyph(x, w, DT_MINUS_Y, DT_MINUS_H, false);
 
     // AM/PM chip, Hour column only, 12h mode only — tells the two halves of

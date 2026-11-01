@@ -246,21 +246,21 @@ void returnFromTextEntry() {
 }
 
 void drawKeyboardPreview() {
-  tft.fillRoundRect(TE_PREV_X, TE_PREV_Y, TE_PREV_W, TE_PREV_H, 6, COL_CARD);
-  tft.drawRoundRect(TE_PREV_X, TE_PREV_Y, TE_PREV_W, TE_PREV_H, 6, COL_CARD_BRD);
+  tft.fillRoundRect(TE_PREV_X, TE_PREV_Y, TE_PREV_W, TE_PREV_H, 6, COL_FIELD_FILL);
+  tft.drawRoundRect(TE_PREV_X, TE_PREV_Y, TE_PREV_W, TE_PREV_H, 6, COL_FIELD_BORDER);
   int cy = TE_PREV_Y + TE_PREV_H / 2;
 
   if (teErrorMsg[0] != '\0' && millis() < teErrorUntil) {
-    auiPut(teErrorMsg, AL_CENTER, TE_PREV_X + 8, TE_PREV_W - 16, cy, COL_DANGER, FACE_MD);
+    auiPut(teErrorMsg, AL_CENTER, TE_PREV_X + 8, TE_PREV_W - 16, cy, COL_FIELD_ERROR, FACE_MD);
     return;
   }
 
   int len = strlen(textEntryBuffer);
   char shown[70];
-  uint16_t col = COL_ACCENT;
+  uint16_t col = COL_FIELD_TEXT;
   if (len == 0) {
     strcpy(shown, "(empty)");
-    col = COL_TEXT_DIM;
+    col = COL_FIELD_EMPTY;
   } else if (textEntryMask && !textEntryShow) {
     int n = min(len, 60);
     for (int k = 0; k < n; k++) shown[k] = '*';
@@ -282,7 +282,7 @@ void drawKeyboardPreview() {
 
   char counter[12];
   snprintf(counter, sizeof(counter), "%d/%d", len, textEntryMaxLen);
-  auiPut(counter, AL_RIGHT, TE_PREV_X + TE_PREV_W - 8 - counterW, counterW, cy, COL_TEXT_DIM, FACE_XS);
+  auiPut(counter, AL_RIGHT, TE_PREV_X + TE_PREV_W - 8 - counterW, counterW, cy, COL_FIELD_COUNT, FACE_XS);
 }
 
 void drawKey(const KeyDef &key, int row, int keyIdx) {
@@ -293,12 +293,12 @@ void drawKey(const KeyDef &key, int row, int keyIdx) {
   // bold face so they read as controls, not characters. No drop shadow on any
   // key: at 30px a shadow would only crowd the 2-3px gaps between them.
   bool modifier = (strlen(key.label) > 1);
-  uint16_t fill = modifier ? COL_BG_TOP : COL_CARD;
+  uint16_t fill = modifier ? COL_KEY_MOD_FILL : COL_KEY_FILL;
 
   tft.fillRoundRect(x, y, w, h, 5, fill);
-  tft.drawRoundRect(x, y, w, h, 5, COL_CARD_BRD);
+  tft.drawRoundRect(x, y, w, h, 5, COL_KEY_BORDER);
   auiPut(key.label, AL_CENTER, x + 1, w - 2, y + h / 2,
-         modifier ? COL_ACCENT : COL_TEXT, modifier ? FACE_SM : FACE_MD);
+         modifier ? COL_KEY_MOD_TEXT : COL_KEY_TEXT, modifier ? FACE_SM : FACE_MD);
 }
 
 void drawAdminTextEntryScreen() {
@@ -447,7 +447,7 @@ bool commitTextEntry() {
       if (strlen(textEntryBuffer) > 0) {
         bool added = addRFIDCard(textEntryBuffer);
         snprintf(rfidCardsMsg, sizeof(rfidCardsMsg), added ? "Card added" : "Already registered");
-        rfidCardsMsgColor = added ? COL_SUCCESS : COL_WARNING;
+        rfidCardsMsgColor = added ? COL_OK_TEXT : COL_WARN_TEXT;
         rfidCardsMsgUntil = millis() + 2000;
       }
       break;

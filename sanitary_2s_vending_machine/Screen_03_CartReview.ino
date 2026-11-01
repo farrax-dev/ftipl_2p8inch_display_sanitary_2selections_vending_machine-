@@ -35,7 +35,7 @@ void drawCartReviewScreen() {
     char totalBuf[16];
     snprintf(totalBuf, sizeof(totalBuf), "Rs. %d", cartTotal());
     tft.setTextSize(2);
-    tft.setTextColor(COL_ACCENT, COL_BG_TOP);
+    tft.setTextColor(COL_PRICE_TEXT, COL_HDR_BG);
     rightText(totalBuf, headerRightX(), headerTextY(2));
   }
 
@@ -47,7 +47,7 @@ void drawCartReviewScreen() {
 
   if (count == 0) {
     tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
+    tft.setTextColor(COL_MSG_BODY, COL_BG_BOTTOM);
     centerText("Cart is empty", 110);
   } else {
     int rowH = cartRowH(count);
@@ -86,8 +86,8 @@ const GFXfont* cartNameFont(int textW, int rowH) {
 
 void drawCartRow(int i, int x, int y, int w, int h) {
   drawCardShadow(x, y, w, h, 8);
-  tft.fillRoundRect(x, y, w, h, 8, COL_CARD);
-  tft.drawRoundRect(x, y, w, h, 8, COL_CARD_BRD);
+  tft.fillRoundRect(x, y, w, h, 8, COL_CARD_FILL);
+  tft.drawRoundRect(x, y, w, h, 8, COL_CARD_BORDER);
 
   int btnSize = constrain(h - 8, 16, 30);
   int plusX = x + w - 10 - btnSize;
@@ -139,7 +139,7 @@ void drawCartRow(int i, int x, int y, int w, int h) {
   int blockH = nameH + (twoLine ? ROW_LINE_GAP + 8 * moneySize : 0);
   int blockY = y + (h - blockH) / 2;
 
-  tft.setTextColor(COL_TEXT, COL_CARD);
+  tft.setTextColor(COL_PRODUCT_NAME, COL_CARD_FILL);
   if (nameFont) {
     tft.setTextSize(1);
     tft.setFont(nameFont);
@@ -159,7 +159,7 @@ void drawCartRow(int i, int x, int y, int w, int h) {
 
   if (twoLine) {
     tft.setTextSize(moneySize);
-    tft.setTextColor(COL_ACCENT, COL_CARD);
+    tft.setTextColor(COL_PRICE_TEXT, COL_CARD_FILL);
     tft.setCursor(textX, blockY + nameH + ROW_LINE_GAP);
     tft.print(moneyBuf);
   }
@@ -171,22 +171,22 @@ void drawCartRow(int i, int x, int y, int w, int h) {
   // that reaches double figures steps that one figure back down a size.
   int qtySize = (glyphSize >= 3 && cartQty[i] >= 10) ? 2 : glyphSize;
 
-  tft.fillRoundRect(minusX, btnY, btnSize, btnSize, 5, COL_ACCENT);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+  tft.fillRoundRect(minusX, btnY, btnSize, btnSize, 5, COL_QTY_BTN_FILL);
+  tft.setTextColor(COL_QTY_BTN_GLYPH, COL_QTY_BTN_FILL);
   tft.setTextSize(glyphSize);
   centerTextInBox("-", btnY + btnSize / 2 - 4 * glyphSize, minusX, btnSize);
 
   // Rounded to match the -/+ buttons either side; no shadow — nested on the
   // already-shadowed row card, and a read-only figure, not a control.
-  tft.fillRoundRect(qtyBoxX, btnY, qtyBoxW, btnSize, 5, COL_CARD);
-  tft.setTextColor(COL_TEXT, COL_CARD);
+  tft.fillRoundRect(qtyBoxX, btnY, qtyBoxW, btnSize, 5, COL_QTY_BOX_FILL);
+  tft.setTextColor(COL_QTY_TEXT, COL_QTY_BOX_FILL);
   tft.setTextSize(qtySize);
   char qbuf[4];
   snprintf(qbuf, sizeof(qbuf), "%d", cartQty[i]);
   centerTextInBox(qbuf, btnY + btnSize / 2 - 4 * qtySize, qtyBoxX, qtyBoxW);
 
-  tft.fillRoundRect(plusX, btnY, btnSize, btnSize, 5, COL_ACCENT);
-  tft.setTextColor(COL_BG_TOP, COL_ACCENT);
+  tft.fillRoundRect(plusX, btnY, btnSize, btnSize, 5, COL_QTY_BTN_FILL);
+  tft.setTextColor(COL_QTY_BTN_GLYPH, COL_QTY_BTN_FILL);
   tft.setTextSize(glyphSize);
   centerTextInBox("+", btnY + btnSize / 2 - 4 * glyphSize, plusX, btnSize);
 }

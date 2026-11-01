@@ -72,12 +72,12 @@ void drawAdminPanelScreen() {
   for (int k = 0; k < PANEL_TILE_COUNT; k++) {
     int x = panelTileX(k), y = panelTileY(k);
     drawCard(x, y, PANEL_TILE_W, PANEL_TILE_H, 8);
-    tft.fillRoundRect(x + 8, y + 9, 4, PANEL_TILE_H - 18, 2, COL_ACCENT);
+    tft.fillRoundRect(x + 8, y + 9, 4, PANEL_TILE_H - 18, 2, COL_TILE_STRIPE);
 
     char cap[28];
     panelCaption(k, cap, sizeof(cap));
-    auiPut(titles[k], AL_LEFT, x + 20, PANEL_TILE_W - 28, y + 16, COL_TEXT, FACE_MD);
-    auiPut(cap,       AL_LEFT, x + 20, PANEL_TILE_W - 26, y + 33, COL_TEXT_DIM, FACE_XS);
+    auiPut(titles[k], AL_LEFT, x + 20, PANEL_TILE_W - 28, y + 16, COL_CARD_TITLE, FACE_MD);
+    auiPut(cap,       AL_LEFT, x + 20, PANEL_TILE_W - 26, y + 33, COL_CARD_CAPTION, FACE_XS);
   }
 
   auiBarButton(0, 1, "Exit Admin", ABTN_SECONDARY);

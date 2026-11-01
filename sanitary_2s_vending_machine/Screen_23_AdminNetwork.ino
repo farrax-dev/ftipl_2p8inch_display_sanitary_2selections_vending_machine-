@@ -25,17 +25,17 @@ void drawNetCard(int k) {
   bool connected = fitted && radioOn && ((k == 0) ? (WiFi.status() == WL_CONNECTED) : isLTEConnected());
 
   drawCard(x, y, w, h, 8);
-  tft.fillRoundRect(x + 8, y + 9, 4, h - 18, 2, connected ? COL_SUCCESS : COL_TEXT_DIM);
+  tft.fillRoundRect(x + 8, y + 9, 4, h - 18, 2, connected ? COL_TILE_STRIPE_OK : COL_TILE_STRIPE_OFF);
 
   auiPut(k == 0 ? "WiFi" : "4G / LTE", AL_LEFT, x + 22, 120, y + 17,
-         fitted ? COL_TEXT : COL_TEXT_DIM, FACE_MD);
+         fitted ? COL_CARD_TITLE : COL_CARD_CAPTION, FACE_MD);
 
   const char* status;
   uint16_t statusCol;
-  if (!fitted)        { status = "Not fitted";    statusCol = COL_TEXT_DIM; }
-  else if (!radioOn)  { status = "Turned off";    statusCol = COL_TEXT_DIM; }
-  else if (connected) { status = "Connected";     statusCol = COL_SUCCESS; }
-  else                { status = "Not connected"; statusCol = COL_DANGER; }
+  if (!fitted)        { status = "Not fitted";    statusCol = COL_CARD_CAPTION; }
+  else if (!radioOn)  { status = "Turned off";    statusCol = COL_CARD_CAPTION; }
+  else if (connected) { status = "Connected";     statusCol = COL_OK_TEXT; }
+  else                { status = "Not connected"; statusCol = COL_ERR_TEXT; }
   auiPut(status, AL_RIGHT, x + 130, w - 130 - 14, y + 17, statusCol, FACE_SM);
 
   char l1[48], l2[48];
@@ -53,8 +53,8 @@ void drawNetCard(int k) {
     else           snprintf(l2, sizeof(l2), "Backup link when WiFi is down");
   }
   int textW = w - 22 - NET_BTN_W - 24;
-  auiPut(l1, AL_LEFT, x + 22, textW, y + 41, COL_TEXT, FACE_XS);
-  auiPut(l2, AL_LEFT, x + 22, textW, y + 57, COL_TEXT_DIM, FACE_XS);
+  auiPut(l1, AL_LEFT, x + 22, textW, y + 41, COL_CARD_TITLE, FACE_XS);
+  auiPut(l2, AL_LEFT, x + 22, textW, y + 57, COL_CARD_CAPTION, FACE_XS);
 
   auiRowButton(x + w - 10 - NET_BTN_W, y + 48, NET_BTN_W, "Setup", fitted ? ABTN_PRIMARY : ABTN_OFF);
 }

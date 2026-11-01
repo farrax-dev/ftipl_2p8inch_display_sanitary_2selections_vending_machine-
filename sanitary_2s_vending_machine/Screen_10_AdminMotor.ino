@@ -34,14 +34,14 @@ void drawAdminMotorAssignScreen() {
     bool mine = (products[i].motorMask & (1 << m)) != 0;
     int owner = productForMotor(m);
 
-    uint16_t fill = mine ? COL_ACCENT : COL_CARD;
-    drawCardShadow(x, y, MOTOR_BTN_W, h, 8);
+    uint16_t fill = mine ? COL_BTN_PRI_FILL : COL_BTN_SEC_FILL;
+    drawButtonShadow(x, y, MOTOR_BTN_W, h, 8);
     tft.fillRoundRect(x, y, MOTOR_BTN_W, h, 8, fill);
-    tft.drawRoundRect(x, y, MOTOR_BTN_W, h, 8, COL_CARD_BRD);
+    tft.drawRoundRect(x, y, MOTOR_BTN_W, h, 8, COL_BTN_SEC_BORDER);
 
     char label[6];
     snprintf(label, sizeof(label), "M%d", m + 1);
-    uint16_t txt = mine ? COL_BG_TOP : COL_TEXT;
+    uint16_t txt = mine ? COL_BTN_PRI_TEXT : COL_BTN_SEC_TEXT;
 
     if (h >= 44) {
       auiPut(label, AL_CENTER, x + 4, MOTOR_BTN_W - 8, y + h / 2 - 9, txt, FACE_MD);
@@ -50,7 +50,7 @@ void drawAdminMotorAssignScreen() {
       else if (owner == -1) snprintf(caption, sizeof(caption), "Free");
       else snprintf(caption, sizeof(caption), "%s", products[owner].name);
       auiPut(caption, AL_CENTER, x + 4, MOTOR_BTN_W - 8, y + h / 2 + 12,
-             mine ? COL_BG_TOP : COL_TEXT_DIM, FACE_XS);
+             mine ? COL_BTN_PRI_TEXT : COL_BTN_OFF_TEXT, FACE_XS);
     } else {
       auiPut(label, AL_CENTER, x + 4, MOTOR_BTN_W - 8, y + h / 2, txt, FACE_MD);
     }
@@ -142,12 +142,12 @@ void getKeypadKeyRect(int k, int &x, int &y) {
 int mkpSideY(int k) { return MKP_Y0 + k * (MKP_SIDE_H + MKP_GY); }
 
 void drawMotorEditValue() {
-  tft.fillRoundRect(16, 38, 288, 34, 8, COL_CARD);
-  tft.drawRoundRect(16, 38, 288, 34, 8, COL_CARD_BRD);
-  auiPut(motorEditBuf[0] ? motorEditBuf : "0", AL_CENTER, 24, 272, 55, COL_ACCENT, FACE_LG);
+  tft.fillRoundRect(16, 38, 288, 34, 8, COL_FIELD_FILL);
+  tft.drawRoundRect(16, 38, 288, 34, 8, COL_FIELD_BORDER);
+  auiPut(motorEditBuf[0] ? motorEditBuf : "0", AL_CENTER, 24, 272, 55, COL_FIELD_TEXT, FACE_LG);
   char lim[16];
   snprintf(lim, sizeof(lim), "max %d", STOCK_MAX);
-  auiPut(lim, AL_RIGHT, 200, 96, 55, COL_TEXT_DIM, FACE_XS);
+  auiPut(lim, AL_RIGHT, 200, 96, 55, COL_FIELD_COUNT, FACE_XS);
 }
 
 void drawMotorEditKeypad() {
@@ -244,18 +244,18 @@ void drawAdminMotorStockScreen() {
 
     int owner = productForMotor(m);
     int labelW = motorStockTestX() - 8 - (MSTOCK_ROW_X + 10);
-    if (owner == -1) auiPut("Unassigned", AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 11, COL_TEXT_DIM, FACE_MD);
-    else             auiPut(products[owner].name, AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 11, COL_TEXT, FACE_MD);
+    if (owner == -1) auiPut("Unassigned", AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 11, COL_CARD_CAPTION, FACE_MD);
+    else             auiPut(products[owner].name, AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 11, COL_CARD_TITLE, FACE_MD);
     char sub[12];
     snprintf(sub, sizeof(sub), "Motor %d", m + 1);
-    auiPut(sub, AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 26, COL_TEXT_DIM, FACE_XS);
+    auiPut(sub, AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 26, COL_CARD_CAPTION, FACE_XS);
 
     auiRowButton(motorStockTestX(), cy, MSTOCK_TEST_W, "Edit", ABTN_PRIMARY);
 
     char qbuf[6];
     snprintf(qbuf, sizeof(qbuf), "%d", motorStock[m]);
     bool low = motorIsActive(m) && motorStock[m] <= lowStockThreshold;
-    auiStepper(MSTOCK_RIGHT, cy, qbuf, low ? COL_DANGER : COL_ACCENT);
+    auiStepper(MSTOCK_RIGHT, cy, qbuf, low ? COL_STEP_VALUE_LOW : COL_STEP_VALUE_TEXT);
   }
 
   if (rowsOnPage < MOTORS_PER_PAGE) {

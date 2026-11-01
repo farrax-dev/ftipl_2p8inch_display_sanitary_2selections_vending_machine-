@@ -49,8 +49,8 @@ void drawRFIDCardsScanOverlay() {
   drawGradientBackground();
   drawScreenTitle("Scan New Card");
 
-  auiPut("Hold the card near", AL_CENTER, 10, 300, 90, COL_ACCENT, FACE_MD);
-  auiPut("the reader", AL_CENTER, 10, 300, 116, COL_ACCENT, FACE_MD);
+  auiPut("Hold the card near", AL_CENTER, 10, 300, 90, COL_MSG_TITLE, FACE_MD);
+  auiPut("the reader", AL_CENTER, 10, 300, 116, COL_MSG_TITLE, FACE_MD);
   auiHint("Cancels automatically after 30 seconds", 150);
 
   auiBarButton(0, 1, "Cancel", ABTN_SECONDARY);
@@ -67,13 +67,13 @@ void drawAdminRFIDCardsScreen() {
 
   char countBuf[12];
   snprintf(countBuf, sizeof(countBuf), "%d / %d", rfidCardCount, MAX_RFID_CARDS);
-  auiPut(countBuf, AL_RIGHT, 200, headerRightX() - 200, HDR_Y + HDR_H / 2, COL_TEXT_DIM, FACE_SM);
+  auiPut(countBuf, AL_RIGHT, 200, headerRightX() - 200, HDR_Y + HDR_H / 2, COL_HDR_COUNT_DIM, FACE_SM);
 
   int first = rfidCardsPage * RFCARD_ROWS_PER_PAGE;
   int rowsOnPage = min(RFCARD_ROWS_PER_PAGE, rfidCardCount - first);
 
   if (rfidCardCount == 0) {
-    auiPut("No cards registered yet", AL_CENTER, 10, 300, 100, COL_TEXT, FACE_MD);
+    auiPut("No cards registered yet", AL_CENTER, 10, 300, 100, COL_MSG_BODY, FACE_MD);
   } else {
     for (int row = 0; row < rowsOnPage; row++) {
       int i = first + row;
@@ -92,15 +92,15 @@ void drawAdminRFIDCardsScreen() {
         snprintf(limBuf, sizeof(limBuf), "%d/%d", rfidCards[i].withdrawUsed, rfidCards[i].withdrawLimit);
         bool full = rfidCards[i].withdrawUsed >= rfidCards[i].withdrawLimit;
         auiPut(limBuf, AL_RIGHT, rightEdge - 56, 56, y + RFCARD_ROW_H / 2,
-               full ? COL_DANGER : COL_ACCENT, FACE_SM);
+               full ? COL_ERR_TEXT : COL_VALUE_TEXT, FACE_SM);
         textW -= 62;
       }
 
       if (rfidCards[i].name[0]) {
-        auiPut(rfidCards[i].name, AL_LEFT, RFCARD_ROW_X + 12, textW, y + 11, COL_TEXT, FACE_MD);
-        auiPut(rfidCards[i].uid,  AL_LEFT, RFCARD_ROW_X + 12, textW, y + 26, COL_TEXT_DIM, FACE_XS);
+        auiPut(rfidCards[i].name, AL_LEFT, RFCARD_ROW_X + 12, textW, y + 11, COL_CARD_TITLE, FACE_MD);
+        auiPut(rfidCards[i].uid,  AL_LEFT, RFCARD_ROW_X + 12, textW, y + 26, COL_CARD_CAPTION, FACE_XS);
       } else {
-        auiPut(rfidCards[i].uid, AL_LEFT, RFCARD_ROW_X + 12, textW, y + RFCARD_ROW_H / 2, COL_TEXT, FACE_MD);
+        auiPut(rfidCards[i].uid, AL_LEFT, RFCARD_ROW_X + 12, textW, y + RFCARD_ROW_H / 2, COL_CARD_TITLE, FACE_MD);
       }
 
       auiButton(rfidDelX(), rfidDelY(row), RFCARD_DEL_W, RFCARD_DEL_H, "X", ABTN_DANGER, FACE_SM);
@@ -140,10 +140,10 @@ void handleAdminRFIDCardsScreen() {
       rfidCardsScanning = false;
       if (addRFIDCard(uid)) {
         snprintf(rfidCardsMsg, sizeof(rfidCardsMsg), "Card added");
-        rfidCardsMsgColor = COL_SUCCESS;
+        rfidCardsMsgColor = COL_OK_TEXT;
       } else {
         snprintf(rfidCardsMsg, sizeof(rfidCardsMsg), "Already registered");
-        rfidCardsMsgColor = COL_WARNING;
+        rfidCardsMsgColor = COL_WARN_TEXT;
       }
       rfidCardsMsgUntil = millis() + 2000;
       drawAdminRFIDCardsScreen();

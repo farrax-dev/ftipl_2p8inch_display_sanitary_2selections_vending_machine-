@@ -51,17 +51,17 @@ void drawReportRow(int index, const char* label, const char* value, uint16_t val
   int y = reportRowY(index), cy = reportRowCY(index);
   auiRow(RPT_ROW_X, y, RPT_ROW_W, RPT_ROW_H);
   int labelW = auiTextW(label, FACE_MD);
-  auiPut(label, AL_LEFT, RPT_ROW_X + 12, labelW + 2, cy, COL_TEXT, FACE_MD);
+  auiPut(label, AL_LEFT, RPT_ROW_X + 12, labelW + 2, cy, COL_CARD_TITLE, FACE_MD);
   int right = RPT_RIGHT - (tappable ? 14 : 0);
   int vx = RPT_ROW_X + 12 + labelW + 12;
   auiPut(value, AL_RIGHT, vx, right - vx, cy, valCol, FACE_SM);
   if (tappable) {
     // chevron
     int cx = RPT_RIGHT - 4;
-    tft.drawLine(cx - 4, cy - 5, cx, cy, COL_TEXT_DIM);
-    tft.drawLine(cx - 4, cy + 5, cx, cy, COL_TEXT_DIM);
-    tft.drawLine(cx - 5, cy - 5, cx - 1, cy, COL_TEXT_DIM);
-    tft.drawLine(cx - 5, cy + 5, cx - 1, cy, COL_TEXT_DIM);
+    tft.drawLine(cx - 4, cy - 5, cx, cy, COL_ROW_CHEVRON);
+    tft.drawLine(cx - 4, cy + 5, cx, cy, COL_ROW_CHEVRON);
+    tft.drawLine(cx - 5, cy - 5, cx - 1, cy, COL_ROW_CHEVRON);
+    tft.drawLine(cx - 5, cy + 5, cx - 1, cy, COL_ROW_CHEVRON);
   }
 }
 
@@ -81,8 +81,8 @@ void drawReportTile(int col, int row, const char* label, const char* value, bool
   int x = rptTileX(col), y = rptTileY(row);
   drawCard(x, y, RPT_TILE_W, RPT_TILE_H, 6);
 
-  auiPut(label, AL_LEFT, x + 10, RPT_TILE_W - 20, y + 10, COL_TEXT_DIM, FACE_XS);
-  auiPut(value, AL_LEFT, x + 10, RPT_TILE_W - 20, y + 26, accent ? COL_ACCENT : COL_TEXT, FACE_MD);
+  auiPut(label, AL_LEFT, x + 10, RPT_TILE_W - 20, y + 10, COL_TILE_LABEL, FACE_XS);
+  auiPut(value, AL_LEFT, x + 10, RPT_TILE_W - 20, y + 26, accent ? COL_TILE_VALUE_HI : COL_TILE_VALUE, FACE_MD);
 }
 
 // The headline figures. Sending is done from the bottom bar (Send Today /
@@ -129,8 +129,8 @@ const int RPT_TBL_COL_LEFT = RPT_ROW_W - RPT_TBL_COL_NAME - RPT_TBL_COL_SOLD - R
 // needed under every single one.
 void drawReportTableRow(int y, int h, int row, const char* name, const char* sold, const char* rs,
                         const char* left, bool header) {
-  uint16_t fill = header ? COL_ACCENT : ((row % 2) ? COL_CARD : COL_BG_TOP);
-  uint16_t txt  = header ? COL_BG_TOP : COL_TEXT;
+  uint16_t fill = header ? COL_TBL_HEAD_FILL : ((row % 2) ? COL_TBL_ROW_B : COL_TBL_ROW_A);
+  uint16_t txt  = header ? COL_TBL_HEAD_TEXT : COL_TBL_TEXT;
   int face = (h >= 24) ? FACE_SM : FACE_XS;
   int cy = y + h / 2;
 
@@ -175,7 +175,7 @@ void drawReportProductPage() {
 
   // Frame the whole block once rather than a border per row — reads as one
   // table instead of a stack of separate cards.
-  tft.drawRect(RPT_ROW_X, RPT_TBL_Y0, RPT_ROW_W, lines * h, COL_CARD_BRD);
+  tft.drawRect(RPT_ROW_X, RPT_TBL_Y0, RPT_ROW_W, lines * h, COL_TBL_FRAME);
 }
 
 // ---------- Auto tab ----------
@@ -225,26 +225,26 @@ void openReportTimePicker(int slot) {
 
 void drawRtpButton(int x, int y, int h, bool plus) {
   if (rptTimeOn) {
-    drawCardShadow(x, y, RTP_COL_W, h, 8);
-    tft.fillRoundRect(x, y, RTP_COL_W, h, 8, COL_ACCENT);
+    drawButtonShadow(x, y, RTP_COL_W, h, 8);
+    tft.fillRoundRect(x, y, RTP_COL_W, h, 8, COL_STEP_BTN_FILL);
   } else {
-    tft.fillRoundRect(x, y, RTP_COL_W, h, 8, COL_CARD);
-    tft.drawRoundRect(x, y, RTP_COL_W, h, 8, COL_CARD_BRD);
+    tft.fillRoundRect(x, y, RTP_COL_W, h, 8, COL_BTN_OFF_FILL);
+    tft.drawRoundRect(x, y, RTP_COL_W, h, 8, COL_BTN_OFF_BORDER);
   }
-  uint16_t g = rptTimeOn ? COL_BG_TOP : COL_TEXT_DIM;
+  uint16_t g = rptTimeOn ? COL_STEP_BTN_GLYPH : COL_BTN_OFF_TEXT;
   int cx = x + RTP_COL_W / 2, cy = y + h / 2;
   tft.fillRect(cx - 7, cy - 1, 15, 3, g);
   if (plus) tft.fillRect(cx - 1, cy - 7, 3, 15, g);
 }
 
 void drawRtpColumn(int x, const char* label, const char* value) {
-  uint16_t col = rptTimeOn ? COL_TEXT : COL_TEXT_DIM;
+  uint16_t col = rptTimeOn ? COL_PICK_LABEL : COL_PICK_LABEL_OFF;
   auiPut(label, AL_CENTER, x, RTP_COL_W, RTP_LABEL_CY, col, FACE_SM);
   drawRtpButton(x, RTP_PLUS_Y, RTP_PLUS_H, true);
-  tft.fillRoundRect(x, RTP_VAL_Y, RTP_COL_W, RTP_VAL_H, 6, COL_CARD);
-  tft.drawRoundRect(x, RTP_VAL_Y, RTP_COL_W, RTP_VAL_H, 6, COL_CARD_BRD);
+  tft.fillRoundRect(x, RTP_VAL_Y, RTP_COL_W, RTP_VAL_H, 6, COL_PICK_VALUE_FILL);
+  tft.drawRoundRect(x, RTP_VAL_Y, RTP_COL_W, RTP_VAL_H, 6, COL_PICK_VALUE_BORDER);
   auiPut(value, AL_CENTER, x + 2, RTP_COL_W - 4, RTP_VAL_Y + RTP_VAL_H / 2,
-         rptTimeOn ? COL_ACCENT : COL_TEXT_DIM, FACE_LG);
+         rptTimeOn ? COL_PICK_VALUE_TEXT : COL_PICK_LABEL_OFF, FACE_LG);
   drawRtpButton(x, RTP_MINUS_Y, RTP_MINUS_H, false);
 }
 
@@ -266,7 +266,7 @@ void drawReportTimePicker() {
   drawRtpColumn(rtpHourX(), "Hour", hb);
   drawRtpColumn(rtpMinX(), "Minute", mb);
   auiPut(":", AL_CENTER, rtpHourX() + RTP_COL_W, RTP_COLON_W, RTP_VAL_Y + RTP_VAL_H / 2 - 2,
-         rptTimeOn ? COL_TEXT : COL_TEXT_DIM, FACE_LG);
+         rptTimeOn ? COL_PICK_LABEL : COL_PICK_LABEL_OFF, FACE_LG);
 
   if (!clock24Hour) {
     auiButton(rtpAmpmX(), RTP_VAL_Y, RTP_AMPM_W, RTP_VAL_H, rptTimeH >= 12 ? "PM" : "AM",
@@ -328,9 +328,9 @@ void handleReportTimePicker(int sx, int sy) {
 void drawReportSchedulePage() {
   char tb[12];
   formatReportTime(nightlyTime1, tb, sizeof(tb));
-  drawReportRow(0, "Report time 1", tb, strlen(nightlyTime1) > 0 ? COL_ACCENT : COL_TEXT_DIM, true);
+  drawReportRow(0, "Report time 1", tb, strlen(nightlyTime1) > 0 ? COL_VALUE_TEXT : COL_CARD_CAPTION, true);
   formatReportTime(nightlyTime2, tb, sizeof(tb));
-  drawReportRow(1, "Report time 2", tb, strlen(nightlyTime2) > 0 ? COL_ACCENT : COL_TEXT_DIM, true);
+  drawReportRow(1, "Report time 2", tb, strlen(nightlyTime2) > 0 ? COL_VALUE_TEXT : COL_CARD_CAPTION, true);
 
   int cy = reportRowCY(2);
   auiRow(RPT_ROW_X, reportRowY(2), RPT_ROW_W, RPT_ROW_H);
@@ -344,7 +344,7 @@ void drawReportSchedulePage() {
   auiRowLabel(RPT_ROW_X + 12, cy, auiStepLeftX(RPT_RIGHT) - RPT_ROW_X - 20, "Alert below");
   char buf[8];
   snprintf(buf, sizeof(buf), "%d", lowStockThreshold);
-  auiStepper(RPT_RIGHT, cy, buf, COL_ACCENT);
+  auiStepper(RPT_RIGHT, cy, buf, COL_STEP_VALUE_TEXT);
 }
 
 // ---------- Email tab ----------
@@ -352,21 +352,21 @@ void drawReportEmailPage() {
   char buf[24];
 
   drawReportRow(0, "Gmail",
-                strlen(gmailUser) > 0 ? gmailUser : "(not set)", COL_ACCENT, true);
+                strlen(gmailUser) > 0 ? gmailUser : "(not set)", COL_VALUE_TEXT, true);
 
   // Only the length is shown, not the characters: this is a live credential
   // on a machine that lives in a public place. Tap the row and use Show on
   // the keyboard to check it.
   if (strlen(gmailPass) > 0) snprintf(buf, sizeof(buf), "%d chars set", (int)strlen(gmailPass));
   else                       snprintf(buf, sizeof(buf), "(not set)");
-  drawReportRow(1, "Password", buf, COL_ACCENT, true);
+  drawReportRow(1, "Password", buf, COL_VALUE_TEXT, true);
 
   drawReportRow(2, "Send to",
-                strlen(reportTo) > 0 ? reportTo : "(not set)", COL_ACCENT, true);
+                strlen(reportTo) > 0 ? reportTo : "(not set)", COL_VALUE_TEXT, true);
 
   // Appears in every email subject next to the machine ID.
   drawReportRow(3, "Name",
-                strlen(machineName) > 0 ? machineName : "(not set)", COL_ACCENT, true);
+                strlen(machineName) > 0 ? machineName : "(not set)", COL_VALUE_TEXT, true);
 }
 
 // ---------- Data tab ----------
@@ -376,18 +376,18 @@ void drawReportDataPage() {
   int days = 0;
   for (int i = 0; i < DAILY_HISTORY_DAYS; i++) if (dailyHistory[i].date) days++;
   snprintf(buf, sizeof(buf), "%d of %d days", days, DAILY_HISTORY_DAYS);
-  drawReportRow(0, "History stored", buf, COL_TEXT_DIM, false);
+  drawReportRow(0, "History stored", buf, COL_CARD_CAPTION, false);
 
   drawReportRow(1, "Sending via",
                 WiFi.status() == WL_CONNECTED ? "WiFi" :
-                isLTEConnected() ? "4G" : "Offline", COL_TEXT_DIM, false);
+                isLTEConnected() ? "4G" : "Offline", COL_CARD_CAPTION, false);
 
   // The second tap is unrecoverable, so it takes two deliberate taps, and the
   // armed state is called out in danger red rather than blending in.
   int cy = reportRowCY(2);
   auiRow(RPT_ROW_X, reportRowY(2), RPT_ROW_W, RPT_ROW_H);
   auiPut(reportResetArmed ? "Tap again to erase" : "Clear sales data", AL_LEFT, RPT_ROW_X + 12, 190, cy,
-         reportResetArmed ? COL_DANGER : COL_TEXT, FACE_MD);
+         reportResetArmed ? COL_ERR_TEXT : COL_CARD_TITLE, FACE_MD);
   auiRowButton(RPT_RIGHT - 70 + 4, cy, 70, reportResetArmed ? "Confirm" : "Clear", ABTN_DANGER);
 }
 
@@ -409,7 +409,7 @@ void drawAdminReportScreen() {
 
   char status[64];
   snprintf(status, sizeof(status), "Last send: %s", reportLastStatus);
-  auiPut(status, AL_CENTER, 12, 296, RPT_STATUS_CY, reportLastOk ? COL_SUCCESS : COL_TEXT, FACE_XS);
+  auiPut(status, AL_CENTER, 12, 296, RPT_STATUS_CY, reportLastOk ? COL_OK_TEXT : COL_HINT_TEXT, FACE_XS);
 
   auiButton(RPT_BAR_BACK_X, ABAR_Y, RPT_BAR_BACK_W, ABAR_H, "Back", ABTN_SECONDARY, FACE_MD);
   // Greyed out until there's somewhere to send to, rather than letting the

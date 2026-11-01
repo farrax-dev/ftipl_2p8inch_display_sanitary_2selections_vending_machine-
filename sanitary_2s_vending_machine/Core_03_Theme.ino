@@ -1,9 +1,9 @@
-// ---------- Theme Colors (20 selectable palettes, Config.h's CFG_COLOR_THEME) ----------
+// ---------- Theme Colors (3 built-in palettes + a Custom one, Config.h's CFG_COLOR_THEME) ----------
 // The whole UI is built from this one set of macros — change which theme is
 // selected in Config.h and every screen picks it up, since every screen
 // draws with these macros instead of raw ILI9341_* constants.
 //
-// All 20 themes below share the same underlying design language this app
+// All the themes below share the same underlying design language this app
 // was built around: a light, card-based look with a near-white top fading
 // into a saturated bottom (the gradient background), pale cards that read
 // as sitting a shade lighter than the wash behind them, a deep saturated
@@ -89,243 +89,402 @@
 #define COL_WARNING    0xB421   // #B58608
 
 #elif CFG_COLOR_THEME == 3
-// Theme 3: Lavender Dream - soft purple, calm and elegant
-#define COL_BG_TOP     0xF77F   // #F5EFFF
-#define COL_BG_BOTTOM  0xC55E   // #C7A9F2
-#define COL_CARD       0xEF3F   // #EFE5FC
-#define COL_CARD_BRD   0x69F4   // #6B3FA0
-#define COL_ACCENT     0x79FA   // #7E3FD1
-#define COL_TEXT       0x28A8   // #2A1547
-#define COL_TEXT_DIM   0x7B72   // #7C6C96
-#define COL_SHADOW     0xDE7E   // #DCCCF0
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 4
-// Theme 4: Sunset Orange - warm citrus orange, energetic
-#define COL_BG_TOP     0xFF9D   // #FFF3EA
-#define COL_BG_BOTTOM  0xFD8F   // #FFB27A
-#define COL_CARD       0xFF5B   // #FFE9DA
-#define COL_CARD_BRD   0xC2A1   // #C1560F
-#define COL_ACCENT     0xEB01   // #E8630F
-#define COL_TEXT       0x4901   // #4A2308
-#define COL_TEXT_DIM   0x9BAB   // #9C7458
-#define COL_SHADOW     0xF655   // #F0C9AE
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 5
-// Theme 5: Ruby Red - bold jewel red, confident
-#define COL_BG_TOP     0xFF9E   // #FFF0F1
-#define COL_BG_BOTTOM  0xFCD4   // #FF9AA4
-#define COL_CARD       0xFF1C   // #FFE3E6
-#define COL_CARD_BRD   0xA085   // #A3122B
-#define COL_ACCENT     0xD0E7   // #D41C39
-#define COL_TEXT       0x3842   // #3B0A12
-#define COL_TEXT_DIM   0x92EC   // #935C64
-#define COL_SHADOW     0xEE19   // #EFC3C9
-#define COL_DANGER     0x7884   // #7A1020 — dropped to a near-black maroon so "danger" still reads distinct from the lively ruby accent
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 6
-// Theme 6: Emerald Forest - deep saturated green, natural and grounded
-#define COL_BG_TOP     0xEFDE   // #EDFBF2
-#define COL_BG_BOTTOM  0x7ED4   // #7FD9A0
-#define COL_CARD       0xE7BD   // #E2F6E9
-#define COL_CARD_BRD   0x1368   // #146C43
-#define COL_ACCENT     0x1429   // #10874F
-#define COL_TEXT       0x0984   // #0B3320
-#define COL_TEXT_DIM   0x5C4E   // #5C8870
-#define COL_SHADOW     0xC75A   // #C6E8D3
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x262B   // #22C55E — brighter, cooler spring-green so "success" stands apart from the deeper forest accent
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 7
-// Theme 7: Golden Amber - warm honey gold, upscale
-#define COL_BG_TOP     0xFFDC   // #FFF8E6
-#define COL_BG_BOTTOM  0xFE8F   // #FFD37A
-#define COL_CARD       0xFF99   // #FFF0CC
-#define COL_CARD_BRD   0xA3A1   // #A6740A
-#define COL_ACCENT     0xCC41   // #C98A0A
-#define COL_TEXT       0x49A0   // #4A3606
-#define COL_TEXT_DIM   0x9C2B   // #9C8558
-#define COL_SHADOW     0xF6F5   // #F0DFAE
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0x8A41   // #8A4B0A — dropped to a burnt rust so "warning" doesn't blend into the lighter amber accent
-
-#elif CFG_COLOR_THEME == 8
-// Theme 8: Mocha Coffee - warm brown/tan, cozy and premium
-#define COL_BG_TOP     0xFF9D   // #FBF3EC
-#define COL_BG_BOTTOM  0xD54E   // #D4A876
-#define COL_CARD       0xF73B   // #F3E6D8
-#define COL_CARD_BRD   0x6A24   // #6B4423
-#define COL_ACCENT     0x8AC5   // #8B5A2B
-#define COL_TEXT       0x28C1   // #2E1B0E
-#define COL_TEXT_DIM   0x8B8C   // #8A7260
-#define COL_SHADOW     0xE697   // #E4D2BE
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x2CEB   // #2E9E5B
-#define COL_WARNING    0xCCC3   // #C99A1A — pushed more yellow/vivid so "warning" separates from the warm brown accent
-
-#elif CFG_COLOR_THEME == 9
-// Theme 9: Slate Charcoal - cool neutral gray-blue, minimal and professional
-#define COL_BG_TOP     0xF7BE   // #F3F5F7
-#define COL_BG_BOTTOM  0xADB7   // #A9B4BE
-#define COL_CARD       0xEF7D   // #EAEDEF
-#define COL_CARD_BRD   0x3A2A   // #3C4650
-#define COL_ACCENT     0x42CD   // #45596B
-#define COL_TEXT       0x1904   // #1B2126
-#define COL_TEXT_DIM   0x6BD0   // #6E7880
-#define COL_SHADOW     0xD6FC   // #D7DCE0
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 10
-// Theme 10: Aqua Cyan - bright cyan, fresh and clinical-clean
-#define COL_BG_TOP     0xEFDF   // #E8FBFC
-#define COL_BG_BOTTOM  0x7F1D   // #7FE0EA
-#define COL_CARD       0xDFBF   // #DFF7F9
-#define COL_CARD_BRD   0x0BF1   // #0E7C88
-#define COL_ACCENT     0x0CB4   // #0E97A6
-#define COL_TEXT       0x09A7   // #0A3438
-#define COL_TEXT_DIM   0x5C52   // #5C8990
-#define COL_SHADOW     0xC75D   // #C3E9EC
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 11
-// Theme 11: Royal Indigo - deep blue-violet, premium and trustworthy
-#define COL_BG_TOP     0xEF9F   // #EFF0FF
-#define COL_BG_BOTTOM  0xAD7E   // #A9AEF2
-#define COL_CARD       0xE73F   // #E6E7FC
-#define COL_CARD_BRD   0x39F4   // #3F3FA0
-#define COL_ACCENT     0x4A7A   // #4D4DD1
-#define COL_TEXT       0x10A7   // #17173F
-#define COL_TEXT_DIM   0x6B72   // #6C6C96
-#define COL_SHADOW     0xD69E   // #D2D3F0
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 12
-// Theme 12: Peach Coral - soft warm coral, friendly and modern
-#define COL_BG_TOP     0xFF9D   // #FFF1EC
-#define COL_BG_BOTTOM  0xFD73   // #FFAE99
-#define COL_CARD       0xFF3B   // #FFE4DC
-#define COL_CARD_BRD   0xC223   // #C1441F
-#define COL_ACCENT     0xEAC7   // #E85A3A
-#define COL_TEXT       0x48E2   // #4A1C10
-#define COL_TEXT_DIM   0x9B6B   // #9C6C5C
-#define COL_SHADOW     0xF678   // #F0CCC0
-#define COL_DANGER     0xC0E7   // #C21F3D — cooled toward magenta-red so "danger" separates from the warm coral accent
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 13
-// Theme 13: Wine Burgundy - deep muted wine, refined and moody
-#define COL_BG_TOP     0xFF7E   // #FBEEF0
-#define COL_BG_BOTTOM  0xC3F1   // #C77E8C
-#define COL_CARD       0xF71C   // #F3E0E3
-#define COL_CARD_BRD   0x68A4   // #6E1626
-#define COL_ACCENT     0x8907   // #8E2138
-#define COL_TEXT       0x2842   // #2A0A10
-#define COL_TEXT_DIM   0x8AEC   // #8A5C64
-#define COL_SHADOW     0xE619   // #E4C3C9
-#define COL_DANGER     0xFA69   // #FF4D4D — brightened well above the muted wine accent so an alert still pops against this deliberately subdued palette
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 14
-// Theme 14: Midnight Navy - dark saturated navy, formal and sleek
-#define COL_BG_TOP     0xEF9F   // #EAF0FA
-#define COL_BG_BOTTOM  0x7C98   // #7C93C2
-#define COL_CARD       0xE75E   // #E1E9F6
-#define COL_CARD_BRD   0x112B   // #14275A
-#define COL_ACCENT     0x19CF   // #1E3A78
-#define COL_TEXT       0x0885   // #0A132E
-#define COL_TEXT_DIM   0x5B71   // #5C6C8A
-#define COL_SHADOW     0xC69D   // #C7D2E8
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 15
-// Theme 15: Turquoise - vivid blue-green, tropical and lively
-#define COL_BG_TOP     0xEFDE   // #E8FBF7
-#define COL_BG_BOTTOM  0x7719   // #74E0C8
-#define COL_CARD       0xDFBE   // #DEF7F0
-#define COL_CARD_BRD   0x0BED   // #0C7C68
-#define COL_ACCENT     0x0D31   // #0DA68A
-#define COL_TEXT       0x09A6   // #0A3630
-#define COL_TEXT_DIM   0x5C50   // #5C8A81
-#define COL_SHADOW     0xC75C   // #C3E9E1
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x6DE7   // #6FBF3E — pushed yellow-green, away from the cooler teal accent
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 16
-// Theme 16: Crimson - vivid true red, striking and bold
-#define COL_BG_TOP     0xFF9D   // #FFF0EF
-#define COL_BG_BOTTOM  0xFC71   // #FF8F8A
-#define COL_CARD       0xFF1B   // #FFE1DF
-#define COL_CARD_BRD   0xA083   // #A3121C
-#define COL_ACCENT     0xD0E5   // #D41C2E
-#define COL_TEXT       0x3841   // #3B0A0C
-#define COL_TEXT_DIM   0x92EB   // #935C5E
-#define COL_SHADOW     0xEE18   // #EFC3C2
-#define COL_DANGER     0x6862   // #6B0F14 — dropped to a near-black maroon, same fix as Ruby Red, so "danger" stays distinct from this theme's own red accent
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 17
-// Theme 17: Steel Blue - muted industrial blue, calm and technical
-#define COL_BG_TOP     0xEF9E   // #EEF3F7
-#define COL_BG_BOTTOM  0x9DD9   // #9DB8CC
-#define COL_CARD       0xE75E   // #E4EBF1
-#define COL_CARD_BRD   0x330F   // #35617D
-#define COL_ACCENT     0x3BF4   // #3F7DA0
-#define COL_TEXT       0x1126   // #142430
-#define COL_TEXT_DIM   0x63D1   // #63798A
-#define COL_SHADOW     0xD6FC   // #D0DEE7
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 18
-// Theme 18: Sage Green - muted soft green, natural and understated
-#define COL_BG_TOP     0xF7BD   // #F1F7EE
-#define COL_BG_BOTTOM  0xB693   // #B7D19A
-#define COL_CARD       0xEF9C   // #E9F2E1
-#define COL_CARD_BRD   0x4BC5   // #4E7A2E
-#define COL_ACCENT     0x5C87   // #5E9138
-#define COL_TEXT       0x1962   // #1F2E12
-#define COL_TEXT_DIM   0x744D   // #74886A
-#define COL_SHADOW     0xDF39   // #DAE6CC
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x1D0B   // #1FA35C — more saturated true green than the muted sage accent, so "success" doesn't blend in
-#define COL_WARNING    0xB421   // #B58608
-
-#elif CFG_COLOR_THEME == 19
-// Theme 19: Plum Purple - rich magenta-purple, playful and premium
-#define COL_BG_TOP     0xF77E   // #F7EEF7
-#define COL_BG_BOTTOM  0xD4DB   // #D69AD8
-#define COL_CARD       0xF71E   // #F1E3F1
-#define COL_CARD_BRD   0x78EF   // #7A1F7C
-#define COL_ACCENT     0x9973   // #9C2E9E
-#define COL_TEXT       0x3046   // #340B36
-#define COL_TEXT_DIM   0x8B52   // #8C6890
-#define COL_SHADOW     0xEE7D   // #E9CCE9
-#define COL_DANGER     0xE1CA   // #E63952
-#define COL_SUCCESS    0x350B   // #31A25A
-#define COL_WARNING    0xB421   // #f3c547
+// Theme 3: Custom - every colour comes from custom_theme.h in this sketch folder.
+// docs/theme_designer.html writes that file ("Save config"); copy it over the one
+// here, set CFG_COLOR_THEME to 3 in Config.h, then compile and flash.
+#include "custom_theme.h"
 
 #else
-#error "CFG_COLOR_THEME must be 0-19 - see the list in Config.h"
+#error "CFG_COLOR_THEME must be 0-3 - see the list in Config.h"
+#endif
+
+// ===========================================================================
+// Component colours
+// ===========================================================================
+// Every part of the UI (buttons, header, cards, switches, price text, ...) has
+// its own COL_* macro below, so one component can be recoloured without
+// touching the others. Each one defaults to a colour from the 11-colour palette
+// a theme sets above, so the 20 built-in themes look exactly as before. To give
+// a component its own colour in a theme, #define it inside that theme's block
+// (above the #elif of the next theme) and the #ifndef here will leave it alone.
+//
+// Example, inside a theme block:
+//   #define COL_BTN_PRI_FILL   0xE0F1   // primary buttons only
+//   #define COL_PRICE_TEXT     0x350B   // price text only
+//
+// docs/theme_designer.html shows every one of these, grouped, and exports the
+// ones you change.
+
+
+// ---------- Header and Welcome strip ----------
+#ifndef COL_HDR_BG
+#define COL_HDR_BG             COL_BG_TOP       // Band behind every screen title
+#endif
+#ifndef COL_HDR_TITLE
+#define COL_HDR_TITLE          COL_TEXT         // Screen title text
+#endif
+#ifndef COL_HDR_RULE
+#define COL_HDR_RULE           COL_ACCENT       // Line under the title
+#endif
+#ifndef COL_HDR_RULE_FADE
+#define COL_HDR_RULE_FADE      COL_HDR_BG       // Colour the title line fades into
+#endif
+#ifndef COL_HDR_NOTE
+#define COL_HDR_NOTE           COL_ACCENT       // Hint in the header (Tap to select)
+#endif
+#ifndef COL_HDR_COUNT
+#define COL_HDR_COUNT          COL_TEXT         // Counter in the header (1 / 5)
+#endif
+#ifndef COL_HDR_COUNT_DIM
+#define COL_HDR_COUNT_DIM      COL_TEXT_DIM     // Dim counter in the header (RFID card count)
+#endif
+#ifndef COL_STRIP_BG
+#define COL_STRIP_BG           COL_BG_TOP       // Welcome top strip
+#endif
+#ifndef COL_STRIP_LINE
+#define COL_STRIP_LINE         COL_CARD_BRD     // Line under the Welcome strip
+#endif
+#ifndef COL_STRIP_TIME
+#define COL_STRIP_TIME         COL_TEXT         // Clock text
+#endif
+#ifndef COL_STRIP_DATE
+#define COL_STRIP_DATE         COL_ACCENT       // Date text
+#endif
+#ifndef COL_WELCOME_SUB
+#define COL_WELCOME_SUB        COL_ACCENT       // Subtitle on the Welcome card
+#endif
+#ifndef COL_PILL_FILL
+#define COL_PILL_FILL          COL_ACCENT       // Touch to Continue pill
+#endif
+#ifndef COL_PILL_TEXT
+#define COL_PILL_TEXT          COL_BG_TOP       // Text on the pill
+#endif
+#ifndef COL_PILL_HOLLOW
+#define COL_PILL_HOLLOW        COL_BG_TOP       // Pill fill while it blinks to outline
+#endif
+
+// ---------- Cards, rows and tiles ----------
+#ifndef COL_CARD_FILL
+#define COL_CARD_FILL          COL_CARD         // Card, row and tile fill
+#endif
+#ifndef COL_CARD_BORDER
+#define COL_CARD_BORDER        COL_CARD_BRD     // Card, row and tile border
+#endif
+#ifndef COL_CARD_SHADOW
+#define COL_CARD_SHADOW        COL_SHADOW       // Shadow under cards
+#endif
+#ifndef COL_CARD_RING
+#define COL_CARD_RING          COL_ACCENT       // Inner highlight ring on key cards
+#endif
+#ifndef COL_CARD_RULE
+#define COL_CARD_RULE          COL_CARD_BRD     // Divider line inside a card
+#endif
+#ifndef COL_CARD_TITLE
+#define COL_CARD_TITLE         COL_TEXT         // Main text on cards and rows
+#endif
+#ifndef COL_CARD_CAPTION
+#define COL_CARD_CAPTION       COL_TEXT_DIM     // Small caption text on cards and rows
+#endif
+#ifndef COL_VALUE_TEXT
+#define COL_VALUE_TEXT         COL_ACCENT       // Editable values in rows (name, ID, clock)
+#endif
+#ifndef COL_HINT_TEXT
+#define COL_HINT_TEXT          COL_TEXT         // Hint lines on the background
+#endif
+#ifndef COL_TILE_STRIPE
+#define COL_TILE_STRIPE        COL_ACCENT       // Stripe on Admin tiles
+#endif
+#ifndef COL_TILE_STRIPE_OFF
+#define COL_TILE_STRIPE_OFF    COL_TEXT_DIM     // Stripe on disabled tiles
+#endif
+#ifndef COL_TILE_STRIPE_OK
+#define COL_TILE_STRIPE_OK     COL_SUCCESS      // Stripe on a connected network tile
+#endif
+#ifndef COL_TILE_LABEL
+#define COL_TILE_LABEL         COL_TEXT_DIM     // Caption on Reports tiles
+#endif
+#ifndef COL_TILE_VALUE
+#define COL_TILE_VALUE         COL_TEXT         // Number on Reports tiles
+#endif
+#ifndef COL_TILE_VALUE_HI
+#define COL_TILE_VALUE_HI      COL_ACCENT       // Highlighted number on Reports tiles
+#endif
+
+// ---------- Products, price and cart ----------
+#ifndef COL_PRODUCT_NAME
+#define COL_PRODUCT_NAME       COL_TEXT         // Product name
+#endif
+#ifndef COL_PRICE_TEXT
+#define COL_PRICE_TEXT         COL_ACCENT       // Price (Rs. 10) on cards, cart and totals
+#endif
+#ifndef COL_STOCK_TEXT
+#define COL_STOCK_TEXT         COL_SUCCESS      // Qty Avail text
+#endif
+#ifndef COL_PRODUCT_FILL
+#define COL_PRODUCT_FILL       COL_CARD         // Product card fill
+#endif
+#ifndef COL_PRODUCT_OOS_FILL
+#define COL_PRODUCT_OOS_FILL   COL_BG_TOP       // Out-of-stock card fill
+#endif
+#ifndef COL_PRODUCT_BORDER
+#define COL_PRODUCT_BORDER     COL_CARD_BRD     // Product card border
+#endif
+#ifndef COL_PRODUCT_SEL_BORDER
+#define COL_PRODUCT_SEL_BORDER COL_ACCENT       // Border of a product in the cart
+#endif
+#ifndef COL_PRODUCT_LIMIT_BORDER
+#define COL_PRODUCT_LIMIT_BORDER COL_WARNING      // Border when the cart is full
+#endif
+#ifndef COL_PRODUCT_ERR_BORDER
+#define COL_PRODUCT_ERR_BORDER COL_DANGER       // Flash border on a refused tap
+#endif
+#ifndef COL_QTY_BTN_FILL
+#define COL_QTY_BTN_FILL       COL_ACCENT       // Cart minus and plus buttons
+#endif
+#ifndef COL_QTY_BTN_GLYPH
+#define COL_QTY_BTN_GLYPH      COL_BG_TOP       // Minus and plus symbols
+#endif
+#ifndef COL_QTY_BOX_FILL
+#define COL_QTY_BOX_FILL       COL_CARD         // Cart quantity box
+#endif
+#ifndef COL_QTY_TEXT
+#define COL_QTY_TEXT           COL_TEXT         // Cart quantity number
+#endif
+#ifndef COL_METHOD_NAME
+#define COL_METHOD_NAME        COL_ACCENT       // UPI and Cash card names
+#endif
+#ifndef COL_METHOD_RULE
+#define COL_METHOD_RULE        COL_CARD_BRD     // Line under the payment name
+#endif
+#ifndef COL_METHOD_DESC
+#define COL_METHOD_DESC        COL_TEXT         // Payment card description
+#endif
+
+// ---------- Buttons ----------
+#ifndef COL_BTN_PRI_FILL
+#define COL_BTN_PRI_FILL       COL_ACCENT       // Primary button fill (Pay, Save, Done)
+#endif
+#ifndef COL_BTN_PRI_TEXT
+#define COL_BTN_PRI_TEXT       COL_BG_TOP       // Primary button label
+#endif
+#ifndef COL_BTN_SEC_FILL
+#define COL_BTN_SEC_FILL       COL_CARD         // Normal button fill (Back, Cancel, keypad)
+#endif
+#ifndef COL_BTN_SEC_BORDER
+#define COL_BTN_SEC_BORDER     COL_CARD_BRD     // Normal button border
+#endif
+#ifndef COL_BTN_SEC_TEXT
+#define COL_BTN_SEC_TEXT       COL_TEXT         // Normal button label
+#endif
+#ifndef COL_BTN_DANGER_FILL
+#define COL_BTN_DANGER_FILL    COL_DANGER       // Danger button fill
+#endif
+#ifndef COL_BTN_DANGER_TEXT
+#define COL_BTN_DANGER_TEXT    COL_BG_TOP       // Danger button label
+#endif
+#ifndef COL_BTN_OFF_FILL
+#define COL_BTN_OFF_FILL       COL_CARD         // Disabled button fill
+#endif
+#ifndef COL_BTN_OFF_BORDER
+#define COL_BTN_OFF_BORDER     COL_CARD_BRD     // Disabled button border
+#endif
+#ifndef COL_BTN_OFF_TEXT
+#define COL_BTN_OFF_TEXT       COL_TEXT_DIM     // Disabled button label
+#endif
+#ifndef COL_BTN_SHADOW
+#define COL_BTN_SHADOW         COL_SHADOW       // Shadow under buttons
+#endif
+
+// ---------- Switch and stepper ----------
+#ifndef COL_SW_ON_FILL
+#define COL_SW_ON_FILL         COL_ACCENT       // Switch track when on
+#endif
+#ifndef COL_SW_ON_BORDER
+#define COL_SW_ON_BORDER       COL_ACCENT       // Switch outline and knob ring when on
+#endif
+#ifndef COL_SW_ON_TEXT
+#define COL_SW_ON_TEXT         COL_BG_TOP       // ON label
+#endif
+#ifndef COL_SW_OFF_FILL
+#define COL_SW_OFF_FILL        COL_SHADOW       // Switch track when off
+#endif
+#ifndef COL_SW_OFF_BORDER
+#define COL_SW_OFF_BORDER      COL_CARD_BRD     // Switch outline and knob ring when off
+#endif
+#ifndef COL_SW_OFF_TEXT
+#define COL_SW_OFF_TEXT        COL_TEXT_DIM     // OFF label
+#endif
+#ifndef COL_SW_KNOB
+#define COL_SW_KNOB            COL_BG_TOP       // Switch knob
+#endif
+#ifndef COL_STEP_BTN_FILL
+#define COL_STEP_BTN_FILL      COL_ACCENT       // Stepper minus and plus buttons
+#endif
+#ifndef COL_STEP_BTN_GLYPH
+#define COL_STEP_BTN_GLYPH     COL_BG_TOP       // Minus and plus symbols
+#endif
+#ifndef COL_STEP_VALUE_FILL
+#define COL_STEP_VALUE_FILL    COL_BG_TOP       // Stepper value box
+#endif
+#ifndef COL_STEP_VALUE_BORDER
+#define COL_STEP_VALUE_BORDER  COL_CARD_BRD     // Stepper value box border
+#endif
+#ifndef COL_STEP_VALUE_TEXT
+#define COL_STEP_VALUE_TEXT    COL_ACCENT       // Stepper number
+#endif
+#ifndef COL_STEP_VALUE_OFF
+#define COL_STEP_VALUE_OFF     COL_TEXT_DIM     // Stepper number when disabled
+#endif
+#ifndef COL_STEP_VALUE_LOW
+#define COL_STEP_VALUE_LOW     COL_DANGER       // Stock number when low
+#endif
+
+// ---------- Tabs, tables and pickers ----------
+#ifndef COL_TAB_ON_FILL
+#define COL_TAB_ON_FILL        COL_ACCENT       // Selected tab
+#endif
+#ifndef COL_TAB_ON_TEXT
+#define COL_TAB_ON_TEXT        COL_BG_TOP       // Selected tab label
+#endif
+#ifndef COL_TAB_OFF_FILL
+#define COL_TAB_OFF_FILL       COL_CARD         // Other tabs
+#endif
+#ifndef COL_TAB_OFF_BORDER
+#define COL_TAB_OFF_BORDER     COL_CARD_BRD     // Other tabs border
+#endif
+#ifndef COL_TAB_OFF_TEXT
+#define COL_TAB_OFF_TEXT       COL_TEXT         // Other tabs label
+#endif
+#ifndef COL_TBL_HEAD_FILL
+#define COL_TBL_HEAD_FILL      COL_ACCENT       // Items table header
+#endif
+#ifndef COL_TBL_HEAD_TEXT
+#define COL_TBL_HEAD_TEXT      COL_BG_TOP       // Items table header text
+#endif
+#ifndef COL_TBL_ROW_A
+#define COL_TBL_ROW_A          COL_BG_TOP       // Items table odd rows
+#endif
+#ifndef COL_TBL_ROW_B
+#define COL_TBL_ROW_B          COL_CARD         // Items table even rows
+#endif
+#ifndef COL_TBL_TEXT
+#define COL_TBL_TEXT           COL_TEXT         // Items table text
+#endif
+#ifndef COL_TBL_FRAME
+#define COL_TBL_FRAME          COL_CARD_BRD     // Items table frame
+#endif
+#ifndef COL_ROW_CHEVRON
+#define COL_ROW_CHEVRON        COL_TEXT_DIM     // Arrow on tappable rows
+#endif
+#ifndef COL_PICK_VALUE_FILL
+#define COL_PICK_VALUE_FILL    COL_CARD         // Hour, minute and date value boxes
+#endif
+#ifndef COL_PICK_VALUE_BORDER
+#define COL_PICK_VALUE_BORDER  COL_CARD_BRD     // Value box border
+#endif
+#ifndef COL_PICK_VALUE_TEXT
+#define COL_PICK_VALUE_TEXT    COL_ACCENT       // Value box number
+#endif
+#ifndef COL_PICK_LABEL
+#define COL_PICK_LABEL         COL_TEXT         // Field label (Hour, Day)
+#endif
+#ifndef COL_PICK_LABEL_OFF
+#define COL_PICK_LABEL_OFF     COL_TEXT_DIM     // Field label when off
+#endif
+
+// ---------- PIN, keyboard and text field ----------
+#ifndef COL_PIN_FIELD_FILL
+#define COL_PIN_FIELD_FILL     COL_CARD         // PIN box
+#endif
+#ifndef COL_PIN_FIELD_BORDER
+#define COL_PIN_FIELD_BORDER   COL_CARD_BRD     // PIN box border
+#endif
+#ifndef COL_PIN_DOT
+#define COL_PIN_DOT            COL_ACCENT       // Entered PIN dots
+#endif
+#ifndef COL_PIN_PLACEHOLDER
+#define COL_PIN_PLACEHOLDER    COL_TEXT_DIM     // Enter PIN prompt
+#endif
+#ifndef COL_PIN_TEXT
+#define COL_PIN_TEXT           COL_TEXT         // PIN box message
+#endif
+#ifndef COL_KEY_FILL
+#define COL_KEY_FILL           COL_CARD         // Letter key fill
+#endif
+#ifndef COL_KEY_BORDER
+#define COL_KEY_BORDER         COL_CARD_BRD     // Key border
+#endif
+#ifndef COL_KEY_TEXT
+#define COL_KEY_TEXT           COL_TEXT         // Letter key text
+#endif
+#ifndef COL_KEY_MOD_FILL
+#define COL_KEY_MOD_FILL       COL_BG_TOP       // DEL, SPACE and ?123 key fill
+#endif
+#ifndef COL_KEY_MOD_TEXT
+#define COL_KEY_MOD_TEXT       COL_ACCENT       // DEL, SPACE and ?123 key text
+#endif
+#ifndef COL_FIELD_FILL
+#define COL_FIELD_FILL         COL_CARD         // Text preview field
+#endif
+#ifndef COL_FIELD_BORDER
+#define COL_FIELD_BORDER       COL_CARD_BRD     // Text preview field border
+#endif
+#ifndef COL_FIELD_TEXT
+#define COL_FIELD_TEXT         COL_ACCENT       // Typed text
+#endif
+#ifndef COL_FIELD_EMPTY
+#define COL_FIELD_EMPTY        COL_TEXT_DIM     // (empty) placeholder
+#endif
+#ifndef COL_FIELD_COUNT
+#define COL_FIELD_COUNT        COL_TEXT_DIM     // 12/30 counter
+#endif
+#ifndef COL_FIELD_ERROR
+#define COL_FIELD_ERROR        COL_DANGER       // Error shown in the field
+#endif
+
+// ---------- Indicators, messages and status ----------
+#ifndef COL_DOT_ON
+#define COL_DOT_ON             COL_SUCCESS      // Status dot on
+#endif
+#ifndef COL_DOT_OFF_FILL
+#define COL_DOT_OFF_FILL       COL_BG_TOP       // Status dot off
+#endif
+#ifndef COL_DOT_OFF_RING
+#define COL_DOT_OFF_RING       COL_TEXT_DIM     // Status dot off ring
+#endif
+#ifndef COL_WIFI_GOOD
+#define COL_WIFI_GOOD          COL_SUCCESS      // Signal icon, strong
+#endif
+#ifndef COL_WIFI_FAIR
+#define COL_WIFI_FAIR          COL_WARNING      // Signal icon, fair
+#endif
+#ifndef COL_WIFI_BAD
+#define COL_WIFI_BAD           COL_DANGER       // Signal icon, weak or none
+#endif
+#ifndef COL_WIFI_OFF
+#define COL_WIFI_OFF           COL_TEXT_DIM     // Signal icon, unlit bars
+#endif
+#ifndef COL_WIFI_BG
+#define COL_WIFI_BG            COL_HDR_BG       // Behind the signal icon
+#endif
+#ifndef COL_MSG_TITLE
+#define COL_MSG_TITLE          COL_ACCENT       // Big message headline
+#endif
+#ifndef COL_MSG_BODY
+#define COL_MSG_BODY           COL_TEXT         // Message body text
+#endif
+#ifndef COL_OK_TEXT
+#define COL_OK_TEXT            COL_SUCCESS      // Success text (paid, connected)
+#endif
+#ifndef COL_ERR_TEXT
+#define COL_ERR_TEXT           COL_DANGER       // Error text (failed, timed out)
+#endif
+#ifndef COL_WARN_TEXT
+#define COL_WARN_TEXT          COL_WARNING      // Warning text
+#endif
+#ifndef COL_COUNTDOWN_TEXT
+#define COL_COUNTDOWN_TEXT     COL_TEXT         // Idle countdown
+#endif
+#ifndef COL_COUNTDOWN_URGENT
+#define COL_COUNTDOWN_URGENT   COL_DANGER       // Idle countdown in the last 10 seconds
 #endif

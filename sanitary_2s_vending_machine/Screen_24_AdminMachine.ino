@@ -37,15 +37,15 @@ void drawAdminMachineScreen() {
 
   // ---- Machine ID ----
   drawMachineValueRow(0, "Machine ID", strlen(machineId) > 0 ? machineId : "(not set)",
-                      COL_ACCENT, "Edit", FACE_MD);
+                      COL_VALUE_TEXT, "Edit", FACE_MD);
 
   // ---- Store ID (printed under the machine ID in report e-mails) ----
   drawMachineValueRow(1, "Store ID", strlen(storeId) > 0 ? storeId : "(not set)",
-                      strlen(storeId) > 0 ? COL_ACCENT : COL_TEXT_DIM, "Edit", FACE_MD);
+                      strlen(storeId) > 0 ? COL_VALUE_TEXT : COL_CARD_CAPTION, "Edit", FACE_MD);
 
   // ---- Admin PIN: a fixed placeholder, never the value — it's a credential,
   // not something to glance at ----
-  drawMachineValueRow(2, "Admin PIN", "****", COL_ACCENT, "Change", FACE_MD);
+  drawMachineValueRow(2, "Admin PIN", "****", COL_VALUE_TEXT, "Change", FACE_MD);
 
   // ---- Clock ----
   char timeBuf[16], dateBuf[24], clockBuf[44];
@@ -53,13 +53,13 @@ void drawAdminMachineScreen() {
     snprintf(clockBuf, sizeof(clockBuf), "%s  %s", timeBuf, dateBuf);
   else
     snprintf(clockBuf, sizeof(clockBuf), "not set");
-  drawMachineValueRow(3, "Clock", clockBuf, COL_ACCENT, "Set", FACE_SM);
+  drawMachineValueRow(3, "Clock", clockBuf, COL_VALUE_TEXT, "Set", FACE_SM);
 
   // ---- Customer screens: max items per order + idle timeout ----
   char cust[24];
   if (idleTimeoutOn) snprintf(cust, sizeof(cust), "Timeout %ds", idleTimeoutSec);
   else               snprintf(cust, sizeof(cust), "Timeout off");
-  drawMachineValueRow(4, "Customer", cust, COL_ACCENT, "Open", FACE_SM);
+  drawMachineValueRow(4, "Customer", cust, COL_VALUE_TEXT, "Open", FACE_SM);
 
   auiBarButton(0, 1, "Back", ABTN_SECONDARY);
 }

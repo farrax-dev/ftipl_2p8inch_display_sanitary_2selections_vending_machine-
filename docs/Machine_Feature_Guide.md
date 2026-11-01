@@ -32,7 +32,7 @@ This document catalogues every feature of the machine end to end: what a custome
 
 **Free vend:** off on this build (`CFG_FREE_VEND_MODE = false`) — customers pay normally. See §3.6 for the admin toggle.
 
-**Color theme:** Blossom / theme 0 on this build (`CFG_COLOR_THEME = 0`) — see §9 for the full set of 20 selectable palettes.
+**Color theme:** Blossom / theme 0 on this build (`CFG_COLOR_THEME = 0`) — see §9 for the 3 built-in palettes and the Custom one.
 
 ---
 
@@ -331,41 +331,27 @@ Set once in `Config.h` and re-flashed per unit — the admin screens take over m
 - PhonePe/UPI merchant credentials and default payment timeout
 - Whether a Free Vend build starts pre-enabled (`CFG_FREE_VEND_MODE`) — a seed value only; Admin > Settings owns the toggle from the first flash onward
 - Whether a product-drop IR sensor is physically fitted at all (`CFG_IR_SENSOR_PRESENT`) — **factory-only, with no admin-screen equivalent**, since it changes what a "successful dispense" means rather than a business setting
-- Which of the 20 color themes the machine ships with (`CFG_COLOR_THEME`) — see §9. Like the drop sensor flag, this is a branding/factory decision with **no admin-screen equivalent**.
+- Which color theme the machine ships with (3 built-in, or Custom) (`CFG_COLOR_THEME`) — see §9. Like the drop sensor flag, this is a branding/factory decision with **no admin-screen equivalent**.
 
 Everything above except the drop-sensor and color-theme flags becomes admin-editable from the touchscreen immediately after that flash (subject to the hardware ceilings noted throughout this document), so day-to-day operation — refilling stock, adjusting prices, changing WiFi passwords, updating the report recipient, or toggling Free Vend on and off — never requires reflashing the machine again. Whether a drop sensor is fitted, and which color theme is active, are the two exceptions: both are hardware/branding facts set once at commissioning and left alone.
 
 ---
 
-## 9. Color Themes (20 Selectable Palettes)
+## 9. Color Themes (3 Built-in + Custom)
 
 The entire UI draws through one shared set of 11 color roles (background gradient top/bottom, card fill, card border, accent, primary text, dimmed text, shadow, and the danger/success/warning status colors) — no screen ever reaches for a raw display color directly (the one deliberate exception is the UPI QR code, which stays literal black-and-white so it still scans regardless of theme). Switching `CFG_COLOR_THEME` in `Config.h` to any number below and reflashing re-skins every screen in the app at once. **0 (Blossom) is the original theme and the default.**
 
-All 20 share the same design language — a light, card-based look with a near-white top fading into a saturated bottom, pale cards, a vivid accent reserved for the one actionable thing on a screen, and dark, legible text — only the hue family changes.
+All of them share the same design language — a light, card-based look with a near-white top fading into a saturated bottom, pale cards, a vivid accent reserved for the one actionable thing on a screen, and dark, legible text — only the hue family changes.
 
 | # | Theme | Feel | Background (top → bottom) | Card Border | Accent |
 |---|---|---|---|---|---|
 | 0 | **Blossom** *(default)* | Pink / rose, soft and approachable | `#FFEFF7` → `#FFC2DE` | `#D6356B` | `#E61C8C` |
 | 1 | Ocean Blue | Crisp sky blue, clean and corporate | `#EAF6FF` → `#8FD0FA` | `#146C9E` | `#1179C9` |
 | 2 | Mint Fresh | Cool teal-green, airy and modern | `#EAFBF5` → `#82E3C0` | `#0C8C6A` | `#0BA37C` |
-| 3 | Lavender Dream | Soft purple, calm and elegant | `#F5EFFF` → `#C7A9F2` | `#6B3FA0` | `#7E3FD1` |
-| 4 | Sunset Orange | Warm citrus orange, energetic | `#FFF3EA` → `#FFB27A` | `#C1560F` | `#E8630F` |
-| 5 | Ruby Red | Bold jewel red, confident | `#FFF0F1` → `#FF9AA4` | `#A3122B` | `#D41C39` |
-| 6 | Emerald Forest | Deep saturated green, natural and grounded | `#EDFBF2` → `#7FD9A0` | `#146C43` | `#10874F` |
-| 7 | Golden Amber | Warm honey gold, upscale | `#FFF8E6` → `#FFD37A` | `#A6740A` | `#C98A0A` |
-| 8 | Mocha Coffee | Warm brown / tan, cozy and premium | `#FBF3EC` → `#D4A876` | `#6B4423` | `#8B5A2B` |
-| 9 | Slate Charcoal | Cool neutral gray-blue, minimal and professional | `#F3F5F7` → `#A9B4BE` | `#3C4650` | `#45596B` |
-| 10 | Aqua Cyan | Bright cyan, fresh and clinical-clean | `#E8FBFC` → `#7FE0EA` | `#0E7C88` | `#0E97A6` |
-| 11 | Royal Indigo | Deep blue-violet, premium and trustworthy | `#EFF0FF` → `#A9AEF2` | `#3F3FA0` | `#4D4DD1` |
-| 12 | Peach Coral | Soft warm coral, friendly and modern | `#FFF1EC` → `#FFAE99` | `#C1441F` | `#E85A3A` |
-| 13 | Wine Burgundy | Deep muted wine, refined and moody | `#FBEEF0` → `#C77E8C` | `#6E1626` | `#8E2138` |
-| 14 | Midnight Navy | Dark saturated navy, formal and sleek | `#EAF0FA` → `#7C93C2` | `#14275A` | `#1E3A78` |
-| 15 | Turquoise | Vivid blue-green, tropical and lively | `#E8FBF7` → `#74E0C8` | `#0C7C68` | `#0DA68A` |
-| 16 | Crimson | Vivid true red, striking and bold | `#FFF0EF` → `#FF8F8A` | `#A3121C` | `#D41C2E` |
-| 17 | Steel Blue | Muted industrial blue, calm and technical | `#EEF3F7` → `#9DB8CC` | `#35617D` | `#3F7DA0` |
-| 18 | Sage Green | Muted soft green, natural and understated | `#F1F7EE` → `#B7D19A` | `#4E7A2E` | `#5E9138` |
-| 19 | Plum Purple | Rich magenta-purple, playful and premium | `#F7EEF7` → `#D69AD8` | `#7A1F7C` | `#9C2E9E` |
+| 3 | **Custom** | Your own colours, set in `docs/theme_designer.html` | read from `custom_theme.h` | read from `custom_theme.h` | read from `custom_theme.h` |
 
-**Status colors (danger/success/warning)** stay a consistent red/green/gold family across all 20 themes for the same reason road signs don't change color by brand — so "error," "success," and "caution" never need relearning from one machine to the next. The only exceptions are the themes whose own accent color already sits in one of those hue families: Ruby Red, Wine Burgundy, and Crimson each get a shifted (usually darker or brighter) danger color so an alert doesn't blend into the theme's own red accent; Emerald Forest, Mint Fresh, Sage Green, and Turquoise each get a shifted success green so it doesn't blend into the theme's own green accent; Golden Amber and Mocha Coffee each get a shifted warning gold for the same reason against their own amber/brown accent.
+**Status colors (danger/success/warning)** stay a consistent red/green/gold family across the built-in themes for the same reason road signs don't change color by brand — so "error," "success," and "caution" never need relearning from one machine to the next. The only exceptions are the themes whose own accent color already sits in one of those hue families: Ruby Red, Wine Burgundy, and Crimson each get a shifted (usually darker or brighter) danger color so an alert doesn't blend into the theme's own red accent; Emerald Forest, Mint Fresh, Sage Green, and Turquoise each get a shifted success green so it doesn't blend into the theme's own green accent; Golden Amber and Mocha Coffee each get a shifted warning gold for the same reason against their own amber/brown accent.
 
-Full hex and RGB565 values for every role of every theme are in `Core_03_Theme.ino`.
+Full hex and RGB565 values for every role of themes 0 to 2 are in `Core_03_Theme.ino`; theme 3 is defined in `custom_theme.h`.
+
+**Custom theme (3).** Open `docs/theme_designer.html`, pick colours for the whole UI (or any single component: buttons, header, cards, switches, price text and so on), press **Save config**, and copy the saved `custom_theme.h` into the sketch folder. Set `CFG_COLOR_THEME` to 3 in `Config.h`, then compile and flash. Each component colour defaults to one of the 11 base colours until it is changed.

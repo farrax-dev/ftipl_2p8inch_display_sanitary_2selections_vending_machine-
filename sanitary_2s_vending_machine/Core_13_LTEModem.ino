@@ -1049,15 +1049,15 @@ void drawCellularBars(int x, int yBase, int scale, int bars, uint16_t onColor) {
   for (int i = 0; i < 4; i++) {
     int bx = x + i * (barWidth + gap);
     int by = yBase - barHeights[i];
-    uint16_t color = (bars >= i + 1) ? onColor : COL_TEXT_DIM;
+    uint16_t color = (bars >= i + 1) ? onColor : COL_WIFI_OFF;
     tft.fillRect(bx, by, barWidth, barHeights[i], color);
   }
 }
 
 void drawLTEIndicator() {
   int bars = lteSignalBars();
-  uint16_t onColor = (bars >= 3) ? COL_SUCCESS : (bars == 2) ? COL_WARNING : COL_DANGER;
+  uint16_t onColor = (bars >= 3) ? COL_WIFI_GOOD : (bars == 2) ? COL_WIFI_FAIR : COL_WIFI_BAD;
 
-  tft.fillRect(WIFI_ICON_X, WIFI_ICON_Y, WIFI_ICON_W, WIFI_ICON_H, COL_BG_TOP);
+  tft.fillRect(WIFI_ICON_X, WIFI_ICON_Y, WIFI_ICON_W, WIFI_ICON_H, COL_WIFI_BG);
   drawCellularBars(WIFI_ICON_X + 2, WIFI_ICON_Y + WIFI_ICON_H - 1, 1, bars, onColor);
 }

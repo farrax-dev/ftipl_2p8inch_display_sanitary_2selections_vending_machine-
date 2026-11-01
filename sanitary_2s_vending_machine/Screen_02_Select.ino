@@ -41,7 +41,7 @@ void drawSelectHeader() {
 
   if (selectMsg[0] != 0) {
     tft.setTextSize(1);
-    tft.setTextColor(COL_DANGER, COL_BG_TOP);
+    tft.setTextColor(COL_ERR_TEXT, COL_HDR_BG);
     rightText(selectMsg, headerRightX(), headerTextY(1));
     return;
   }
@@ -56,7 +56,7 @@ void drawSelectHeader() {
     tft.setFont(&FreeSerifBold9pt7b);
     // Accent, not body text: the theme's own highlight colour, so the
     // invitation stands apart from the title and follows CFG_COLOR_THEME.
-    tft.setTextColor(COL_ACCENT, COL_BG_TOP);
+    tft.setTextColor(COL_HDR_NOTE, COL_HDR_BG);
     tft.getTextBounds("Tap to select", 0, 0, &x1, &y1, &w, &h);
     tft.setCursor(headerRightX() - (int)w - x1, HDR_Y + (HDR_H - (int)h) / 2 - y1);
     tft.print("Tap to select");
@@ -69,7 +69,7 @@ void drawSelectHeader() {
   char counter[12];
   snprintf(counter, sizeof(counter), "%d / %d", qty, maxCartQty);
   tft.setTextSize(2);
-  tft.setTextColor(qty >= maxCartQty ? COL_WARNING : COL_TEXT, COL_BG_TOP);
+  tft.setTextColor(qty >= maxCartQty ? COL_WARN_TEXT : COL_HDR_COUNT, COL_HDR_BG);
   rightText(counter, headerRightX(), headerTextY(2));
 }
 
@@ -86,7 +86,7 @@ void drawSelectScreen() {
 
   if (count == 0) {
     tft.setTextSize(2);
-    tft.setTextColor(COL_TEXT, COL_BG_BOTTOM);
+    tft.setTextColor(COL_MSG_BODY, COL_BG_BOTTOM);
     centerText("No products available", 110);
   } else {
     for (int k = 0; k < count; k++) {
@@ -156,6 +156,22 @@ const int PCARD_MAX_NAME_LINES = 2;
 // small bitmap line.
 const int STATUS_LINE_H_12 = 24, STATUS_LINE_H_9 = 18;
 bool statusUsesSerif(int cardH) { return cardH >= 60; }
+
+// The caption over the stock figure. A card wide enough for the full words at
+// 12pt (in practice only the single-product screen, where the card spans the
+// whole width) says "Quantity Available:"; narrower cards keep "Qty Avail:".
+const char* qtyAvailLabel(int cardH, int innerW) {
+  if (cardH >= 100) {
+    int16_t x1, y1; uint16_t w, h;
+    tft.setTextSize(1);
+    tft.setFont(&FreeSerif12pt7b);
+    tft.getTextBounds("Quantity Available:", 0, 0, &x1, &y1, &w, &h);
+    tft.setFont();
+    if ((int)w <= innerW - 4) return "Quantity Available:";
+  }
+  return "Qty Avail:";
+}
+
 int statusFaceFor(int cardH, int innerW) {
   // 12pt only where the card is tall enough for two lines and wide enough
   // for "Qty Avail:" at that size.
@@ -163,7 +179,7 @@ int statusFaceFor(int cardH, int innerW) {
     int16_t x1, y1; uint16_t w, h;
     tft.setTextSize(1);
     tft.setFont(&FreeSerif12pt7b);
-    tft.getTextBounds("Qty Avail:", 0, 0, &x1, &y1, &w, &h);
+    tft.getTextBounds(qtyAvailLabel(cardH, innerW), 0, 0, &x1, &y1, &w, &h);
     tft.setFont();
     if ((int)w <= innerW - 4) return 1;
   }
@@ -251,8 +267,8 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   bool cartFull  = (cartTotalQty() >= maxCartQty);
   bool atLimit   = (!outOfStock && !inCart && (allInCart || cartFull));
 
-  uint16_t bg = outOfStock ? COL_BG_TOP : COL_CARD;
-  uint16_t border = atLimit ? COL_WARNING : (inCart ? COL_ACCENT : COL_CARD_BRD);
+  uint16_t bg = outOfStock ? COL_PRODUCT_OOS_FILL : COL_PRODUCT_FILL;
+  uint16_t border = atLimit ? COL_PRODUCT_LIMIT_BORDER : (inCart ? COL_PRODUCT_SEL_BORDER : COL_PRODUCT_BORDER);
 
   // rejectCardTap() redraws this same card in place (no full-screen repaint
   // first), always back to this same shadow+fill+border state, so — unlike a
@@ -284,15 +300,15 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   bool roomForTwo = (h >= 100);
   if (outOfStock) {
     snprintf(statusLine[0], sizeof(statusLine[0]), "OUT OF STOCK");
-    statusColor = COL_DANGER;
+    statusColor = COL_ERR_TEXT;
   } else if (atLimit) {
     snprintf(statusLine[0], sizeof(statusLine[0]), "%s", allInCart ? "ALL IN CART" : "CART FULL");
-    statusColor = COL_WARNING;
+    statusColor = COL_WARN_TEXT;
   } else {
-    statusColor = COL_SUCCESS;
+    statusColor = COL_STOCK_TEXT;
     if (roomForTwo) {
       statusLines = 2;
-      snprintf(statusLine[0], sizeof(statusLine[0]), "Qty Avail:");
+      snprintf(statusLine[0], sizeof(statusLine[0]), "%s", qtyAvailLabel(h, innerW));
       snprintf(statusLine[1], sizeof(statusLine[1]), "%d%s", totalStock, CFG_STOCK_UNIT);
     } else {
       snprintf(statusLine[0], sizeof(statusLine[0]), "Qty Avail: %d%s", totalStock, CFG_STOCK_UNIT);
@@ -323,7 +339,7 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   int blockH = nameH + (showPrice ? PCARD_GAP + 8 * priceSize : 0) + PCARD_GAP + statusH;
   int cursorY = y + (h - blockH) / 2;
 
-  tft.setTextColor(outOfStock ? COL_TEXT : COL_TEXT, bg);
+  tft.setTextColor(outOfStock ? COL_PRODUCT_NAME : COL_PRODUCT_NAME, bg);
   if (nameFont) {
     wrapFontInBox(nameFont, products[i].name, innerX, innerW, cursorY, true);
   } else {
@@ -335,7 +351,7 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   if (showPrice) {
     cursorY += PCARD_GAP;
     tft.setTextSize(priceSize);
-    tft.setTextColor(COL_ACCENT, bg);
+    tft.setTextColor(COL_PRICE_TEXT, bg);
     centerTextInBox(priceBuf, cursorY, innerX, innerW);
     cursorY += 8 * priceSize;
   }
@@ -362,8 +378,8 @@ void rejectCardTap(int i, int x, int y, int w, int h, const char* msg) {
   selectMsgUntil = millis() + 1800;
   drawSelectHeader();
 
-  tft.drawRoundRect(x, y, w, h, 10, COL_DANGER);
-  tft.drawRoundRect(x + 1, y + 1, w - 2, h - 2, 9, COL_DANGER);
+  tft.drawRoundRect(x, y, w, h, 10, COL_PRODUCT_ERR_BORDER);
+  tft.drawRoundRect(x + 1, y + 1, w - 2, h - 2, 9, COL_PRODUCT_ERR_BORDER);
   delay(160);
   drawProductCard(i, x, y, w, h);
 }

@@ -115,14 +115,15 @@ const int ABTN_OFF       = 3;   // unavailable: flat, dimmed, still bordered
 
 void auiButton(int x, int y, int w, int h, const char* label, int style, int face) {
   int r = (h >= 30) ? 8 : 6;
-  uint16_t fill = COL_CARD, txt = COL_TEXT;
-  if (style == ABTN_PRIMARY)      { fill = COL_ACCENT; txt = COL_BG_TOP; }
-  else if (style == ABTN_DANGER)  { fill = COL_DANGER; txt = COL_BG_TOP; }
-  else if (style == ABTN_OFF)     { fill = COL_CARD;   txt = COL_TEXT_DIM; }
+  uint16_t fill = COL_BTN_SEC_FILL, txt = COL_BTN_SEC_TEXT;
+  if (style == ABTN_PRIMARY)      { fill = COL_BTN_PRI_FILL; txt = COL_BTN_PRI_TEXT; }
+  else if (style == ABTN_DANGER)  { fill = COL_BTN_DANGER_FILL; txt = COL_BTN_DANGER_TEXT; }
+  else if (style == ABTN_OFF)     { fill = COL_BTN_OFF_FILL;   txt = COL_BTN_OFF_TEXT; }
 
-  if (style != ABTN_OFF) drawCardShadow(x, y, w, h, r);
+  if (style != ABTN_OFF) drawButtonShadow(x, y, w, h, r);
   tft.fillRoundRect(x, y, w, h, r, fill);
-  if (style == ABTN_SECONDARY || style == ABTN_OFF) tft.drawRoundRect(x, y, w, h, r, COL_CARD_BRD);
+  if (style == ABTN_SECONDARY) tft.drawRoundRect(x, y, w, h, r, COL_BTN_SEC_BORDER);
+  else if (style == ABTN_OFF) tft.drawRoundRect(x, y, w, h, r, COL_BTN_OFF_BORDER);
   auiPut(label, AL_CENTER, x + 4, w - 8, y + h / 2, txt, face);
 }
 
@@ -150,7 +151,7 @@ void auiRow(int x, int y, int w, int h) {
 
 // A row's left-hand label. cy is the row's vertical centre.
 void auiRowLabel(int x, int cy, int maxW, const char* label) {
-  auiPut(label, AL_LEFT, x, maxW, cy, COL_TEXT, FACE_MD);
+  auiPut(label, AL_LEFT, x, maxW, cy, COL_CARD_TITLE, FACE_MD);
 }
 
 // ---------- Switch ----------
@@ -162,18 +163,18 @@ const int ASW_W = 66, ASW_H = 24;
 void auiSwitch(int rightX, int cy, bool on, int w, const char* onText, const char* offText) {
   int x = rightX - w, y = cy - ASW_H / 2;
   int knobR = 9;
-  uint16_t track = on ? COL_ACCENT : COL_SHADOW;
+  uint16_t track = on ? COL_SW_ON_FILL : COL_SW_OFF_FILL;
 
   tft.fillRoundRect(x, y, w, ASW_H, ASW_H / 2, track);
-  tft.drawRoundRect(x, y, w, ASW_H, ASW_H / 2, on ? COL_ACCENT : COL_CARD_BRD);
+  tft.drawRoundRect(x, y, w, ASW_H, ASW_H / 2, on ? COL_SW_ON_BORDER : COL_SW_OFF_BORDER);
 
   int kx = on ? (x + w - 3 - knobR) : (x + 3 + knobR);
-  tft.fillCircle(kx, cy, knobR, COL_BG_TOP);
-  tft.drawCircle(kx, cy, knobR, on ? COL_ACCENT : COL_CARD_BRD);
+  tft.fillCircle(kx, cy, knobR, COL_SW_KNOB);
+  tft.drawCircle(kx, cy, knobR, on ? COL_SW_ON_BORDER : COL_SW_OFF_BORDER);
 
   int textW = w - 2 * knobR - 12;
-  if (on) auiPut(onText,  AL_CENTER, x + 6,                   textW, cy, COL_BG_TOP,   FACE_SM);
-  else    auiPut(offText, AL_CENTER, x + 2 * knobR + 6,       textW, cy, COL_TEXT_DIM, FACE_SM);
+  if (on) auiPut(onText,  AL_CENTER, x + 6,                   textW, cy, COL_SW_ON_TEXT,   FACE_SM);
+  else    auiPut(offText, AL_CENTER, x + 2 * knobR + 6,       textW, cy, COL_SW_OFF_TEXT, FACE_SM);
 }
 
 void auiOnOff(int rightX, int cy, bool on) {
@@ -190,24 +191,24 @@ int auiStepLeftX(int rightX)  { return auiStepMinusX(rightX); }
 
 void auiStepGlyph(int x, int cy, bool plus) {
   int cx = x + ASTEP_BTN_W / 2;
-  tft.fillRect(cx - 7, cy - 1, 15, 3, COL_BG_TOP);
-  if (plus) tft.fillRect(cx - 1, cy - 7, 3, 15, COL_BG_TOP);
+  tft.fillRect(cx - 7, cy - 1, 15, 3, COL_STEP_BTN_GLYPH);
+  if (plus) tft.fillRect(cx - 1, cy - 7, 3, 15, COL_STEP_BTN_GLYPH);
 }
 
 void auiStepper(int rightX, int cy, const char* value, uint16_t valCol) {
   int y = cy - ASTEP_H / 2;
   int mx = auiStepMinusX(rightX), vx = auiStepValX(rightX), px = auiStepPlusX(rightX);
 
-  drawCardShadow(mx, y, ASTEP_BTN_W, ASTEP_H, 6);
-  tft.fillRoundRect(mx, y, ASTEP_BTN_W, ASTEP_H, 6, COL_ACCENT);
+  drawButtonShadow(mx, y, ASTEP_BTN_W, ASTEP_H, 6);
+  tft.fillRoundRect(mx, y, ASTEP_BTN_W, ASTEP_H, 6, COL_STEP_BTN_FILL);
   auiStepGlyph(mx, cy, false);
 
-  tft.fillRoundRect(vx, y, ASTEP_VAL_W, ASTEP_H, 6, COL_BG_TOP);
-  tft.drawRoundRect(vx, y, ASTEP_VAL_W, ASTEP_H, 6, COL_CARD_BRD);
+  tft.fillRoundRect(vx, y, ASTEP_VAL_W, ASTEP_H, 6, COL_STEP_VALUE_FILL);
+  tft.drawRoundRect(vx, y, ASTEP_VAL_W, ASTEP_H, 6, COL_STEP_VALUE_BORDER);
   auiPut(value, AL_CENTER, vx + 3, ASTEP_VAL_W - 6, cy, valCol, FACE_MD);
 
-  drawCardShadow(px, y, ASTEP_BTN_W, ASTEP_H, 6);
-  tft.fillRoundRect(px, y, ASTEP_BTN_W, ASTEP_H, 6, COL_ACCENT);
+  drawButtonShadow(px, y, ASTEP_BTN_W, ASTEP_H, 6);
+  tft.fillRoundRect(px, y, ASTEP_BTN_W, ASTEP_H, 6, COL_STEP_BTN_FILL);
   auiStepGlyph(px, cy, true);
 }
 
@@ -235,35 +236,35 @@ bool auiRowButtonHit(int sx, int sy, int x, int cy, int w) {
 // COL_TEXT, not COL_TEXT_DIM: this sits directly on the gradient, which is a
 // saturated colour by the lower half of the screen.
 void auiHint(const char* s, int cy) {
-  auiPut(s, AL_CENTER, 12, 296, cy, COL_TEXT, FACE_XS);
+  auiPut(s, AL_CENTER, 12, 296, cy, COL_HINT_TEXT, FACE_XS);
 }
 
 // ---------- Tab strip (Reports) ----------
 void auiTab(int x, int y, int w, int h, const char* label, bool active) {
   if (active) {
-    tft.fillRoundRect(x, y, w, h, 6, COL_ACCENT);
-    auiPut(label, AL_CENTER, x + 2, w - 4, y + h / 2, COL_BG_TOP, FACE_SM);
+    tft.fillRoundRect(x, y, w, h, 6, COL_TAB_ON_FILL);
+    auiPut(label, AL_CENTER, x + 2, w - 4, y + h / 2, COL_TAB_ON_TEXT, FACE_SM);
   } else {
-    tft.fillRoundRect(x, y, w, h, 6, COL_CARD);
-    tft.drawRoundRect(x, y, w, h, 6, COL_CARD_BRD);
-    auiPut(label, AL_CENTER, x + 2, w - 4, y + h / 2, COL_TEXT, FACE_SM);
+    tft.fillRoundRect(x, y, w, h, 6, COL_TAB_OFF_FILL);
+    tft.drawRoundRect(x, y, w, h, 6, COL_TAB_OFF_BORDER);
+    auiPut(label, AL_CENTER, x + 2, w - 4, y + h / 2, COL_TAB_OFF_TEXT, FACE_SM);
   }
 }
 
 // ---------- Status dot ----------
 void auiDot(int cx, int cy, bool on) {
   if (on) {
-    tft.fillCircle(cx, cy, 6, COL_SUCCESS);
+    tft.fillCircle(cx, cy, 6, COL_DOT_ON);
   } else {
-    tft.fillCircle(cx, cy, 6, COL_BG_TOP);
-    tft.drawCircle(cx, cy, 6, COL_TEXT_DIM);
+    tft.fillCircle(cx, cy, 6, COL_DOT_OFF_FILL);
+    tft.drawCircle(cx, cy, 6, COL_DOT_OFF_RING);
   }
 }
 
 // ---------- Full-screen message (long operations) ----------
 void auiMessageScreen(const char* title, const char* line1, const char* line2) {
   drawGradientBackground();
-  auiPut(title, AL_CENTER, 10, 300, 92, COL_ACCENT, FACE_MD);
-  if (line1) auiPut(line1, AL_CENTER, 10, 300, 124, COL_TEXT, FACE_SM);
-  if (line2) auiPut(line2, AL_CENTER, 10, 300, 146, COL_TEXT, FACE_XS);
+  auiPut(title, AL_CENTER, 10, 300, 92, COL_MSG_TITLE, FACE_MD);
+  if (line1) auiPut(line1, AL_CENTER, 10, 300, 124, COL_MSG_BODY, FACE_SM);
+  if (line2) auiPut(line2, AL_CENTER, 10, 300, 146, COL_MSG_BODY, FACE_XS);
 }
