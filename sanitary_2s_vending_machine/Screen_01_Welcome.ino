@@ -17,8 +17,7 @@ void drawWelcomeClock() {
   if (getClockStrings(timeBuf, sizeof(timeBuf), dateBuf, sizeof(dateBuf))) {
     tft.setTextSize(2);
     tft.setTextColor(COL_STRIP_TIME, COL_STRIP_BG);
-    tft.setCursor(10, 8);
-    tft.print(timeBuf);
+    leftText(timeBuf, 10, 8);
 
     tft.setTextSize(2);
     tft.setTextColor(COL_STRIP_DATE, COL_STRIP_BG);
@@ -28,12 +27,11 @@ void drawWelcomeClock() {
   } else {
     tft.setTextSize(2);
     tft.setTextColor(COL_STRIP_TIME, COL_STRIP_BG);
-    tft.setCursor(10, 8);
-    tft.print("--:--");
+    leftText("--:--", 10, 8);
 
     tft.setTextSize(2);
     tft.setTextColor(COL_STRIP_TIME, COL_STRIP_BG);
-    rightText((WiFi.status() == WL_CONNECTED) ? "Syncing..." : "No network",
+    rightText((WiFi.status() == WL_CONNECTED) ? TXT_SYNCING : TXT_NO_NETWORK,
               WELCOME_CLOCK_W - 8, 8);
 
     lastClockMinute = -1;
@@ -81,11 +79,11 @@ void drawWelcomeCard() {
   // card has always rendered right, but only because drawWelcomeClock() runs
   // first and happens to leave the size at 1 — that is luck, not a contract.
   tft.setTextSize(1);
-  tft.setFont(&FreeSerifBold18pt7b);
+  tft.setFont(&UI_FONT_LG);
   // The font's own line-height metric, not a guess — replaces the old
   // "line height at text size 4" constant, which was tuned for the default
   // bitmap font and would be wrong for this one.
-  const int BIG_H = FreeSerifBold18pt7b.yAdvance;
+  const int BIG_H = UI_FONT_LG.yAdvance;
   const int SUB_H = 30;    // subtitle line plus the gap above it (default font, unchanged)
   int blockH = (has1 ? BIG_H : 0) + (has2 ? BIG_H : 0) + (hasSub ? SUB_H : 0);
   int cursorY = y + (h - blockH) / 2;
@@ -129,7 +127,7 @@ void drawFooterPrompt(bool visible) {
   tft.drawRoundRect(WELCOME_PILL_X, WELCOME_PILL_Y, WELCOME_PILL_W, WELCOME_PILL_H, 18, accent);
   tft.setTextSize(2);
   tft.setTextColor((outOfStock || visible) ? COL_PILL_TEXT : accent, fill);
-  centerTextInBox(outOfStock ? "Out of Stock" : "Touch to Continue",
+  centerTextInBox(outOfStock ? TXT_OUT_OF_STOCK : TXT_TOUCH_TO_CONTINUE,
                   WELCOME_PILL_Y + 11, WELCOME_PILL_X, WELCOME_PILL_W);
 }
 

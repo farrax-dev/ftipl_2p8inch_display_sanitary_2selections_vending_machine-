@@ -57,9 +57,9 @@ void drawIdleCountdown(int remainingSec) {
 
 void showIdleTimeoutWarning() {
   drawGradientBackground();
-  drawSerifLine("Time Out!", 0, tft.width(), 75, COL_ERR_TEXT, 0);
-  drawSerifLine("No activity for a while", 0, tft.width(), 125, COL_MSG_BODY, 1);
-  drawSerifLine("Returning to the home screen", 0, tft.width(), 155, COL_MSG_BODY, 1);
+  drawSerifLine(TXT_TIME_OUT, 0, tft.width(), 75, COL_ERR_TEXT, 0);
+  drawSerifLine(TXT_NO_ACTIVITY_FOR_A_WHILE, 0, tft.width(), 125, COL_MSG_BODY, 1);
+  drawSerifLine(TXT_RETURNING_TO_THE_HOME_SCREEN, 0, tft.width(), 155, COL_MSG_BODY, 1);
   delay(2000);
 }
 

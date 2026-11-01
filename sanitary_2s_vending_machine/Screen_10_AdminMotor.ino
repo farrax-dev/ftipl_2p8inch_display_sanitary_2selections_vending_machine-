@@ -46,8 +46,8 @@ void drawAdminMotorAssignScreen() {
     if (h >= 44) {
       auiPut(label, AL_CENTER, x + 4, MOTOR_BTN_W - 8, y + h / 2 - 9, txt, FACE_MD);
       char caption[16];
-      if (mine) snprintf(caption, sizeof(caption), "Selected");
-      else if (owner == -1) snprintf(caption, sizeof(caption), "Free");
+      if (mine) snprintf(caption, sizeof(caption), TXT_SELECTED);
+      else if (owner == -1) snprintf(caption, sizeof(caption), TXT_FREE);
       else snprintf(caption, sizeof(caption), "%s", products[owner].name);
       auiPut(caption, AL_CENTER, x + 4, MOTOR_BTN_W - 8, y + h / 2 + 12,
              mine ? COL_BTN_PRI_TEXT : COL_BTN_OFF_TEXT, FACE_XS);
@@ -57,9 +57,9 @@ void drawAdminMotorAssignScreen() {
   }
 
   int hintY = MOTOR_BTN_Y0 + motorGridRows() * (h + MOTOR_BTN_GAP) + 8;
-  if (hintY <= 186) auiHint("Tap a motor to assign or release it", hintY);
+  if (hintY <= 186) auiHint(TXT_TAP_A_MOTOR_TO_ASSIGN_OR_RELEA, hintY);
 
-  auiBarButton(0, 1, "Done", ABTN_PRIMARY);
+  auiBarButton(0, 1, TXT_DONE, ABTN_PRIMARY);
 }
 
 void handleAdminMotorAssignScreen() {
@@ -165,9 +165,9 @@ void drawMotorEditKeypad() {
 
   // Save / Fill Max / Cancel stacked down the right. Fill Max is the per-tray
   // refill: this motor goes straight to the maximum and the keypad closes.
-  auiButton(MKP_SIDE_X, mkpSideY(0), MKP_SIDE_W, MKP_SIDE_H, "Save", ABTN_PRIMARY, FACE_MD);
-  auiButton(MKP_SIDE_X, mkpSideY(1), MKP_SIDE_W, MKP_SIDE_H, "Fill Max", ABTN_PRIMARY, FACE_MD);
-  auiButton(MKP_SIDE_X, mkpSideY(2), MKP_SIDE_W, MKP_SIDE_H, "Cancel", ABTN_SECONDARY, FACE_MD);
+  auiButton(MKP_SIDE_X, mkpSideY(0), MKP_SIDE_W, MKP_SIDE_H, TXT_SAVE, ABTN_PRIMARY, FACE_MD);
+  auiButton(MKP_SIDE_X, mkpSideY(1), MKP_SIDE_W, MKP_SIDE_H, TXT_FILL_MAX, ABTN_PRIMARY, FACE_MD);
+  auiButton(MKP_SIDE_X, mkpSideY(2), MKP_SIDE_W, MKP_SIDE_H, TXT_CANCEL, ABTN_SECONDARY, FACE_MD);
 }
 
 void handleMotorEditKeypad() {
@@ -231,7 +231,7 @@ void drawAdminMotorStockScreen() {
   if (motorEditing >= 0) { drawMotorEditKeypad(); return; }
   drawGradientBackground();
 
-  drawScreenTitle("Motor Stock");
+  drawScreenTitle(TXT_MOTOR_STOCK);
 
   int firstMotor = motorStockPage * MOTORS_PER_PAGE;
   int rowsOnPage = min(MOTORS_PER_PAGE, MAX_MOTORS - firstMotor);
@@ -244,13 +244,13 @@ void drawAdminMotorStockScreen() {
 
     int owner = productForMotor(m);
     int labelW = motorStockTestX() - 8 - (MSTOCK_ROW_X + 10);
-    if (owner == -1) auiPut("Unassigned", AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 11, COL_CARD_CAPTION, FACE_MD);
+    if (owner == -1) auiPut(TXT_UNASSIGNED, AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 11, COL_CARD_CAPTION, FACE_MD);
     else             auiPut(products[owner].name, AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 11, COL_CARD_TITLE, FACE_MD);
     char sub[12];
     snprintf(sub, sizeof(sub), "Motor %d", m + 1);
     auiPut(sub, AL_LEFT, MSTOCK_ROW_X + 10, labelW, y + 26, COL_CARD_CAPTION, FACE_XS);
 
-    auiRowButton(motorStockTestX(), cy, MSTOCK_TEST_W, "Edit", ABTN_PRIMARY);
+    auiRowButton(motorStockTestX(), cy, MSTOCK_TEST_W, TXT_EDIT, ABTN_PRIMARY);
 
     char qbuf[6];
     snprintf(qbuf, sizeof(qbuf), "%d", motorStock[m]);
@@ -260,14 +260,14 @@ void drawAdminMotorStockScreen() {
 
   if (rowsOnPage < MOTORS_PER_PAGE) {
     int hintY = motorStockRowY(rowsOnPage) + 8;
-    if (hintY <= 186) auiHint("Tap Edit to type an exact quantity", hintY);
+    if (hintY <= 186) auiHint(TXT_TAP_EDIT_TO_TYPE_AN_EXACT_QUAN, hintY);
   }
 
   // Back | Refill Trays [| Page n/m]. Refill Trays is instant, no confirm:
   // it sets every assigned motor to the maximum.
   int slots = (MOTOR_STOCK_PAGES > 1) ? 3 : 2;
-  auiBarButton(0, slots, "Back", ABTN_SECONDARY);
-  auiBarButton(1, slots, "Refill Trays", ABTN_PRIMARY);
+  auiBarButton(0, slots, TXT_BACK, ABTN_SECONDARY);
+  auiBarButton(1, slots, TXT_REFILL_TRAYS, ABTN_PRIMARY);
   if (MOTOR_STOCK_PAGES > 1) {
     char pageLabel[16];
     snprintf(pageLabel, sizeof(pageLabel), "Page %d/%d", motorStockPage + 1, MOTOR_STOCK_PAGES);

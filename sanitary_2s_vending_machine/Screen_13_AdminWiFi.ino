@@ -47,21 +47,21 @@ void drawWiFiStatusCard(const char* busy) {
 
   // L1: state. Neutral colour when switched off — a deliberate choice, not a
   // fault.
-  const char* state = !wifiEnabled ? "Turned off" : connected ? "Connected" : "Not connected";
+  const char* state = !wifiEnabled ? TXT_TURNED_OFF : connected ? TXT_CONNECTED : TXT_NOT_CONNECTED;
   uint16_t stateCol = !wifiEnabled ? COL_CARD_CAPTION : connected ? COL_OK_TEXT : COL_ERR_TEXT;
   auiPut(state, AL_LEFT, x + 12, w - 24, y + 14, stateCol, FACE_MD);
 
   int textW = w - 24 - 48;   // leave the signal glyph's column free
   char buf[48];
   if (connected) snprintf(buf, sizeof(buf), "IP: %s", WiFi.localIP().toString().c_str());
-  else           snprintf(buf, sizeof(buf), "IP: -");
+  else           snprintf(buf, sizeof(buf), TXT_IP);
   auiPut(buf, AL_LEFT, x + 12, textW, y + 33, COL_CARD_TITLE, FACE_XS);
 
   if (connected) {
     long rssi = WiFi.RSSI();
     snprintf(buf, sizeof(buf), "Signal: %s (%ld dBm)", wifiQualityLabel(wifiBarsFromRSSI(rssi)), rssi);
   } else {
-    snprintf(buf, sizeof(buf), "Signal: -");
+    snprintf(buf, sizeof(buf), TXT_SIGNAL);
   }
   auiPut(buf, AL_LEFT, x + 12, textW, y + 50, COL_CARD_TITLE, FACE_XS);
 
@@ -72,16 +72,16 @@ void drawWiFiStatusCard(const char* busy) {
   // reasoning as the state line above, and as 4G Setup's test-result line.
   uint16_t resCol = COL_CARD_CAPTION;
   if (!wifiEnabled) {
-    snprintf(buf, sizeof(buf), "Ping: WiFi is turned off");
+    snprintf(buf, sizeof(buf), TXT_PING_WIFI_IS_TURNED_OFF);
   } else if (strlen(wifiSSID) == 0) {
-    snprintf(buf, sizeof(buf), "Set a network name to get started");
+    snprintf(buf, sizeof(buf), TXT_SET_A_NETWORK_NAME_TO_GET_STAR);
   } else if (!wifiPingAttempted) {
-    snprintf(buf, sizeof(buf), "Ping: not tested yet");
+    snprintf(buf, sizeof(buf), TXT_PING_NOT_TESTED_YET);
   } else if (wifiPingSuccess) {
     snprintf(buf, sizeof(buf), "Ping OK - HTTP %d in %lums", wifiPingHttpCode, wifiPingMs);
     resCol = COL_OK_TEXT;
   } else {
-    snprintf(buf, sizeof(buf), "Ping failed - no internet reachable");
+    snprintf(buf, sizeof(buf), TXT_PING_FAILED_NO_INTERNET_REACHA);
     resCol = COL_ERR_TEXT;
   }
   auiPut(buf, AL_LEFT, x + 12, w - 24, y + 67, resCol, FACE_XS);
@@ -90,38 +90,38 @@ void drawWiFiStatusCard(const char* busy) {
 void drawAdminWiFiScreen() {
   drawGradientBackground();
 
-  drawScreenTitle("WiFi Setup", tft.width() - (HDR_SW_RIGHT - ASW_W - 6));
+  drawScreenTitle(TXT_WIFI_SETUP, tft.width() - (HDR_SW_RIGHT - ASW_W - 6));
   drawHeaderSwitch(wifiEnabled);
 
   // ---- Network name ----
   int cy = wfRowY(0) + WF_ROW_H / 2;
   auiRow(WF_ROW_X, wfRowY(0), WF_ROW_W, WF_ROW_H);
-  auiRowLabel(WF_ROW_X + 12, cy, 90, "Network");
-  int vx = WF_ROW_X + 12 + auiTextW("Network", FACE_MD) + 12;
-  auiPut(strlen(wifiSSID) > 0 ? wifiSSID : "(not set)", AL_LEFT, vx, WF_BTN_X - 8 - vx, cy,
+  auiRowLabel(WF_ROW_X + 12, cy, 90, TXT_NETWORK);
+  int vx = WF_ROW_X + 12 + auiTextW(TXT_NETWORK, FACE_MD) + 12;
+  auiPut(strlen(wifiSSID) > 0 ? wifiSSID : TXT_NOT_SET, AL_LEFT, vx, WF_BTN_X - 8 - vx, cy,
          COL_VALUE_TEXT, FACE_MD);
-  auiRowButton(WF_BTN_X, cy, WF_BTN_W, "Edit", ABTN_PRIMARY);
+  auiRowButton(WF_BTN_X, cy, WF_BTN_W, TXT_EDIT, ABTN_PRIMARY);
 
   // ---- Password (never shown, only its length) ----
   cy = wfRowY(1) + WF_ROW_H / 2;
   auiRow(WF_ROW_X, wfRowY(1), WF_ROW_W, WF_ROW_H);
-  auiRowLabel(WF_ROW_X + 12, cy, 100, "Password");
-  vx = WF_ROW_X + 12 + auiTextW("Password", FACE_MD) + 12;
+  auiRowLabel(WF_ROW_X + 12, cy, 100, TXT_PASSWORD);
+  vx = WF_ROW_X + 12 + auiTextW(TXT_PASSWORD, FACE_MD) + 12;
   int plen = strlen(wifiPass);
   if (plen == 0) {
-    auiPut("(none)", AL_LEFT, vx, WF_BTN_X - 8 - vx, cy, COL_CARD_CAPTION, FACE_MD);
+    auiPut(TXT_NONE, AL_LEFT, vx, WF_BTN_X - 8 - vx, cy, COL_CARD_CAPTION, FACE_MD);
   } else {
     int n = min(plen, 12);
     for (int k = 0; k < n; k++) tft.fillCircle(vx + 5 + k * 12, cy, 4, COL_VALUE_TEXT);
   }
-  auiRowButton(WF_BTN_X, cy, WF_BTN_W, "Edit", ABTN_PRIMARY);
+  auiRowButton(WF_BTN_X, cy, WF_BTN_W, TXT_EDIT, ABTN_PRIMARY);
 
   drawWiFiStatusCard(NULL);
 
   int actionStyle = wifiEnabled ? ABTN_PRIMARY : ABTN_OFF;
-  auiBarButton(0, 3, "Back", ABTN_SECONDARY);
-  auiBarButton(1, 3, "Connect", actionStyle);
-  auiBarButton(2, 3, "Ping", actionStyle);
+  auiBarButton(0, 3, TXT_BACK, ABTN_SECONDARY);
+  auiBarButton(1, 3, TXT_CONNECT, actionStyle);
+  auiBarButton(2, 3, TXT_PING, actionStyle);
 }
 
 void handleAdminWiFiScreen() {

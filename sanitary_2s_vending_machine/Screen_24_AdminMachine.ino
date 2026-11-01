@@ -33,35 +33,35 @@ void drawMachineValueRow(int row, const char* label, const char* value, uint16_t
 
 void drawAdminMachineScreen() {
   drawGradientBackground();
-  drawScreenTitle("Machine");
+  drawScreenTitle(TXT_MACHINE);
 
   // ---- Machine ID ----
-  drawMachineValueRow(0, "Machine ID", strlen(machineId) > 0 ? machineId : "(not set)",
-                      COL_VALUE_TEXT, "Edit", FACE_MD);
+  drawMachineValueRow(0, TXT_MACHINE_ID, strlen(machineId) > 0 ? machineId : TXT_NOT_SET,
+                      COL_VALUE_TEXT, TXT_EDIT, FACE_MD);
 
   // ---- Store ID (printed under the machine ID in report e-mails) ----
-  drawMachineValueRow(1, "Store ID", strlen(storeId) > 0 ? storeId : "(not set)",
-                      strlen(storeId) > 0 ? COL_VALUE_TEXT : COL_CARD_CAPTION, "Edit", FACE_MD);
+  drawMachineValueRow(1, TXT_STORE_ID, strlen(storeId) > 0 ? storeId : TXT_NOT_SET,
+                      strlen(storeId) > 0 ? COL_VALUE_TEXT : COL_CARD_CAPTION, TXT_EDIT, FACE_MD);
 
   // ---- Admin PIN: a fixed placeholder, never the value — it's a credential,
   // not something to glance at ----
-  drawMachineValueRow(2, "Admin PIN", "****", COL_VALUE_TEXT, "Change", FACE_MD);
+  drawMachineValueRow(2, TXT_ADMIN_PIN, "****", COL_VALUE_TEXT, TXT_CHANGE, FACE_MD);
 
   // ---- Clock ----
   char timeBuf[16], dateBuf[24], clockBuf[44];
   if (getClockStrings(timeBuf, sizeof(timeBuf), dateBuf, sizeof(dateBuf)))
     snprintf(clockBuf, sizeof(clockBuf), "%s  %s", timeBuf, dateBuf);
   else
-    snprintf(clockBuf, sizeof(clockBuf), "not set");
-  drawMachineValueRow(3, "Clock", clockBuf, COL_VALUE_TEXT, "Set", FACE_SM);
+    snprintf(clockBuf, sizeof(clockBuf), TXT_NOT_SET_LOWER);
+  drawMachineValueRow(3, TXT_CLOCK, clockBuf, COL_VALUE_TEXT, TXT_SET, FACE_SM);
 
   // ---- Customer screens: max items per order + idle timeout ----
   char cust[24];
   if (idleTimeoutOn) snprintf(cust, sizeof(cust), "Timeout %ds", idleTimeoutSec);
-  else               snprintf(cust, sizeof(cust), "Timeout off");
-  drawMachineValueRow(4, "Customer", cust, COL_VALUE_TEXT, "Open", FACE_SM);
+  else               snprintf(cust, sizeof(cust), TXT_TIMEOUT_OFF);
+  drawMachineValueRow(4, TXT_CUSTOMER, cust, COL_VALUE_TEXT, TXT_OPEN, FACE_SM);
 
-  auiBarButton(0, 1, "Back", ABTN_SECONDARY);
+  auiBarButton(0, 1, TXT_BACK, ABTN_SECONDARY);
 }
 
 void handleAdminMachineScreen() {

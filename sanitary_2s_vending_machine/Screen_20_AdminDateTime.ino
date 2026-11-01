@@ -154,7 +154,7 @@ void dtDrawGlyph(int x, int w, int y, int h, bool plus) {
 
 void drawAdminDateTimeScreen() {
   drawGradientBackground();
-  drawScreenTitle("Date & Time");
+  drawScreenTitle(TXT_DATE_TIME);
 
   for (int f = 0; f < DT_FIELD_COUNT; f++) {
     int x = dtColX(f), w = DT_COL_W[f];
@@ -182,12 +182,12 @@ void drawAdminDateTimeScreen() {
     }
   }
 
-  auiBarButton(0, 3, "Cancel", ABTN_SECONDARY);
+  auiBarButton(0, 3, TXT_CANCEL, ABTN_SECONDARY);
   // Core_06_Network.ino's clock24Hour, toggled here — also reshapes the Hour
   // stepper above (1-12 + AM/PM chip vs. 0-23) rather than being purely
   // cosmetic for the Welcome screen clock the way it used to be.
-  auiBarButton(1, 3, clock24Hour ? "24 hour" : "12 hour", ABTN_SECONDARY);
-  auiBarButton(2, 3, "Save", ABTN_PRIMARY);
+  auiBarButton(1, 3, clock24Hour ? TXT_24_HOUR : TXT_12_HOUR, ABTN_SECONDARY);
+  auiBarButton(2, 3, TXT_SAVE, ABTN_PRIMARY);
 }
 
 void handleAdminDateTimeScreen() {

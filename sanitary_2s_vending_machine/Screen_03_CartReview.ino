@@ -26,7 +26,7 @@ void drawCartReviewScreen() {
   drawGradientBackground();
 
   // The total moves up beside the title rather than sitting on its own line
-  drawScreenTitle("Your Cart", 110);
+  drawScreenTitle(TXT_YOUR_CART, 110);
 
   // Matches the product cards' own showPrice gate (Screen_02_Select.ino) —
   // a cart total is still a price, so it stays hidden under the same flag
@@ -48,7 +48,7 @@ void drawCartReviewScreen() {
   if (count == 0) {
     tft.setTextSize(2);
     tft.setTextColor(COL_MSG_BODY, COL_BG_BOTTOM);
-    centerText("Cart is empty", 110);
+    centerText(TXT_CART_IS_EMPTY, 110);
   } else {
     int rowH = cartRowH(count);
     for (int k = 0; k < count; k++) {
@@ -56,8 +56,8 @@ void drawCartReviewScreen() {
     }
   }
 
-  drawBackButton("< Back");
-  drawProceedButton(freeVendMode ? "Get Free >" : "Pay >");
+  drawBackButton(TXT_BACK_ARROW);
+  drawProceedButton(freeVendMode ? TXT_GET_FREE : TXT_PAY);
 }
 
 // Serif face for item names, the same family as the Welcome screen's
@@ -66,7 +66,7 @@ void drawCartReviewScreen() {
 // column on one line and the row is tall enough. nullptr means neither fits
 // and the bitmap font is used instead.
 const GFXfont* cartNameFont(int textW, int rowH) {
-  const GFXfont* candidates[2] = { &FreeSerifBold12pt7b, &FreeSerifBold9pt7b };
+  const GFXfont* candidates[2] = { &UI_FONT_MD, &UI_FONT_SM };
   for (int c = 0; c < 2; c++) {
     if (candidates[c]->yAdvance > rowH - 4) continue;
     tft.setTextSize(1);
@@ -153,15 +153,13 @@ void drawCartRow(int i, int x, int y, int w, int h) {
     char nameBuf[24];
     snprintf(nameBuf, sizeof(nameBuf), "%.*s", maxChars, products[i].name);
     tft.setTextSize(nameSize);
-    tft.setCursor(textX, blockY);
-    tft.print(nameBuf);
+    leftText(nameBuf, textX, blockY);
   }
 
   if (twoLine) {
     tft.setTextSize(moneySize);
     tft.setTextColor(COL_PRICE_TEXT, COL_CARD_FILL);
-    tft.setCursor(textX, blockY + nameH + ROW_LINE_GAP);
-    tft.print(moneyBuf);
+    leftText(moneyBuf, textX, blockY + nameH + ROW_LINE_GAP);
   }
 
   // 28, not 26: a size-3 glyph is 18x24, which in a 26px button leaves one

@@ -12,10 +12,10 @@
 // which is why labels kept running out of room. A proportional serif is
 // narrower per character AND taller, so text got bigger without costing width.
 //
-//   FACE_XS  FreeSerif 9pt        cap 12px  captions, long values, hints
-//   FACE_SM  FreeSerifBold 9pt    cap 12px  secondary labels, small buttons
-//   FACE_MD  FreeSerifBold 12pt   cap 16px  primary labels, buttons, values
-//   FACE_LG  FreeSerifBold 18pt   cap 24px  big numbers (keypad, PIN)
+//   FACE_XS  UI_FONT_XS (default FreeSerif 9pt)      captions, long values, hints
+//   FACE_SM  UI_FONT_SM (default FreeSerifBold 9pt)  secondary labels, small buttons
+//   FACE_MD  UI_FONT_MD (default FreeSerifBold 12pt) primary labels, buttons, values
+//   FACE_LG  UI_FONT_LG (default FreeSerifBold 18pt) big numbers (keypad, PIN)
 //
 // Custom GFX fonts have three traps, all handled here so no screen has to:
 //   - setTextSize() scales them, so size is pinned to 1 before every draw.
@@ -35,14 +35,29 @@ const int FACE_SM = 1;
 const int FACE_MD = 2;
 const int FACE_LG = 3;
 
-#define AUI_FONT(face) ((face) == FACE_LG ? &FreeSerifBold18pt7b : \
-                        (face) == FACE_MD ? &FreeSerifBold12pt7b : \
-                        (face) == FACE_SM ? &FreeSerifBold9pt7b  : &FreeSerif9pt7b)
+// The four type roles map to UI_FONT_* (Core_03_Theme.ino / custom_theme.h), so the
+// family and sizes can be changed from the theme without touching any screen.
+#define AUI_FONT(face) ((face) == FACE_LG ? &UI_FONT_LG : \
+                        (face) == FACE_MD ? &UI_FONT_MD : \
+                        (face) == FACE_SM ? &UI_FONT_SM : &UI_FONT_XS)
 
 const int AL_LEFT = 0, AL_CENTER = 1, AL_RIGHT = 2;
 
+// Height of a capital letter in the face's font, measured once from the font
+// itself so centring stays right whatever family or size the theme picks.
 int auiCapH(int face) {
-  return (face == FACE_LG) ? 24 : (face == FACE_MD) ? 16 : 12;
+  static int cache[4] = { -1, -1, -1, -1 };
+  if (face < 0 || face > 3) face = FACE_XS;
+  if (cache[face] < 0) {
+    int16_t x1, y1;
+    uint16_t w, h;
+    tft.setTextSize(1);
+    tft.setFont(AUI_FONT(face));
+    tft.getTextBounds("H", 0, 0, &x1, &y1, &w, &h);
+    tft.setFont();
+    cache[face] = (int)h;
+  }
+  return cache[face];
 }
 
 void auiFace(int face) {
@@ -105,6 +120,59 @@ void auiPut(const char* s, int align, int bx, int bw, int cy, uint16_t col, int 
   tft.setCursor(x - x1, cy + auiCapH(face) / 2);
   tft.print(buf);
   tft.setFont();
+}
+
+// ---------- Text that used to use the built-in pixel font ----------
+// Prices, the clock, button labels, cart quantities and similar text were drawn with the
+// default 5x7 pixel font at setTextSize(1..3). So that EVERY piece of text on every screen
+// is in the one theme font, those calls (rightText, centerText, centerTextInBox, leftText,
+// wrapTextInBox) now draw with UI_FONT_*: size 1 -> small bold, size 2 -> medium bold,
+// size 3 -> large bold. The caller's setTextSize() still chooses which, and y is still the
+// top of the old 8*size row; the text is centred in that row.
+int uiBmpSize() {
+  int16_t x1, y1;
+  uint16_t w, h;
+  tft.setFont();
+  tft.getTextBounds("0", 0, 0, &x1, &y1, &w, &h);
+  int s = (int)h / 8;
+  return (s < 1) ? 1 : s;
+}
+
+int uiBmpFaceFor(int size) {
+  return (size >= 3) ? FACE_LG : (size == 2) ? FACE_MD : FACE_SM;
+}
+
+// Width of s drawn at the given pixel-font size. Leaves the text size as it found it.
+int uiBmpTextW(const char* s, int size) {
+  int keep = uiBmpSize();
+  int w = auiTextW(s, uiBmpFaceFor(size));
+  tft.setTextSize(keep);
+  return w;
+}
+
+// Row height for wrapped lines: the font's cap height, never less than the old 8*size, plus 2.
+int uiBmpLineH(int size) {
+  int h = auiCapH(uiBmpFaceFor(size));
+  if (h < 8 * size) h = 8 * size;
+  return h + 2;
+}
+
+// align: 0 = x is the left edge, 1 = centred in [x, x+boxW], 2 = x is the right edge.
+// With boxW > 0 the face steps down (large -> medium -> small) until the text fits the box.
+void uiBmpDraw(const char* s, int align, int x, int boxW, int topY) {
+  if (s == NULL || s[0] == '\0') return;
+  int size = uiBmpSize();
+  int face = uiBmpFaceFor(size);
+  if (boxW > 0) face = auiFitFace(s, boxW, face);
+  int16_t x1, y1;
+  uint16_t w, h;
+  auiFace(face);
+  tft.getTextBounds(s, 0, 0, &x1, &y1, &w, &h);
+  int px = (align == 1) ? x + (boxW - (int)w) / 2 : (align == 2) ? x - (int)w : x;
+  tft.setCursor(px - x1, topY + (8 * size) / 2 + auiCapH(face) / 2);
+  tft.print(s);
+  tft.setFont();
+  tft.setTextSize(size);
 }
 
 // ---------- Buttons ----------

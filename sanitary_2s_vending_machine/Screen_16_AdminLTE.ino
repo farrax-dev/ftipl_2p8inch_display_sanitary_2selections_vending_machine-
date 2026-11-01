@@ -14,7 +14,7 @@ void drawLTEStatusCard(const char* busy) {
 
   if (busy != NULL) {
     auiPut(busy, AL_CENTER, x + 12, w - 24, y + h / 2 - 10, COL_MSG_TITLE, FACE_MD);
-    auiPut("This can take 20+ seconds", AL_CENTER, x + 12, w - 24, y + h / 2 + 16, COL_CARD_CAPTION, FACE_XS);
+    auiPut(TXT_THIS_CAN_TAKE_20_SECONDS, AL_CENTER, x + 12, w - 24, y + h / 2 + 16, COL_CARD_CAPTION, FACE_XS);
     return;
   }
 
@@ -25,20 +25,20 @@ void drawLTEStatusCard(const char* busy) {
   // switched off. Neutral colour when off — a deliberate choice, not a fault.
   char state[48];
   uint16_t stateCol;
-  if (!lteEnabled)                { snprintf(state, sizeof(state), "Turned off");     stateCol = COL_CARD_CAPTION; }
-  else if (connected)             { snprintf(state, sizeof(state), "Connected");      stateCol = COL_OK_TEXT; }
+  if (!lteEnabled)                { snprintf(state, sizeof(state), TXT_TURNED_OFF);     stateCol = COL_CARD_CAPTION; }
+  else if (connected)             { snprintf(state, sizeof(state), TXT_CONNECTED);      stateCol = COL_OK_TEXT; }
   else if (lteLastError[0] != '\0') { snprintf(state, sizeof(state), "%s", lteLastError); stateCol = COL_ERR_TEXT; }
-  else                            { snprintf(state, sizeof(state), "Not connected");  stateCol = COL_ERR_TEXT; }
+  else                            { snprintf(state, sizeof(state), TXT_NOT_CONNECTED);  stateCol = COL_ERR_TEXT; }
   auiPut(state, AL_LEFT, x + 14, w - 28, y + 18, stateCol, FACE_MD);
 
   char buf[56];
   snprintf(buf, sizeof(buf), "APN: %s", LTE_APN);
   auiPut(buf, AL_LEFT, x + 14, w - 28, y + 46, COL_CARD_TITLE, FACE_XS);
-  auiPut("Used as the backup link when WiFi is down", AL_LEFT, x + 14, w - 28, y + 66, COL_CARD_CAPTION, FACE_XS);
+  auiPut(TXT_USED_AS_THE_BACKUP_LINK_WHEN_W, AL_LEFT, x + 14, w - 28, y + 66, COL_CARD_CAPTION, FACE_XS);
 
   int bars = lteSignalBars();
   if (connected) snprintf(buf, sizeof(buf), "Signal: %s", wifiQualityLabel(bars));
-  else           snprintf(buf, sizeof(buf), "Signal: -");
+  else           snprintf(buf, sizeof(buf), TXT_SIGNAL);
   auiPut(buf, AL_LEFT, x + 14, w - 28 - 48, y + 92, COL_CARD_TITLE, FACE_XS);
   drawCellularBars(x + w - 14 - 36, y + 100, 2, connected ? bars : 0,
                    connected ? COL_WIFI_GOOD : COL_WIFI_OFF);
@@ -48,14 +48,14 @@ void drawLTEStatusCard(const char* busy) {
   // "Test failed" line sitting there looking current.
   uint16_t resCol = COL_CARD_CAPTION;
   if (!lteEnabled) {
-    snprintf(buf, sizeof(buf), "Test: 4G is turned off");
+    snprintf(buf, sizeof(buf), TXT_TEST_4G_IS_TURNED_OFF);
   } else if (!ltePingAttempted) {
-    snprintf(buf, sizeof(buf), "Test: not tested yet");
+    snprintf(buf, sizeof(buf), TXT_TEST_NOT_TESTED_YET);
   } else if (ltePingSuccess) {
     snprintf(buf, sizeof(buf), "Test OK - HTTP %d in %lums", ltePingHttpCode, ltePingMs);
     resCol = COL_OK_TEXT;
   } else {
-    snprintf(buf, sizeof(buf), "Test failed - could not reach the internet");
+    snprintf(buf, sizeof(buf), TXT_TEST_FAILED_COULD_NOT_REACH_TH);
     resCol = COL_ERR_TEXT;
   }
   auiPut(buf, AL_LEFT, x + 14, w - 28, y + 124, resCol, FACE_SM);
@@ -64,15 +64,15 @@ void drawLTEStatusCard(const char* busy) {
 void drawAdminLTEScreen() {
   drawGradientBackground();
 
-  drawScreenTitle("4G / LTE Setup", tft.width() - (HDR_SW_RIGHT - ASW_W - 6));
+  drawScreenTitle(TXT_4G_LTE_SETUP, tft.width() - (HDR_SW_RIGHT - ASW_W - 6));
   drawHeaderSwitch(lteEnabled);
 
   drawLTEStatusCard(NULL);
 
   // Greyed out while the radio is off — the handler already no-ops the tap in
   // that state, but until now it still looked fully active.
-  auiBarButton(0, 2, "Back", ABTN_SECONDARY);
-  auiBarButton(1, 2, "Test 4G", lteEnabled ? ABTN_PRIMARY : ABTN_OFF);
+  auiBarButton(0, 2, TXT_BACK, ABTN_SECONDARY);
+  auiBarButton(1, 2, TXT_TEST_4G, lteEnabled ? ABTN_PRIMARY : ABTN_OFF);
 }
 
 void handleAdminLTEScreen() {

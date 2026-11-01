@@ -47,17 +47,17 @@ void drawRRSStepperRow(int row, const char* label, int value) {
 
 void drawAdminRFIDResetScreen() {
   drawGradientBackground();
-  drawScreenTitle("RFID Auto-Reset");
+  drawScreenTitle(TXT_RFID_AUTO_RESET);
 
   // ---- Row 0: on/off ----
   auiRow(RRS_ROW_X, RRS_ROW0_Y, RRS_ROW_W, RRS_ROW0_H);
-  auiRowLabel(RRS_ROW_X + 12, RRS_ROW0_Y + 14, 170, "Monthly reset");
+  auiRowLabel(RRS_ROW_X + 12, RRS_ROW0_Y + 14, 170, TXT_MONTHLY_RESET);
   char caption[40];
   if (rfidResetFiredMonth > 0)
     snprintf(caption, sizeof(caption), "Last run %04d-%02d",
              (int)(rfidResetFiredMonth / 100), (int)(rfidResetFiredMonth % 100));
   else
-    snprintf(caption, sizeof(caption), "Zeroes every card's usage");
+    snprintf(caption, sizeof(caption), TXT_ZEROES_EVERY_CARD_S_USAGE);
   auiPut(caption, AL_LEFT, RRS_ROW_X + 12, 190, RRS_ROW0_Y + 31, COL_CARD_CAPTION, FACE_XS);
   auiOnOff(RRS_RIGHT, RRS_ROW0_Y + RRS_ROW0_H / 2, rfidResetEnabled);
 
@@ -66,7 +66,7 @@ void drawAdminRFIDResetScreen() {
     drawRRSStepperRow(f + 1, rrsFields[f].label, *rrsFields[f].value);
   }
 
-  auiBarButton(0, 1, "Back", ABTN_SECONDARY);
+  auiBarButton(0, 1, TXT_BACK, ABTN_SECONDARY);
 }
 
 void handleAdminRFIDResetScreen() {

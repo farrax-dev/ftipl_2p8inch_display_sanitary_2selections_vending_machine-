@@ -22,7 +22,7 @@ int cusRowCY(int row) { return cusRowY(row) + CUS_ROW_H / 2; }
 
 void drawAdminCustomerScreen() {
   drawGradientBackground();
-  drawScreenTitle("Customer Screens");
+  drawScreenTitle(TXT_CUSTOMER_SCREENS);
 
   for (int r = 0; r < 4; r++) auiRow(CUS_ROW_X, cusRowY(r), CUS_ROW_W, CUS_ROW_H);
 
@@ -30,20 +30,20 @@ void drawAdminCustomerScreen() {
   char buf[8];
 
   snprintf(buf, sizeof(buf), "%d", maxCartQty);
-  auiRowLabel(CUS_ROW_X + 12, cusRowCY(0), stepLabelW, "Max items");
+  auiRowLabel(CUS_ROW_X + 12, cusRowCY(0), stepLabelW, TXT_MAX_ITEMS);
   auiStepper(CUS_RIGHT, cusRowCY(0), buf, COL_STEP_VALUE_TEXT);
 
-  auiRowLabel(CUS_ROW_X + 12, cusRowCY(1), 170, "Auto timeout");
+  auiRowLabel(CUS_ROW_X + 12, cusRowCY(1), 170, TXT_AUTO_TIMEOUT);
   auiOnOff(CUS_RIGHT, cusRowCY(1), idleTimeoutOn);
 
   snprintf(buf, sizeof(buf), "%d", idleTimeoutSec);
-  auiRowLabel(CUS_ROW_X + 12, cusRowCY(2), stepLabelW, "Seconds");
+  auiRowLabel(CUS_ROW_X + 12, cusRowCY(2), stepLabelW, TXT_SECONDS);
   auiStepper(CUS_RIGHT, cusRowCY(2), buf, idleTimeoutOn ? COL_STEP_VALUE_TEXT : COL_STEP_VALUE_OFF);
 
-  auiRowLabel(CUS_ROW_X + 12, cusRowCY(3), 170, "Show countdown");
+  auiRowLabel(CUS_ROW_X + 12, cusRowCY(3), 170, TXT_SHOW_COUNTDOWN);
   auiOnOff(CUS_RIGHT, cusRowCY(3), idleShowTimer);
 
-  auiBarButton(0, 1, "Back", ABTN_SECONDARY);
+  auiBarButton(0, 1, TXT_BACK, ABTN_SECONDARY);
 }
 
 void handleAdminCustomerScreen() {

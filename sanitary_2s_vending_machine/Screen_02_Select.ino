@@ -33,11 +33,11 @@ void drawSelectHeader() {
   // the title can't change size as the right-hand text swaps.
   int16_t bx, by; uint16_t bw, bh;
   tft.setTextSize(1);
-  tft.setFont(&FreeSerifBold9pt7b);
-  tft.getTextBounds("Tap to select", 0, 0, &bx, &by, &bw, &bh);
+  tft.setFont(&UI_FONT_SM);
+  tft.getTextBounds(TXT_TAP_TO_SELECT, 0, 0, &bx, &by, &bw, &bh);
   tft.setFont();
   int reserved = max(SELECT_HDR_RESERVED, HDR_STATUS_W + 4 + (int)bw + 10);
-  drawScreenTitle("Select Products", reserved);
+  drawScreenTitle(TXT_SELECT_PRODUCTS, reserved);
 
   if (selectMsg[0] != 0) {
     tft.setTextSize(1);
@@ -53,13 +53,13 @@ void drawSelectHeader() {
     // in the band the way drawHeaderTitle() does it.
     int16_t x1, y1; uint16_t w, h;
     tft.setTextSize(1);
-    tft.setFont(&FreeSerifBold9pt7b);
+    tft.setFont(&UI_FONT_SM);
     // Accent, not body text: the theme's own highlight colour, so the
     // invitation stands apart from the title and follows CFG_COLOR_THEME.
     tft.setTextColor(COL_HDR_NOTE, COL_HDR_BG);
-    tft.getTextBounds("Tap to select", 0, 0, &x1, &y1, &w, &h);
+    tft.getTextBounds(TXT_TAP_TO_SELECT, 0, 0, &x1, &y1, &w, &h);
     tft.setCursor(headerRightX() - (int)w - x1, HDR_Y + (HDR_H - (int)h) / 2 - y1);
-    tft.print("Tap to select");
+    tft.print(TXT_TAP_TO_SELECT);
     tft.setFont();
     tft.setTextSize(2);
     return;
@@ -87,7 +87,7 @@ void drawSelectScreen() {
   if (count == 0) {
     tft.setTextSize(2);
     tft.setTextColor(COL_MSG_BODY, COL_BG_BOTTOM);
-    centerText("No products available", 110);
+    centerText(TXT_NO_PRODUCTS_AVAILABLE, 110);
   } else {
     for (int k = 0; k < count; k++) {
       int x, y, w, h;
@@ -96,7 +96,7 @@ void drawSelectScreen() {
     }
   }
 
-  drawBackButton("< Back");
+  drawBackButton(TXT_BACK_ARROW);
 
   // The Proceed button's "just buy the only thing here" shortcut only means
   // something with exactly one product on sale — with 2+, there's no single
@@ -105,12 +105,12 @@ void drawSelectScreen() {
   // So quick-vend with multiple products draws no Proceed button at all —
   // every card is already the complete action, nothing left to proceed to.
   if (isQuickVend() && count == 1) {
-    drawProceedButton(freeVendMode ? "Get Free >" : "Proceed >");
+    drawProceedButton(freeVendMode ? TXT_GET_FREE : TXT_PROCEED);
   } else if (!isQuickVend()) {
     int items = cartItemCount();
     char cartLabel[16];
     if (items > 0) snprintf(cartLabel, sizeof(cartLabel), "Cart(%d) >", items);
-    else snprintf(cartLabel, sizeof(cartLabel), "Cart >");
+    else snprintf(cartLabel, sizeof(cartLabel), TXT_CART);
     drawProceedButton(cartLabel);
   }
 }
@@ -154,7 +154,7 @@ const int PCARD_MAX_NAME_LINES = 2;
 // Status text is regular-weight serif (FreeSerif): 12pt lines are ~24px apart,
 // 9pt ~18px. Cards under 60px tall are too short for either and keep the
 // small bitmap line.
-const int STATUS_LINE_H_12 = 24, STATUS_LINE_H_9 = 18;
+const int STATUS_LINE_H_12 = UI_FONT_RM.yAdvance - 5, STATUS_LINE_H_9 = UI_FONT_XS.yAdvance - 4;
 bool statusUsesSerif(int cardH) { return cardH >= 60; }
 
 // The caption over the stock figure. A card wide enough for the full words at
@@ -164,7 +164,7 @@ const char* qtyAvailLabel(int cardH, int innerW) {
   if (cardH >= 100) {
     int16_t x1, y1; uint16_t w, h;
     tft.setTextSize(1);
-    tft.setFont(&FreeSerif12pt7b);
+    tft.setFont(&UI_FONT_RM);
     tft.getTextBounds("Quantity Available:", 0, 0, &x1, &y1, &w, &h);
     tft.setFont();
     if ((int)w <= innerW - 4) return "Quantity Available:";
@@ -178,7 +178,7 @@ int statusFaceFor(int cardH, int innerW) {
   if (cardH >= 100) {
     int16_t x1, y1; uint16_t w, h;
     tft.setTextSize(1);
-    tft.setFont(&FreeSerif12pt7b);
+    tft.setFont(&UI_FONT_RM);
     tft.getTextBounds(qtyAvailLabel(cardH, innerW), 0, 0, &x1, &y1, &w, &h);
     tft.setFont();
     if ((int)w <= innerW - 4) return 1;
@@ -232,7 +232,7 @@ const GFXfont* productNameFont(int nameBoxW, int cardH, int priceSize, int &outL
   int count = getEnabledProducts(idx);
   int avail = cardH - 4 - (PCARD_GAP + 8 * priceSize) - (PCARD_GAP + statusBlockH(cardH, nameBoxW));
 
-  const GFXfont* candidates[2] = { &FreeSerifBold12pt7b, &FreeSerifBold9pt7b };
+  const GFXfont* candidates[2] = { &UI_FONT_MD, &UI_FONT_SM };
   for (int c = 0; c < 2; c++) {
     bool fits = true;
     int maxLines = 0;
@@ -299,10 +299,10 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   uint16_t statusColor;
   bool roomForTwo = (h >= 100);
   if (outOfStock) {
-    snprintf(statusLine[0], sizeof(statusLine[0]), "OUT OF STOCK");
+    snprintf(statusLine[0], sizeof(statusLine[0]), TXT_OUT_OF_STOCK_CAPS);
     statusColor = COL_ERR_TEXT;
   } else if (atLimit) {
-    snprintf(statusLine[0], sizeof(statusLine[0]), "%s", allInCart ? "ALL IN CART" : "CART FULL");
+    snprintf(statusLine[0], sizeof(statusLine[0]), "%s", allInCart ? TXT_ALL_IN_CART : TXT_CART_FULL);
     statusColor = COL_WARN_TEXT;
   } else {
     statusColor = COL_STOCK_TEXT;

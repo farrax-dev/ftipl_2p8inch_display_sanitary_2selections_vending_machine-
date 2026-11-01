@@ -10,8 +10,8 @@
 // second line of the Cash and RFID descriptions was landing outside its
 // own card and on top of the one to its left.
 const char* PM_DESCRIPTIONS[PAYMENT_COUNT] = {
-  "Scan the QR code",
-  "Insert exact change",
+  TXT_SCAN_THE_QR_CODE,
+  TXT_INSERT_EXACT_CHANGE,
   "Registered cards only"
 };
 
@@ -56,20 +56,20 @@ void backFromPayment() {
 void drawPaymentMethodScreen() {
   drawGradientBackground();
 
-  drawScreenTitle("Select Payment");
+  drawScreenTitle(TXT_SELECT_PAYMENT);
 
   int idx[PAYMENT_COUNT];
   int count = getEnabledPaymentMethods(idx);
 
   if (count == 0) {
-    drawSerifLine("No payment methods", 0, tft.width(), 100, COL_MSG_BODY, 1);
-    drawSerifLine("available", 0, tft.width(), 135, COL_MSG_BODY, 1);
+    drawSerifLine(TXT_NO_PAYMENT_METHODS, 0, tft.width(), 100, COL_MSG_BODY, 1);
+    drawSerifLine(TXT_AVAILABLE, 0, tft.width(), 135, COL_MSG_BODY, 1);
   } else {
     // Largest bold face at which every method name fits one line of a card.
     int cx, cy, cw, ch;
     getSelectCardRect(0, count, cx, cy, cw, ch);
-    const GFXfont* nameFont = &FreeSerifBold9pt7b;
-    const GFXfont* faces[2] = { &FreeSerifBold18pt7b, &FreeSerifBold12pt7b };
+    const GFXfont* nameFont = &UI_FONT_SM;
+    const GFXfont* faces[2] = { &UI_FONT_LG, &UI_FONT_MD };
     for (int f = 0; f < 2; f++) {
       tft.setTextSize(1);
       tft.setFont(faces[f]);
@@ -105,7 +105,7 @@ void drawPaymentMethodScreen() {
       tft.setFont();
       int nameH = nameFont->yAdvance;
 
-      const GFXfont* descFont = &FreeSerifBold9pt7b;
+      const GFXfont* descFont = &UI_FONT_SM;
       int descLines = wrapFontInBox(descFont, PM_DESCRIPTIONS[p], innerX, innerW, 0, false);
       int descH = wrapFontHeight(descLines, descFont);
 
@@ -127,7 +127,7 @@ void drawPaymentMethodScreen() {
     }
   }
 
-  drawBackButton("< Back");
+  drawBackButton(TXT_BACK_ARROW);
 }
 
 void handlePaymentMethodScreen() {

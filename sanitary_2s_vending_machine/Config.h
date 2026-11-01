@@ -63,7 +63,7 @@
 // saved custom_theme.h over the one next to this file, then flash.
 //
 // See Core_03_Theme.ino for the exact hex values of themes 0-2.
-#define CFG_COLOR_THEME 0
+#define CFG_COLOR_THEME 3
 
 // ---------- Identity ----------
 // Where this particular unit is. Shown in the small line under the Welcome

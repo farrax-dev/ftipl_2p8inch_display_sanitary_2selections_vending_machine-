@@ -39,7 +39,7 @@ void drawPinField(const char* message, uint16_t messageColor) {
   if (message != NULL) {
     auiPut(message, AL_CENTER, LOGIN_PIN_X + 6, LOGIN_PIN_W - 12, cy, messageColor, FACE_MD);
   } else if (len == 0) {
-    auiPut("Enter PIN", AL_CENTER, LOGIN_PIN_X + 6, LOGIN_PIN_W - 12, cy, COL_PIN_PLACEHOLDER, FACE_MD);
+    auiPut(TXT_ENTER_PIN, AL_CENTER, LOGIN_PIN_X + 6, LOGIN_PIN_W - 12, cy, COL_PIN_PLACEHOLDER, FACE_MD);
   } else {
     const int pitch = 20;
     int x0 = LOGIN_PIN_X + (LOGIN_PIN_W - (len - 1) * pitch) / 2;
@@ -54,8 +54,8 @@ void drawPinLine() {
 void drawAdminLoginScreen() {
   drawGradientBackground();
 
-  drawScreenTitle("Admin Login", tft.width() - LOGIN_CANCEL_X);
-  auiButton(LOGIN_CANCEL_X, LOGIN_CANCEL_Y, LOGIN_CANCEL_W, LOGIN_CANCEL_H, "Cancel", ABTN_SECONDARY, FACE_SM);
+  drawScreenTitle(TXT_ADMIN_LOGIN, tft.width() - LOGIN_CANCEL_X);
+  auiButton(LOGIN_CANCEL_X, LOGIN_CANCEL_Y, LOGIN_CANCEL_W, LOGIN_CANCEL_H, TXT_CANCEL, ABTN_SECONDARY, FACE_SM);
 
   drawPinLine();
 

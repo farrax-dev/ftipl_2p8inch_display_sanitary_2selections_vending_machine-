@@ -62,7 +62,7 @@ int payChipX(int slot) {      // slot 0 sits against the switch, 1 to its left
 
 void drawAdminSettingsScreen() {
   drawGradientBackground();
-  drawScreenTitle("Payments");
+  drawScreenTitle(TXT_PAYMENTS);
 
   int kinds[PAYMENT_COUNT + 2], args[PAYMENT_COUNT + 2];
   int count = payRows(kinds, args);
@@ -74,27 +74,27 @@ void drawAdminSettingsScreen() {
     auiRow(PAY_ROW_X, y, PAY_ROW_W, h);
 
     if (kinds[r] == PAYROW_FREEVEND) {
-      auiRowLabel(PAY_ROW_X + 12, cy, 150, "Free Vend");
+      auiRowLabel(PAY_ROW_X + 12, cy, 150, TXT_FREE_VEND_LABEL);
       auiOnOff(PAY_RIGHT, cy, freeVendMode);
     } else if (kinds[r] == PAYROW_PRICES) {
-      auiRowLabel(PAY_ROW_X + 12, cy, 150, "Show Prices");
+      auiRowLabel(PAY_ROW_X + 12, cy, 150, TXT_SHOW_PRICES);
       auiOnOff(PAY_RIGHT, cy, !hideProductPrices);
     } else {
       int p = args[r];
       auiRowLabel(PAY_ROW_X + 12, cy, 70, PAYMENT_NAMES[p]);
       auiOnOff(PAY_RIGHT, cy, paymentEnabled[p]);
 
-      if (p == PAY_IDX_UPI)  auiRowButton(payChipX(0), cy, PAY_CHIP_W, "Setup", ABTN_SECONDARY);
+      if (p == PAY_IDX_UPI)  auiRowButton(payChipX(0), cy, PAY_CHIP_W, TXT_SETUP, ABTN_SECONDARY);
       if (p == PAY_IDX_RFID) {
-        auiRowButton(payChipX(0), cy, PAY_CHIP_W, "Cards", ABTN_SECONDARY);
-        auiRowButton(payChipX(1), cy, PAY_CHIP_W, "Reset", ABTN_SECONDARY);
+        auiRowButton(payChipX(0), cy, PAY_CHIP_W, TXT_CARDS, ABTN_SECONDARY);
+        auiRowButton(payChipX(1), cy, PAY_CHIP_W, TXT_RESET, ABTN_SECONDARY);
       }
     }
   }
 
-  if (freeVendMode) auiHint("Free vend: customers are never charged", payRowY(count, count) + 6);
+  if (freeVendMode) auiHint(TXT_FREE_VEND_CUSTOMERS_ARE_NEVER, payRowY(count, count) + 6);
 
-  auiBarButton(0, 1, "Back", ABTN_SECONDARY);
+  auiBarButton(0, 1, TXT_BACK, ABTN_SECONDARY);
 }
 
 void handleAdminSettingsScreen() {

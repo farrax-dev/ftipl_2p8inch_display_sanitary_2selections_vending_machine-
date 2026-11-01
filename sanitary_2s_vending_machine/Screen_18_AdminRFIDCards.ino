@@ -47,13 +47,13 @@ const unsigned long RFID_SCAN_TIMEOUT_MS = 30000;
 
 void drawRFIDCardsScanOverlay() {
   drawGradientBackground();
-  drawScreenTitle("Scan New Card");
+  drawScreenTitle(TXT_SCAN_NEW_CARD);
 
-  auiPut("Hold the card near", AL_CENTER, 10, 300, 90, COL_MSG_TITLE, FACE_MD);
-  auiPut("the reader", AL_CENTER, 10, 300, 116, COL_MSG_TITLE, FACE_MD);
-  auiHint("Cancels automatically after 30 seconds", 150);
+  auiPut(TXT_HOLD_THE_CARD_NEAR, AL_CENTER, 10, 300, 90, COL_MSG_TITLE, FACE_MD);
+  auiPut(TXT_THE_READER, AL_CENTER, 10, 300, 116, COL_MSG_TITLE, FACE_MD);
+  auiHint(TXT_CANCELS_AUTOMATICALLY_AFTER_30, 150);
 
-  auiBarButton(0, 1, "Cancel", ABTN_SECONDARY);
+  auiBarButton(0, 1, TXT_CANCEL, ABTN_SECONDARY);
 }
 
 void drawAdminRFIDCardsScreen() {
@@ -63,7 +63,7 @@ void drawAdminRFIDCardsScreen() {
 
   drawGradientBackground();
 
-  drawScreenTitle("RFID Cards", 70);
+  drawScreenTitle(TXT_RFID_CARDS, 70);
 
   char countBuf[12];
   snprintf(countBuf, sizeof(countBuf), "%d / %d", rfidCardCount, MAX_RFID_CARDS);
@@ -73,7 +73,7 @@ void drawAdminRFIDCardsScreen() {
   int rowsOnPage = min(RFCARD_ROWS_PER_PAGE, rfidCardCount - first);
 
   if (rfidCardCount == 0) {
-    auiPut("No cards registered yet", AL_CENTER, 10, 300, 100, COL_MSG_BODY, FACE_MD);
+    auiPut(TXT_NO_CARDS_REGISTERED_YET, AL_CENTER, 10, 300, 100, COL_MSG_BODY, FACE_MD);
   } else {
     for (int row = 0; row < rowsOnPage; row++) {
       int i = first + row;
@@ -121,10 +121,10 @@ void drawAdminRFIDCardsScreen() {
   if (pages > 1) {
     char pageLabel[16];
     snprintf(pageLabel, sizeof(pageLabel), "Page %d/%d", rfidCardsPage + 1, pages);
-    auiBarButton(0, 2, "Back", ABTN_SECONDARY);
+    auiBarButton(0, 2, TXT_BACK, ABTN_SECONDARY);
     auiBarButton(1, 2, pageLabel, ABTN_PRIMARY);
   } else {
-    auiBarButton(0, 1, "Back", ABTN_SECONDARY);
+    auiBarButton(0, 1, TXT_BACK, ABTN_SECONDARY);
   }
 }
 
@@ -139,10 +139,10 @@ void handleAdminRFIDCardsScreen() {
     if (pollRFIDCard(uid, sizeof(uid))) {
       rfidCardsScanning = false;
       if (addRFIDCard(uid)) {
-        snprintf(rfidCardsMsg, sizeof(rfidCardsMsg), "Card added");
+        snprintf(rfidCardsMsg, sizeof(rfidCardsMsg), TXT_CARD_ADDED);
         rfidCardsMsgColor = COL_OK_TEXT;
       } else {
-        snprintf(rfidCardsMsg, sizeof(rfidCardsMsg), "Already registered");
+        snprintf(rfidCardsMsg, sizeof(rfidCardsMsg), TXT_ALREADY_REGISTERED);
         rfidCardsMsgColor = COL_WARN_TEXT;
       }
       rfidCardsMsgUntil = millis() + 2000;

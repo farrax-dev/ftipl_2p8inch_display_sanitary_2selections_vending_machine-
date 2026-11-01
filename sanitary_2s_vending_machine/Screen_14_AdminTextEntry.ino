@@ -7,7 +7,7 @@ char textEntryBuffer[128] = "";
 int  textEntryMaxLen = 12;
 bool textEntryMask = false;
 bool textEntryShow = false;
-const char* textEntryTitle = "Enter Name";
+const char* textEntryTitle = TXT_ENTER_NAME;
 AppScreen textEntryReturnScreen = SCREEN_ADMIN_EDIT;
 
 // Holds a new PIN that passed format validation but hasn't been confirmed by
@@ -81,14 +81,14 @@ void openTextEntry(TextEntryTarget target) {
       strncpy(textEntryBuffer, wifiSSID, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(wifiSSID) - 1;
       textEntryMask = false;
-      textEntryTitle = "WiFi Name";
+      textEntryTitle = TXT_WIFI_NAME;
       textEntryReturnScreen = SCREEN_ADMIN_WIFI;
       break;
     case TE_WIFI_PASS:
       strncpy(textEntryBuffer, wifiPass, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(wifiPass) - 1;
       textEntryMask = true;
-      textEntryTitle = "WiFi Password";
+      textEntryTitle = TXT_WIFI_PASSWORD;
       textEntryReturnScreen = SCREEN_ADMIN_WIFI;
       kbLayer = KB_LAYER_LOWER;
       break;
@@ -96,35 +96,35 @@ void openTextEntry(TextEntryTarget target) {
       strncpy(textEntryBuffer, phonepeMerchantId, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(phonepeMerchantId) - 1;
       textEntryMask = false;
-      textEntryTitle = "UPI Merchant ID";
+      textEntryTitle = TXT_UPI_MERCHANT_ID;
       textEntryReturnScreen = SCREEN_ADMIN_UPI;
       break;
     case TE_UPI_STORE_ID:
       strncpy(textEntryBuffer, phonepeStoreId, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(phonepeStoreId) - 1;
       textEntryMask = false;
-      textEntryTitle = "UPI Store ID";
+      textEntryTitle = TXT_UPI_STORE_ID;
       textEntryReturnScreen = SCREEN_ADMIN_UPI;
       break;
     case TE_MACHINE_ID:
       strncpy(textEntryBuffer, machineId, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(machineId) - 1;
       textEntryMask = false;
-      textEntryTitle = "Machine ID";
+      textEntryTitle = TXT_MACHINE_ID;
       textEntryReturnScreen = SCREEN_ADMIN_MACHINE;
       break;
     case TE_STORE_ID:
       strncpy(textEntryBuffer, storeId, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(storeId) - 1;
       textEntryMask = false;
-      textEntryTitle = "Store ID";
+      textEntryTitle = TXT_STORE_ID;
       textEntryReturnScreen = SCREEN_ADMIN_MACHINE;
       break;
     case TE_MACHINE_NAME:
       strncpy(textEntryBuffer, machineName, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(machineName) - 1;
       textEntryMask = false;
-      textEntryTitle = "Machine Name";
+      textEntryTitle = TXT_MACHINE_NAME;
       textEntryReturnScreen = SCREEN_ADMIN_REPORT;
       break;
     // Email fields all start on the lowercase layer: keys and addresses are
@@ -133,7 +133,7 @@ void openTextEntry(TextEntryTarget target) {
       strncpy(textEntryBuffer, gmailUser, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(gmailUser) - 1;
       textEntryMask = false;
-      textEntryTitle = "Gmail Address";
+      textEntryTitle = TXT_GMAIL_ADDRESS;
       textEntryReturnScreen = SCREEN_ADMIN_REPORT;
       kbLayer = KB_LAYER_LOWER;
       break;
@@ -141,7 +141,7 @@ void openTextEntry(TextEntryTarget target) {
       strncpy(textEntryBuffer, gmailPass, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(gmailPass) - 1;
       textEntryMask = true;   // a credential; Show reveals it to check a typo
-      textEntryTitle = "Gmail App Password";
+      textEntryTitle = TXT_GMAIL_APP_PASSWORD;
       textEntryReturnScreen = SCREEN_ADMIN_REPORT;
       kbLayer = KB_LAYER_LOWER;
       break;
@@ -149,7 +149,7 @@ void openTextEntry(TextEntryTarget target) {
       strncpy(textEntryBuffer, reportTo, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(reportTo) - 1;
       textEntryMask = false;
-      textEntryTitle = "Send Report To";
+      textEntryTitle = TXT_SEND_REPORT_TO;
       textEntryReturnScreen = SCREEN_ADMIN_REPORT;
       kbLayer = KB_LAYER_LOWER;
       break;
@@ -160,7 +160,7 @@ void openTextEntry(TextEntryTarget target) {
       strncpy(textEntryBuffer, nightlyTime1, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(nightlyTime1) - 1;
       textEntryMask = false;
-      textEntryTitle = "Email 1 at HH:MM";
+      textEntryTitle = TXT_EMAIL_1_AT_HH_MM;
       textEntryReturnScreen = SCREEN_ADMIN_REPORT;
       kbLayer = KB_LAYER_SYM;
       break;
@@ -168,7 +168,7 @@ void openTextEntry(TextEntryTarget target) {
       strncpy(textEntryBuffer, nightlyTime2, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(nightlyTime2) - 1;
       textEntryMask = false;
-      textEntryTitle = "Email 2 at HH:MM";
+      textEntryTitle = TXT_EMAIL_2_AT_HH_MM;
       textEntryReturnScreen = SCREEN_ADMIN_REPORT;
       kbLayer = KB_LAYER_SYM;
       break;
@@ -179,7 +179,7 @@ void openTextEntry(TextEntryTarget target) {
       textEntryBuffer[0] = '\0';
       textEntryMaxLen = sizeof(rfidCards[0].uid) - 1;
       textEntryMask = false;
-      textEntryTitle = "Card Number (hex)";
+      textEntryTitle = TXT_CARD_NUMBER_HEX;
       textEntryReturnScreen = SCREEN_ADMIN_RFID_CARDS;
       kbLayer = KB_LAYER_UPPER;
       break;
@@ -190,7 +190,7 @@ void openTextEntry(TextEntryTarget target) {
       strncpy(textEntryBuffer, rfidCards[rfidEditingCard].name, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(rfidCards[0].name) - 1;
       textEntryMask = false;
-      textEntryTitle = "Card Holder Name";
+      textEntryTitle = TXT_CARD_HOLDER_NAME;
       textEntryReturnScreen = SCREEN_ADMIN_RFID_CARD_EDIT;
       break;
     // Pre-filled with the current PIN, same as WiFi/Gmail passwords above —
@@ -202,7 +202,7 @@ void openTextEntry(TextEntryTarget target) {
       strncpy(textEntryBuffer, adminPin, sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(adminPin) - 1;
       textEntryMask = true;
-      textEntryTitle = "Admin PIN";
+      textEntryTitle = TXT_ADMIN_PIN;
       textEntryReturnScreen = SCREEN_ADMIN_MACHINE;
       kbLayer = KB_LAYER_SYM;
       break;
@@ -214,7 +214,7 @@ void openTextEntry(TextEntryTarget target) {
       textEntryBuffer[0] = '\0';
       textEntryMaxLen = sizeof(adminPin) - 1;
       textEntryMask = true;
-      textEntryTitle = "Confirm New PIN";
+      textEntryTitle = TXT_CONFIRM_NEW_PIN;
       textEntryReturnScreen = SCREEN_ADMIN_MACHINE;
       kbLayer = KB_LAYER_SYM;
       break;
@@ -222,7 +222,7 @@ void openTextEntry(TextEntryTarget target) {
       strncpy(textEntryBuffer, productNames[adminEditingSlot], sizeof(textEntryBuffer));
       textEntryMaxLen = sizeof(productNames[0]) - 1;
       textEntryMask = false;
-      textEntryTitle = "Enter Name";
+      textEntryTitle = TXT_ENTER_NAME;
       textEntryReturnScreen = SCREEN_ADMIN_EDIT;
       break;
   }
@@ -315,12 +315,12 @@ void drawAdminTextEntryScreen() {
   }
 
   // Cancel / Show-Hide (masked fields only) / Done, on the bar's three slots.
-  auiButton(auiBarSlotX(0, 3), TE_BAR_Y, auiBarSlotW(3), TE_BAR_H, "Cancel", ABTN_SECONDARY, FACE_MD);
+  auiButton(auiBarSlotX(0, 3), TE_BAR_Y, auiBarSlotW(3), TE_BAR_H, TXT_CANCEL, ABTN_SECONDARY, FACE_MD);
   if (textEntryMask) {
     auiButton(auiBarSlotX(1, 3), TE_BAR_Y, auiBarSlotW(3), TE_BAR_H,
               textEntryShow ? "Hide" : "Show", textEntryShow ? ABTN_PRIMARY : ABTN_SECONDARY, FACE_MD);
   }
-  auiButton(auiBarSlotX(2, 3), TE_BAR_Y, auiBarSlotW(3), TE_BAR_H, "Done", ABTN_PRIMARY, FACE_MD);
+  auiButton(auiBarSlotX(2, 3), TE_BAR_Y, auiBarSlotW(3), TE_BAR_H, TXT_DONE, ABTN_PRIMARY, FACE_MD);
 }
 
 // A layer switch repaints the whole screen: the keys are drawn over a
@@ -435,7 +435,7 @@ bool commitTextEntry() {
         target[sizeof(nightlyTime1) - 1] = '\0';
       } else {
         Serial.printf("Schedule: ignoring invalid time [%s]\n", textEntryBuffer);
-        snprintf(teErrorMsg, sizeof(teErrorMsg), "Use HH:MM (24h)");
+        snprintf(teErrorMsg, sizeof(teErrorMsg), TXT_USE_HH_MM_24H);
         teErrorUntil = millis() + 1800;
         drawKeyboardPreview();
         return false;   // leave the old value in place, stay on screen
@@ -446,7 +446,7 @@ bool commitTextEntry() {
     case TE_RFID_CARD_MANUAL:
       if (strlen(textEntryBuffer) > 0) {
         bool added = addRFIDCard(textEntryBuffer);
-        snprintf(rfidCardsMsg, sizeof(rfidCardsMsg), added ? "Card added" : "Already registered");
+        snprintf(rfidCardsMsg, sizeof(rfidCardsMsg), added ? TXT_CARD_ADDED : TXT_ALREADY_REGISTERED);
         rfidCardsMsgColor = added ? COL_OK_TEXT : COL_WARN_TEXT;
         rfidCardsMsgUntil = millis() + 2000;
       }
@@ -471,7 +471,7 @@ bool commitTextEntry() {
       }
       if (!digitsOnly) {
         Serial.printf("Admin PIN: ignoring invalid entry [%s] (need 4-8 digits)\n", textEntryBuffer);
-        snprintf(teErrorMsg, sizeof(teErrorMsg), "Need 4-8 digits");
+        snprintf(teErrorMsg, sizeof(teErrorMsg), TXT_NEED_4_8_DIGITS);
         teErrorUntil = millis() + 1800;
         drawKeyboardPreview();
         return false;   // leave the old PIN in place, stay on screen
@@ -484,7 +484,7 @@ bool commitTextEntry() {
     case TE_ADMIN_PIN_CONFIRM: {
       if (strcmp(textEntryBuffer, adminPinPending) != 0) {
         Serial.println("Admin PIN: confirm entry didn't match - retry from the start");
-        snprintf(teErrorMsg, sizeof(teErrorMsg), "PINs didn't match");
+        snprintf(teErrorMsg, sizeof(teErrorMsg), TXT_PINS_DIDN_T_MATCH);
         teErrorUntil = millis() + 1800;
         adminPinPending[0] = '\0';
         openTextEntry(TE_ADMIN_PIN);   // back to the first step, old PIN prefilled as before

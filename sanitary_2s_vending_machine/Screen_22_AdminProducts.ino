@@ -9,7 +9,7 @@
 
 void drawAdminProductsScreen() {
   drawGradientBackground();
-  drawScreenTitle("Products");
+  drawScreenTitle(TXT_PRODUCTS);
 
   int shown = min(MAX_PRODUCTS, PANEL_TILE_COUNT);
   for (int i = 0; i < shown; i++) {
@@ -31,7 +31,7 @@ void drawAdminProductsScreen() {
     auiDot(x + PANEL_TILE_W - 16, y + 16, on);
   }
 
-  auiBarButton(0, 1, "Back", ABTN_SECONDARY);
+  auiBarButton(0, 1, TXT_BACK, ABTN_SECONDARY);
 }
 
 void handleAdminProductsScreen() {

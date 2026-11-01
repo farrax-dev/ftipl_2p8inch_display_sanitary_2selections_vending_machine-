@@ -33,26 +33,26 @@ void drawUPIFieldRow(int index, const char* caption, const char* value) {
   int y = upiRowY(index);
   auiRow(UPI_ROW_X, y, UPI_ROW_W, UPI_ROW_H);
   auiPut(caption, AL_LEFT, UPI_ROW_X + 12, 150, y + 12, COL_CARD_CAPTION, FACE_XS);
-  auiPut(strlen(value) > 0 ? value : "(not set)", AL_LEFT, UPI_ROW_X + 12,
+  auiPut(strlen(value) > 0 ? value : TXT_NOT_SET, AL_LEFT, UPI_ROW_X + 12,
          UPI_EDIT_X - 8 - (UPI_ROW_X + 12), y + 30, COL_CARD_TITLE, FACE_MD);
-  auiRowButton(UPI_EDIT_X, upiRowCY(index), UPI_EDIT_W, "Edit", ABTN_PRIMARY);
+  auiRowButton(UPI_EDIT_X, upiRowCY(index), UPI_EDIT_W, TXT_EDIT, ABTN_PRIMARY);
 }
 
 void drawAdminUPIScreen() {
   drawGradientBackground();
-  drawScreenTitle("UPI Configuration");
+  drawScreenTitle(TXT_UPI_CONFIGURATION);
 
   drawUPIFieldRow(0, "Merchant ID", phonepeMerchantId);
-  drawUPIFieldRow(1, "Store ID", phonepeStoreId);
+  drawUPIFieldRow(1, TXT_STORE_ID, phonepeStoreId);
 
   int y2 = upiRowY(2), cy2 = upiRowCY(2);
   auiRow(UPI_ROW_X, y2, UPI_ROW_W, UPI_ROW_H);
-  auiRowLabel(UPI_ROW_X + 12, cy2, auiStepLeftX(UPI_RIGHT) - UPI_ROW_X - 20, "Timeout (min)");
+  auiRowLabel(UPI_ROW_X + 12, cy2, auiStepLeftX(UPI_RIGHT) - UPI_ROW_X - 20, TXT_TIMEOUT_MIN);
   char tbuf[8];
   snprintf(tbuf, sizeof(tbuf), "%d", (int)(upiTimeoutMs / 60000));
   auiStepper(UPI_RIGHT, cy2, tbuf, COL_STEP_VALUE_TEXT);
 
-  auiBarButton(0, 1, "Back", ABTN_SECONDARY);
+  auiBarButton(0, 1, TXT_BACK, ABTN_SECONDARY);
 }
 
 void handleAdminUPIScreen() {

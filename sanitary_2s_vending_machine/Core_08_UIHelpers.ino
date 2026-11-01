@@ -113,10 +113,10 @@ int drawHeaderTitle(const char* title, int availW) {
   uint16_t w, h;
 
   tft.setTextSize(1);
-  tft.setFont(&FreeSerifBold12pt7b);
+  tft.setFont(&UI_FONT_MD);
   tft.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
   if ((int)w > availW) {
-    tft.setFont(&FreeSerifBold9pt7b);
+    tft.setFont(&UI_FONT_SM);
     tft.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
   }
 
@@ -212,10 +212,8 @@ int headerRightX() {
 const int WRAP_LINE_GAP = 2;
 
 int wrapTextInBox(const char* text, int boxX, int boxW, int topY, int size, bool draw) {
-  int maxChars = boxW / (6 * size);
-  if (maxChars < 1) maxChars = 1;
-  int lineH = 8 * size + WRAP_LINE_GAP;
-
+  int lineH = uiBmpLineH(size);
+  char buf[40];
   int lines = 0;
   int i = 0;
   while (text[i] != '\0') {
@@ -223,38 +221,36 @@ int wrapTextInBox(const char* text, int boxX, int boxW, int topY, int size, bool
     if (text[i] == '\n') { i++; continue; }
     if (text[i] == '\0') break;
 
-    int start = i, lastSpace = -1, n = 0;
-    while (text[i] != '\0' && text[i] != '\n' && n < maxChars) {
-      if (text[i] == ' ') lastSpace = i;
-      i++;
-      n++;
+    // Greedy: take whole words while the line, measured in the theme font, still fits.
+    int start = i, end = i, j = i;
+    while (true) {
+      int k = j;
+      while (text[k] != '\0' && text[k] != ' ' && text[k] != '\n') k++;
+      int len = k - start;
+      if (len > (int)sizeof(buf) - 1) len = (int)sizeof(buf) - 1;
+      memcpy(buf, text + start, len);
+      buf[len] = '\0';
+      if (end == start || uiBmpTextW(buf, size) <= boxW) end = k;   // always take at least one word
+      else break;
+      j = k;
+      while (text[j] == ' ') j++;
+      if (text[j] == '\0' || text[j] == '\n') break;
     }
-    int end = i;
-    // Back up to the last space only when the cut landed mid-word — not when
-    // the line ended at the string's end, at an explicit break, or on a space
-    // that the next pass will skip anyway.
-    if (text[i] != '\0' && text[i] != '\n' && text[i] != ' ' && lastSpace > start) {
-      end = lastSpace;
-      i = lastSpace;
-    }
-    while (end > start && text[end - 1] == ' ') end--;   // nothing to center around
-
     if (draw) {
-      char buf[32];
       int len = end - start;
-      if (len > (int)sizeof(buf) - 1) len = sizeof(buf) - 1;
+      if (len > (int)sizeof(buf) - 1) len = (int)sizeof(buf) - 1;
       memcpy(buf, text + start, len);
       buf[len] = '\0';
       centerTextInBox(buf, topY + lines * lineH, boxX, boxW);
     }
     lines++;
-    if (text[i] == '\n') i++;
+    i = end;
   }
   return lines;
 }
 
 int wrapTextHeight(int lines, int size) {
-  return (lines > 0) ? lines * (8 * size + WRAP_LINE_GAP) - WRAP_LINE_GAP : 0;
+  return (lines > 0) ? lines * uiBmpLineH(size) - 2 : 0;
 }
 
 // ---------- Word-wrapped label text for a custom GFX font ----------
@@ -347,7 +343,7 @@ int wrapFontHeight(int lines, const GFXfont* font) {
 // Same as drawSerifLine() below but in the regular (non-bold) FreeSerif face.
 // maxFace: 1 = 12pt, 2 = 9pt.
 int drawSerifRegularLine(const char* text, int boxX, int boxW, int centerY, uint16_t color, int maxFace) {
-  const GFXfont* faces[3] = { &FreeSerif12pt7b, &FreeSerif12pt7b, &FreeSerif9pt7b };
+  const GFXfont* faces[3] = { &UI_FONT_RM, &UI_FONT_RM, &UI_FONT_XS };
   int16_t x1, y1;
   uint16_t w = 0, h = 0;
   int face = maxFace;
@@ -375,7 +371,7 @@ int drawSerifRegularLine(const char* text, int boxX, int boxW, int centerY, uint
 // Returns the width drawn. GFX fonts are transparent, so whatever is behind
 // the text must already be painted.
 int drawSerifLine(const char* text, int boxX, int boxW, int centerY, uint16_t color, int maxFace) {
-  const GFXfont* faces[3] = { &FreeSerifBold18pt7b, &FreeSerifBold12pt7b, &FreeSerifBold9pt7b };
+  const GFXfont* faces[3] = { &UI_FONT_LG, &UI_FONT_MD, &UI_FONT_SM };
   int16_t x1, y1;
   uint16_t w = 0, h = 0;
   int face = maxFace;
@@ -487,37 +483,26 @@ void drawGradientBackground() {
 }
 
 void rightText(const char* text, int rightX, int y) {
-  int16_t x1, y1;
-  uint16_t w, h;
-  tft.getTextBounds(text, 0, y, &x1, &y1, &w, &h);
-  tft.setCursor(rightX - (int)w, y);
-  tft.print(text);
+  uiBmpDraw(text, 2, rightX, 0, y);
 }
 
 void centerText(const char* text, int y) {
-  int16_t x1, y1;
-  uint16_t w, h;
-  tft.getTextBounds(text, 0, y, &x1, &y1, &w, &h);
-  int x = (tft.width() - w) / 2;
-  tft.setCursor(x, y);
-  tft.print(text);
+  uiBmpDraw(text, 1, 0, tft.width(), y);
 }
 
 void centerTextInBox(const char* text, int y, int boxX, int boxW) {
-  int16_t x1, y1;
-  uint16_t w, h;
-  tft.getTextBounds(text, 0, y, &x1, &y1, &w, &h);
-  int x = boxX + (boxW - (int)w) / 2;
-  tft.setCursor(x, y);
-  tft.print(text);
+  uiBmpDraw(text, 1, boxX, boxW, y);
+}
+
+void leftText(const char* text, int x, int y) {
+  uiBmpDraw(text, 0, x, 0, y);
 }
 
 // Largest text size (1..maxSize) at which the string still fits in availW.
 int fitTextSize(const char* s, int availW, int maxSize) {
-  int len = (int)strlen(s);
-  if (len == 0) return 1;
+  if (s == NULL || s[0] == '\0') return 1;
   for (int sz = maxSize; sz > 1; sz--) {
-    if (len * 6 * sz <= availW) return sz;
+    if (uiBmpTextW(s, sz) <= availW) return sz;
   }
   return 1;
 }

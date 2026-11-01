@@ -36,33 +36,33 @@ void drawAdminEditScreen() {
 
   // ---- Name ----
   int cy = editRowCY(0);
-  auiRowLabel(EDIT_ROW_X + 12, cy, 80, "Name");
-  int vx = editValueX("Name");
+  auiRowLabel(EDIT_ROW_X + 12, cy, 80, TXT_NAME);
+  int vx = editValueX(TXT_NAME);
   auiPut(products[i].name, AL_LEFT, vx, EDIT_BTN_X - 8 - vx, cy, COL_VALUE_TEXT, FACE_MD);
-  auiRowButton(EDIT_BTN_X, cy, EDIT_BTN_W, "Edit", ABTN_PRIMARY);
+  auiRowButton(EDIT_BTN_X, cy, EDIT_BTN_W, TXT_EDIT, ABTN_PRIMARY);
 
   // ---- Price ----
   cy = editRowCY(1);
-  auiRowLabel(EDIT_ROW_X + 12, cy, auiStepLeftX(EDIT_CTRL_RIGHT) - EDIT_ROW_X - 20, "Price (Rs.)");
+  auiRowLabel(EDIT_ROW_X + 12, cy, auiStepLeftX(EDIT_CTRL_RIGHT) - EDIT_ROW_X - 20, TXT_PRICE_RS);
   char pbuf[8];
   snprintf(pbuf, sizeof(pbuf), "%d", products[i].price);
   auiStepper(EDIT_CTRL_RIGHT, cy, pbuf, COL_STEP_VALUE_TEXT);
 
   // ---- Motors ----
   cy = editRowCY(2);
-  auiRowLabel(EDIT_ROW_X + 12, cy, 90, "Motors");
+  auiRowLabel(EDIT_ROW_X + 12, cy, 90, TXT_MOTORS);
   char motorBuf[16];  // worst case "1,2,3,4,5" across all MAX_MOTORS
   formatMotorList(products[i].motorMask, motorBuf, sizeof(motorBuf));
-  vx = editValueX("Motors");
+  vx = editValueX(TXT_MOTORS);
   auiPut(motorBuf, AL_LEFT, vx, EDIT_BTN_X - 8 - vx, cy, COL_VALUE_TEXT, FACE_MD);
-  auiRowButton(EDIT_BTN_X, cy, EDIT_BTN_W, "Assign", ABTN_PRIMARY);
+  auiRowButton(EDIT_BTN_X, cy, EDIT_BTN_W, TXT_ASSIGN, ABTN_PRIMARY);
 
   // ---- Visible ----
   cy = editRowCY(3);
-  auiRowLabel(EDIT_ROW_X + 12, cy, 140, "Visible");
+  auiRowLabel(EDIT_ROW_X + 12, cy, 140, TXT_VISIBLE);
   auiOnOff(EDIT_CTRL_RIGHT, cy, productEnabled[i]);
 
-  auiBarButton(0, 1, "Back", ABTN_SECONDARY);
+  auiBarButton(0, 1, TXT_BACK, ABTN_SECONDARY);
 }
 
 void handleAdminEditScreen() {

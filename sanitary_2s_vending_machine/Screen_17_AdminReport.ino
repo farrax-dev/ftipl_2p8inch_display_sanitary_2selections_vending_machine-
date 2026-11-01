@@ -91,24 +91,24 @@ void drawReportSalesPage() {
   char buf[24];
 
   snprintf(buf, sizeof(buf), "%ld", lifetimeTxnCount);
-  drawReportTile(0, 0, "Transactions", buf, false);
+  drawReportTile(0, 0, TXT_TRANSACTIONS, buf, false);
 
   snprintf(buf, sizeof(buf), "%ld", totalUnitsSoldAll());
-  drawReportTile(1, 0, "Products sold", buf, false);
+  drawReportTile(1, 0, TXT_PRODUCTS_SOLD, buf, false);
 
   snprintf(buf, sizeof(buf), "%ld", lifetimeRevenueTotal);
-  drawReportTile(0, 1, "Total sales (Rs.)", buf, true);
+  drawReportTile(0, 1, TXT_TOTAL_SALES_RS, buf, true);
 
   snprintf(buf, sizeof(buf), "%d", totalStockOnHand());
-  drawReportTile(1, 1, "Units in stock", buf, false);
+  drawReportTile(1, 1, TXT_UNITS_IN_STOCK, buf, false);
 
   int slot = findDailySlot(todayDateNum());
   snprintf(buf, sizeof(buf), "%ld", dayRevenue(slot));
-  drawReportTile(0, 2, "Today (Rs.)", buf, true);
+  drawReportTile(0, 2, TXT_TODAY_RS, buf, true);
 
   char today[20];
   snprintf(today, sizeof(today), "%d / %d", dayUnits(slot), slot >= 0 ? dailyHistory[slot].txns : 0);
-  drawReportTile(1, 2, "Today units/txns", today, false);
+  drawReportTile(1, 2, TXT_TODAY_UNITS_TXNS, today, false);
 }
 
 // ---------- Items tab: a real table ----------
@@ -187,7 +187,7 @@ char* reportTimePtr(int slot) { return (slot == 0) ? nightlyTime1 : nightlyTime2
 // "14:05" -> "2:05 PM" (or unchanged in 24-hour mode); blank/invalid -> "Off".
 void formatReportTime(const char* hhmm, char* out, size_t n) {
   int m = parseScheduleTime(hhmm);
-  if (m < 0) { snprintf(out, n, "Off"); return; }
+  if (m < 0) { snprintf(out, n, TXT_OFF); return; }
   int h = m / 60, mi = m % 60;
   if (clock24Hour) { snprintf(out, n, "%02d:%02d", h, mi); return; }
   int h12 = (h % 12 == 0) ? 12 : h % 12;
@@ -255,7 +255,7 @@ void drawReportTimePicker() {
   drawScreenTitle(title);
 
   auiRow(RPT_ROW_X, RTP_SW_Y, RPT_ROW_W, RTP_SW_H);
-  auiRowLabel(RPT_ROW_X + 12, RTP_SW_Y + RTP_SW_H / 2, 170, "Send this report");
+  auiRowLabel(RPT_ROW_X + 12, RTP_SW_Y + RTP_SW_H / 2, 170, TXT_SEND_THIS_REPORT);
   auiOnOff(RPT_RIGHT, RTP_SW_Y + RTP_SW_H / 2, rptTimeOn);
 
   int h = rptTimeH;
@@ -273,8 +273,8 @@ void drawReportTimePicker() {
               rptTimeOn ? ABTN_SECONDARY : ABTN_OFF, FACE_SM);
   }
 
-  auiBarButton(0, 2, "Cancel", ABTN_SECONDARY);
-  auiBarButton(1, 2, "Save", ABTN_PRIMARY);
+  auiBarButton(0, 2, TXT_CANCEL, ABTN_SECONDARY);
+  auiBarButton(1, 2, TXT_SAVE, ABTN_PRIMARY);
 }
 
 void handleReportTimePicker(int sx, int sy) {
@@ -328,20 +328,20 @@ void handleReportTimePicker(int sx, int sy) {
 void drawReportSchedulePage() {
   char tb[12];
   formatReportTime(nightlyTime1, tb, sizeof(tb));
-  drawReportRow(0, "Report time 1", tb, strlen(nightlyTime1) > 0 ? COL_VALUE_TEXT : COL_CARD_CAPTION, true);
+  drawReportRow(0, TXT_REPORT_TIME_1, tb, strlen(nightlyTime1) > 0 ? COL_VALUE_TEXT : COL_CARD_CAPTION, true);
   formatReportTime(nightlyTime2, tb, sizeof(tb));
-  drawReportRow(1, "Report time 2", tb, strlen(nightlyTime2) > 0 ? COL_VALUE_TEXT : COL_CARD_CAPTION, true);
+  drawReportRow(1, TXT_REPORT_TIME_2, tb, strlen(nightlyTime2) > 0 ? COL_VALUE_TEXT : COL_CARD_CAPTION, true);
 
   int cy = reportRowCY(2);
   auiRow(RPT_ROW_X, reportRowY(2), RPT_ROW_W, RPT_ROW_H);
-  auiRowLabel(RPT_ROW_X + 12, cy, 160, "Low-stock alert");
+  auiRowLabel(RPT_ROW_X + 12, cy, 160, TXT_LOW_STOCK_ALERT);
   auiOnOff(RPT_RIGHT, cy, lowStockAlertOn);
 
   // A motor at or below this figure is flagged — and drawn red on the Stock
   // screen.
   cy = reportRowCY(3);
   auiRow(RPT_ROW_X, reportRowY(3), RPT_ROW_W, RPT_ROW_H);
-  auiRowLabel(RPT_ROW_X + 12, cy, auiStepLeftX(RPT_RIGHT) - RPT_ROW_X - 20, "Alert below");
+  auiRowLabel(RPT_ROW_X + 12, cy, auiStepLeftX(RPT_RIGHT) - RPT_ROW_X - 20, TXT_ALERT_BELOW);
   char buf[8];
   snprintf(buf, sizeof(buf), "%d", lowStockThreshold);
   auiStepper(RPT_RIGHT, cy, buf, COL_STEP_VALUE_TEXT);
@@ -351,22 +351,22 @@ void drawReportSchedulePage() {
 void drawReportEmailPage() {
   char buf[24];
 
-  drawReportRow(0, "Gmail",
-                strlen(gmailUser) > 0 ? gmailUser : "(not set)", COL_VALUE_TEXT, true);
+  drawReportRow(0, TXT_GMAIL,
+                strlen(gmailUser) > 0 ? gmailUser : TXT_NOT_SET, COL_VALUE_TEXT, true);
 
   // Only the length is shown, not the characters: this is a live credential
   // on a machine that lives in a public place. Tap the row and use Show on
   // the keyboard to check it.
   if (strlen(gmailPass) > 0) snprintf(buf, sizeof(buf), "%d chars set", (int)strlen(gmailPass));
-  else                       snprintf(buf, sizeof(buf), "(not set)");
-  drawReportRow(1, "Password", buf, COL_VALUE_TEXT, true);
+  else                       snprintf(buf, sizeof(buf), TXT_NOT_SET);
+  drawReportRow(1, TXT_PASSWORD, buf, COL_VALUE_TEXT, true);
 
-  drawReportRow(2, "Send to",
-                strlen(reportTo) > 0 ? reportTo : "(not set)", COL_VALUE_TEXT, true);
+  drawReportRow(2, TXT_SEND_TO,
+                strlen(reportTo) > 0 ? reportTo : TXT_NOT_SET, COL_VALUE_TEXT, true);
 
   // Appears in every email subject next to the machine ID.
-  drawReportRow(3, "Name",
-                strlen(machineName) > 0 ? machineName : "(not set)", COL_VALUE_TEXT, true);
+  drawReportRow(3, TXT_NAME,
+                strlen(machineName) > 0 ? machineName : TXT_NOT_SET, COL_VALUE_TEXT, true);
 }
 
 // ---------- Data tab ----------
@@ -376,27 +376,27 @@ void drawReportDataPage() {
   int days = 0;
   for (int i = 0; i < DAILY_HISTORY_DAYS; i++) if (dailyHistory[i].date) days++;
   snprintf(buf, sizeof(buf), "%d of %d days", days, DAILY_HISTORY_DAYS);
-  drawReportRow(0, "History stored", buf, COL_CARD_CAPTION, false);
+  drawReportRow(0, TXT_HISTORY_STORED, buf, COL_CARD_CAPTION, false);
 
-  drawReportRow(1, "Sending via",
-                WiFi.status() == WL_CONNECTED ? "WiFi" :
-                isLTEConnected() ? "4G" : "Offline", COL_CARD_CAPTION, false);
+  drawReportRow(1, TXT_SENDING_VIA,
+                WiFi.status() == WL_CONNECTED ? TXT_WIFI :
+                isLTEConnected() ? "4G" : TXT_OFFLINE, COL_CARD_CAPTION, false);
 
   // The second tap is unrecoverable, so it takes two deliberate taps, and the
   // armed state is called out in danger red rather than blending in.
   int cy = reportRowCY(2);
   auiRow(RPT_ROW_X, reportRowY(2), RPT_ROW_W, RPT_ROW_H);
-  auiPut(reportResetArmed ? "Tap again to erase" : "Clear sales data", AL_LEFT, RPT_ROW_X + 12, 190, cy,
+  auiPut(reportResetArmed ? TXT_TAP_AGAIN_TO_ERASE : TXT_CLEAR_SALES_DATA, AL_LEFT, RPT_ROW_X + 12, 190, cy,
          reportResetArmed ? COL_ERR_TEXT : COL_CARD_TITLE, FACE_MD);
-  auiRowButton(RPT_RIGHT - 70 + 4, cy, 70, reportResetArmed ? "Confirm" : "Clear", ABTN_DANGER);
+  auiRowButton(RPT_RIGHT - 70 + 4, cy, 70, reportResetArmed ? TXT_CONFIRM : TXT_CLEAR, ABTN_DANGER);
 }
 
 void drawAdminReportScreen() {
   if (rptTimeSlot >= 0) { drawReportTimePicker(); return; }
   drawGradientBackground();
-  drawScreenTitle("Reports");
+  drawScreenTitle(TXT_REPORTS);
 
-  const char* tabs[RPT_PAGE_COUNT] = { "Sales", "Items", "Auto", "Email", "Data" };
+  const char* tabs[RPT_PAGE_COUNT] = { TXT_SALES, TXT_ITEMS, TXT_AUTO, TXT_EMAIL, TXT_DATA };
   for (int k = 0; k < RPT_PAGE_COUNT; k++) {
     auiTab(rptTabX(k), RPT_TAB_Y, RPT_TAB_W, RPT_TAB_H, tabs[k], k == reportPage);
   }
@@ -411,20 +411,20 @@ void drawAdminReportScreen() {
   snprintf(status, sizeof(status), "Last send: %s", reportLastStatus);
   auiPut(status, AL_CENTER, 12, 296, RPT_STATUS_CY, reportLastOk ? COL_OK_TEXT : COL_HINT_TEXT, FACE_XS);
 
-  auiButton(RPT_BAR_BACK_X, ABAR_Y, RPT_BAR_BACK_W, ABAR_H, "Back", ABTN_SECONDARY, FACE_MD);
+  auiButton(RPT_BAR_BACK_X, ABAR_Y, RPT_BAR_BACK_W, ABAR_H, TXT_BACK, ABTN_SECONDARY, FACE_MD);
   // Greyed out until there's somewhere to send to, rather than letting the
   // tap fail with an error after a long wait. Still tappable: it jumps to the
   // Email tab to show what's missing.
   int sendStyle = emailConfigured() ? ABTN_PRIMARY : ABTN_OFF;
-  auiButton(RPT_BAR_TODAY_X, ABAR_Y, RPT_BAR_TODAY_W, ABAR_H, "Send Today", sendStyle, FACE_XS);
-  auiButton(RPT_BAR_FULL_X, ABAR_Y, RPT_BAR_FULL_W, ABAR_H, "Send 60 Days", sendStyle, FACE_XS);
+  auiButton(RPT_BAR_TODAY_X, ABAR_Y, RPT_BAR_TODAY_W, ABAR_H, TXT_SEND_TODAY, sendStyle, FACE_XS);
+  auiButton(RPT_BAR_FULL_X, ABAR_Y, RPT_BAR_FULL_W, ABAR_H, TXT_SEND_60_DAYS, sendStyle, FACE_XS);
 }
 
 // Sending blocks for as long as the modem takes (up to ~90s with an
 // attachment on a slow uplink), so say so rather than leaving a frozen
 // screen that invites repeated taps.
 void drawReportSendingOverlay(const char* what) {
-  auiMessageScreen("Sending report...", what, "This can take a minute over 4G. Please wait.");
+  auiMessageScreen(TXT_SENDING_REPORT, what, TXT_THIS_CAN_TAKE_A_MINUTE_OVER_4G);
 }
 
 void handleAdminReportScreen() {

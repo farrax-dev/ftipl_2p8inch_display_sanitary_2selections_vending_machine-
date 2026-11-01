@@ -36,26 +36,26 @@ void panelCaption(int k, char* out, size_t n) {
       snprintf(out, n, "%d units left", totalStockOnHand());
       break;
     case 2: {
-      if (freeVendMode) { snprintf(out, n, "Free vend"); break; }
+      if (freeVendMode) { snprintf(out, n, TXT_FREE_VEND); break; }
       for (int p = 0; p < PAYMENT_COUNT; p++) {
         if (!PAYMENT_AVAILABLE[p] || !paymentEnabled[p]) continue;
         if (out[0]) strncat(out, "/", n - strlen(out) - 1);
         strncat(out, PAYMENT_NAMES[p], n - strlen(out) - 1);
       }
-      if (!out[0]) snprintf(out, n, "None enabled");
+      if (!out[0]) snprintf(out, n, TXT_NONE_ENABLED);
       break;
     }
     case 3:
-      if (wifiEnabled && WiFi.status() == WL_CONNECTED) snprintf(out, n, "WiFi connected");
-      else if (lteEnabled && isLTEConnected())          snprintf(out, n, "4G connected");
-      else                                              snprintf(out, n, "Offline");
+      if (wifiEnabled && WiFi.status() == WL_CONNECTED) snprintf(out, n, TXT_WIFI_CONNECTED);
+      else if (lteEnabled && isLTEConnected())          snprintf(out, n, TXT_4G_CONNECTED);
+      else                                              snprintf(out, n, TXT_OFFLINE);
       break;
     case 4:
       snprintf(out, n, "Today Rs.%ld", dayRevenue(findDailySlot(todayDateNum())));
       break;
     default:
       if (strlen(machineId) > 0) snprintf(out, n, "ID %s", machineId);
-      else                       snprintf(out, n, "ID, PIN, clock");
+      else                       snprintf(out, n, TXT_ID_PIN_CLOCK);
       break;
   }
 }
@@ -63,10 +63,10 @@ void panelCaption(int k, char* out, size_t n) {
 void drawAdminPanelScreen() {
   drawGradientBackground();
 
-  drawScreenTitle("Admin Panel");
+  drawScreenTitle(TXT_ADMIN_PANEL);
 
   const char* titles[PANEL_TILE_COUNT] = {
-    "Products", "Stock", "Payments", "Network", "Reports", "Machine"
+    TXT_PRODUCTS, TXT_STOCK, TXT_PAYMENTS, TXT_NETWORK, TXT_REPORTS, TXT_MACHINE
   };
 
   for (int k = 0; k < PANEL_TILE_COUNT; k++) {
@@ -80,7 +80,7 @@ void drawAdminPanelScreen() {
     auiPut(cap,       AL_LEFT, x + 20, PANEL_TILE_W - 26, y + 33, COL_CARD_CAPTION, FACE_XS);
   }
 
-  auiBarButton(0, 1, "Exit Admin", ABTN_SECONDARY);
+  auiBarButton(0, 1, TXT_EXIT_ADMIN, ABTN_SECONDARY);
 }
 
 void handleAdminPanelScreen() {

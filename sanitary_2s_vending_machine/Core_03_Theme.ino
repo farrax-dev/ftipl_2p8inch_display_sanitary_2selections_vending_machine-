@@ -488,3 +488,695 @@
 #ifndef COL_COUNTDOWN_URGENT
 #define COL_COUNTDOWN_URGENT   COL_DANGER       // Idle countdown in the last 10 seconds
 #endif
+
+
+// ---------- Fonts ----------
+// The text roles the UI draws with. Each is one Adafruit GFX font: Free<Family>[Bold]<size>pt7b,
+// where family is Serif, Sans or Mono and size is 9, 12, 18 or 24. Keep XS <= SM <= MD <= LG;
+// bigger fonts need bigger boxes, and text that no longer fits is shrunk or clipped with '..'.
+// A theme (custom_theme.h) can #define any of these before this point to change them.
+//   XS regular small   captions, long values       SM bold small   secondary labels, small buttons
+//   MD bold medium     main labels, buttons, titles LG bold large   big numbers, Welcome title, messages
+//   RM regular medium  the stock figure on product cards
+#ifndef UI_FONT_XS
+#define UI_FONT_XS FreeSerif9pt7b
+#endif
+#ifndef UI_FONT_SM
+#define UI_FONT_SM FreeSerifBold9pt7b
+#endif
+#ifndef UI_FONT_MD
+#define UI_FONT_MD FreeSerifBold12pt7b
+#endif
+#ifndef UI_FONT_LG
+#define UI_FONT_LG FreeSerifBold18pt7b
+#endif
+#ifndef UI_FONT_RM
+#define UI_FONT_RM FreeSerif12pt7b
+#endif
+
+
+// ---------- Text ----------
+// Every fixed label the UI shows. A theme (custom_theme.h) can #define any of these before
+// this point to reword it. Keep them short: text that is too long for its box is shrunk or
+// clipped. Do not put % or double quotes inside them (several are used as plain format text).
+// docs/theme_designer.html lists them by screen and previews the result.
+
+// -- Welcome --
+#ifndef TXT_SYNCING
+#define TXT_SYNCING "Syncing..."
+#endif
+#ifndef TXT_NO_NETWORK
+#define TXT_NO_NETWORK "No network"
+#endif
+#ifndef TXT_OUT_OF_STOCK
+#define TXT_OUT_OF_STOCK "Out of Stock"
+#endif
+#ifndef TXT_TOUCH_TO_CONTINUE
+#define TXT_TOUCH_TO_CONTINUE "Touch to Continue"
+#endif
+
+// -- Select products --
+#ifndef TXT_SELECT_PRODUCTS
+#define TXT_SELECT_PRODUCTS "Select Products"
+#endif
+#ifndef TXT_TAP_TO_SELECT
+#define TXT_TAP_TO_SELECT "Tap to select"
+#endif
+#ifndef TXT_NO_PRODUCTS_AVAILABLE
+#define TXT_NO_PRODUCTS_AVAILABLE "No products available"
+#endif
+#ifndef TXT_PROCEED
+#define TXT_PROCEED "Proceed >"
+#endif
+#ifndef TXT_CART
+#define TXT_CART "Cart >"
+#endif
+#ifndef TXT_OUT_OF_STOCK_CAPS
+#define TXT_OUT_OF_STOCK_CAPS "OUT OF STOCK"
+#endif
+#ifndef TXT_ALL_IN_CART
+#define TXT_ALL_IN_CART "ALL IN CART"
+#endif
+#ifndef TXT_CART_FULL
+#define TXT_CART_FULL "CART FULL"
+#endif
+
+// -- Shared labels --
+#ifndef TXT_BACK_ARROW
+#define TXT_BACK_ARROW "< Back"
+#endif
+#ifndef TXT_GET_FREE
+#define TXT_GET_FREE "Get Free >"
+#endif
+#ifndef TXT_DONE
+#define TXT_DONE "Done"
+#endif
+#ifndef TXT_PAYMENT
+#define TXT_PAYMENT "Payment"
+#endif
+#ifndef TXT_TIMED_OUT
+#define TXT_TIMED_OUT "Timed Out"
+#endif
+#ifndef TXT_NO_PAYMENT_WAS_RECEIVED_IN_TIM
+#define TXT_NO_PAYMENT_WAS_RECEIVED_IN_TIM "No payment was received in time."
+#endif
+#ifndef TXT_DISPENSE
+#define TXT_DISPENSE "Dispense"
+#endif
+#ifndef TXT_FAILED
+#define TXT_FAILED "Failed"
+#endif
+#ifndef TXT_PLEASE_CONTACT_SUPPORT
+#define TXT_PLEASE_CONTACT_SUPPORT "Please contact support"
+#endif
+#ifndef TXT_CANCEL
+#define TXT_CANCEL "Cancel"
+#endif
+#ifndef TXT_PRODUCTS
+#define TXT_PRODUCTS "Products"
+#endif
+#ifndef TXT_PAYMENTS
+#define TXT_PAYMENTS "Payments"
+#endif
+#ifndef TXT_NETWORK
+#define TXT_NETWORK "Network"
+#endif
+#ifndef TXT_REPORTS
+#define TXT_REPORTS "Reports"
+#endif
+#ifndef TXT_MACHINE
+#define TXT_MACHINE "Machine"
+#endif
+#ifndef TXT_NAME
+#define TXT_NAME "Name"
+#endif
+#ifndef TXT_EDIT
+#define TXT_EDIT "Edit"
+#endif
+#ifndef TXT_BACK
+#define TXT_BACK "Back"
+#endif
+#ifndef TXT_SAVE
+#define TXT_SAVE "Save"
+#endif
+#ifndef TXT_SETUP
+#define TXT_SETUP "Setup"
+#endif
+#ifndef TXT_RESET
+#define TXT_RESET "Reset"
+#endif
+#ifndef TXT_NOT_SET
+#define TXT_NOT_SET "(not set)"
+#endif
+#ifndef TXT_SIGNAL
+#define TXT_SIGNAL "Signal: -"
+#endif
+#ifndef TXT_PASSWORD
+#define TXT_PASSWORD "Password"
+#endif
+#ifndef TXT_MACHINE_ID
+#define TXT_MACHINE_ID "Machine ID"
+#endif
+#ifndef TXT_STORE_ID
+#define TXT_STORE_ID "Store ID"
+#endif
+#ifndef TXT_ADMIN_PIN
+#define TXT_ADMIN_PIN "Admin PIN"
+#endif
+#ifndef TXT_CARD_ADDED
+#define TXT_CARD_ADDED "Card added"
+#endif
+#ifndef TXT_ALREADY_REGISTERED
+#define TXT_ALREADY_REGISTERED "Already registered"
+#endif
+
+// -- Your cart --
+#ifndef TXT_YOUR_CART
+#define TXT_YOUR_CART "Your Cart"
+#endif
+#ifndef TXT_CART_IS_EMPTY
+#define TXT_CART_IS_EMPTY "Cart is empty"
+#endif
+#ifndef TXT_PAY
+#define TXT_PAY "Pay >"
+#endif
+
+// -- Select payment --
+#ifndef TXT_SCAN_THE_QR_CODE
+#define TXT_SCAN_THE_QR_CODE "Scan the QR code"
+#endif
+#ifndef TXT_INSERT_EXACT_CHANGE
+#define TXT_INSERT_EXACT_CHANGE "Insert exact change"
+#endif
+#ifndef TXT_SELECT_PAYMENT
+#define TXT_SELECT_PAYMENT "Select Payment"
+#endif
+#ifndef TXT_NO_PAYMENT_METHODS
+#define TXT_NO_PAYMENT_METHODS "No payment methods"
+#endif
+#ifndef TXT_AVAILABLE
+#define TXT_AVAILABLE "available"
+#endif
+
+// -- UPI payment --
+#ifndef TXT_SCAN_TO_PAY
+#define TXT_SCAN_TO_PAY "Scan to Pay"
+#endif
+#ifndef TXT_AMOUNT_TO_PAY
+#define TXT_AMOUNT_TO_PAY "Amount to pay"
+#endif
+#ifndef TXT_SCAN_WITH_ANY
+#define TXT_SCAN_WITH_ANY "Scan with any"
+#endif
+#ifndef TXT_UPI_APP
+#define TXT_UPI_APP "UPI app"
+#endif
+#ifndef TXT_QR_GENERATION_FAILED
+#define TXT_QR_GENERATION_FAILED "QR generation failed"
+#endif
+#ifndef TXT_CANCEL_ARROW
+#define TXT_CANCEL_ARROW "< Cancel"
+#endif
+#ifndef TXT_SUCCESSFUL
+#define TXT_SUCCESSFUL "Successful!"
+#endif
+#ifndef TXT_PREPARING_YOUR_ITEM
+#define TXT_PREPARING_YOUR_ITEM "Preparing your item..."
+#endif
+#ifndef TXT_DISPENSE_FAILED_CONTACT_SUPPOR
+#define TXT_DISPENSE_FAILED_CONTACT_SUPPOR "Dispense failed - contact support"
+#endif
+#ifndef TXT_RETRY
+#define TXT_RETRY "Retry"
+#endif
+
+// -- Cash and RFID payment --
+#ifndef TXT_REMAINING
+#define TXT_REMAINING "Remaining"
+#endif
+#ifndef TXT_PAYING_NO_REFUND
+#define TXT_PAYING_NO_REFUND "Paying, no refund"
+#endif
+#ifndef TXT_INSERT_COINS
+#define TXT_INSERT_COINS "Insert Coins"
+#endif
+#ifndef TXT_COIN_NOT_RECOGNIZED
+#define TXT_COIN_NOT_RECOGNIZED "Coin not recognized"
+#endif
+#ifndef TXT_TAP_RFID_CARD
+#define TXT_TAP_RFID_CARD "Tap RFID Card"
+#endif
+#ifndef TXT_NO_CHARGE_FOR
+#define TXT_NO_CHARGE_FOR "No charge for"
+#endif
+#ifndef TXT_REGISTERED_CARDS
+#define TXT_REGISTERED_CARDS "registered cards"
+#endif
+#ifndef TXT_HOLD_YOUR_CARD_NEAR_THE_READER
+#define TXT_HOLD_YOUR_CARD_NEAR_THE_READER "Hold your card near the reader"
+#endif
+#ifndef TXT_DISPENSE_FAILED
+#define TXT_DISPENSE_FAILED "Dispense Failed"
+#endif
+#ifndef TXT_CARD_NOT_REGISTERED
+#define TXT_CARD_NOT_REGISTERED "Card not registered"
+#endif
+#ifndef TXT_NO_CARD_WAS_TAPPED_IN_TIME
+#define TXT_NO_CARD_WAS_TAPPED_IN_TIME "No card was tapped in time."
+#endif
+
+// -- Admin login --
+#ifndef TXT_ENTER_PIN
+#define TXT_ENTER_PIN "Enter PIN"
+#endif
+#ifndef TXT_ADMIN_LOGIN
+#define TXT_ADMIN_LOGIN "Admin Login"
+#endif
+
+// -- Admin panel --
+#ifndef TXT_FREE_VEND
+#define TXT_FREE_VEND "Free vend"
+#endif
+#ifndef TXT_NONE_ENABLED
+#define TXT_NONE_ENABLED "None enabled"
+#endif
+#ifndef TXT_WIFI_CONNECTED
+#define TXT_WIFI_CONNECTED "WiFi connected"
+#endif
+#ifndef TXT_4G_CONNECTED
+#define TXT_4G_CONNECTED "4G connected"
+#endif
+#ifndef TXT_OFFLINE
+#define TXT_OFFLINE "Offline"
+#endif
+#ifndef TXT_ID_PIN_CLOCK
+#define TXT_ID_PIN_CLOCK "ID, PIN, clock"
+#endif
+#ifndef TXT_ADMIN_PANEL
+#define TXT_ADMIN_PANEL "Admin Panel"
+#endif
+#ifndef TXT_STOCK
+#define TXT_STOCK "Stock"
+#endif
+#ifndef TXT_EXIT_ADMIN
+#define TXT_EXIT_ADMIN "Exit Admin"
+#endif
+
+// -- Edit product --
+#ifndef TXT_PRICE_RS
+#define TXT_PRICE_RS "Price (Rs.)"
+#endif
+#ifndef TXT_MOTORS
+#define TXT_MOTORS "Motors"
+#endif
+#ifndef TXT_ASSIGN
+#define TXT_ASSIGN "Assign"
+#endif
+#ifndef TXT_VISIBLE
+#define TXT_VISIBLE "Visible"
+#endif
+
+// -- Motors and stock --
+#ifndef TXT_SELECTED
+#define TXT_SELECTED "Selected"
+#endif
+#ifndef TXT_FREE
+#define TXT_FREE "Free"
+#endif
+#ifndef TXT_TAP_A_MOTOR_TO_ASSIGN_OR_RELEA
+#define TXT_TAP_A_MOTOR_TO_ASSIGN_OR_RELEA "Tap a motor to assign or release it"
+#endif
+#ifndef TXT_FILL_MAX
+#define TXT_FILL_MAX "Fill Max"
+#endif
+#ifndef TXT_MOTOR_STOCK
+#define TXT_MOTOR_STOCK "Motor Stock"
+#endif
+#ifndef TXT_UNASSIGNED
+#define TXT_UNASSIGNED "Unassigned"
+#endif
+#ifndef TXT_TAP_EDIT_TO_TYPE_AN_EXACT_QUAN
+#define TXT_TAP_EDIT_TO_TYPE_AN_EXACT_QUAN "Tap Edit to type an exact quantity"
+#endif
+#ifndef TXT_REFILL_TRAYS
+#define TXT_REFILL_TRAYS "Refill Trays"
+#endif
+
+// -- Admin payments --
+#ifndef TXT_FREE_VEND_LABEL
+#define TXT_FREE_VEND_LABEL "Free Vend"
+#endif
+#ifndef TXT_SHOW_PRICES
+#define TXT_SHOW_PRICES "Show Prices"
+#endif
+#ifndef TXT_CARDS
+#define TXT_CARDS "Cards"
+#endif
+#ifndef TXT_FREE_VEND_CUSTOMERS_ARE_NEVER
+#define TXT_FREE_VEND_CUSTOMERS_ARE_NEVER "Free vend: customers are never charged"
+#endif
+
+// -- UPI setup --
+#ifndef TXT_UPI_CONFIGURATION
+#define TXT_UPI_CONFIGURATION "UPI Configuration"
+#endif
+#ifndef TXT_TIMEOUT_MIN
+#define TXT_TIMEOUT_MIN "Timeout (min)"
+#endif
+
+// -- WiFi setup --
+#ifndef TXT_IP
+#define TXT_IP "IP: -"
+#endif
+#ifndef TXT_PING_WIFI_IS_TURNED_OFF
+#define TXT_PING_WIFI_IS_TURNED_OFF "Ping: WiFi is turned off"
+#endif
+#ifndef TXT_SET_A_NETWORK_NAME_TO_GET_STAR
+#define TXT_SET_A_NETWORK_NAME_TO_GET_STAR "Set a network name to get started"
+#endif
+#ifndef TXT_PING_NOT_TESTED_YET
+#define TXT_PING_NOT_TESTED_YET "Ping: not tested yet"
+#endif
+#ifndef TXT_PING_FAILED_NO_INTERNET_REACHA
+#define TXT_PING_FAILED_NO_INTERNET_REACHA "Ping failed - no internet reachable"
+#endif
+#ifndef TXT_WIFI_SETUP
+#define TXT_WIFI_SETUP "WiFi Setup"
+#endif
+#ifndef TXT_NONE
+#define TXT_NONE "(none)"
+#endif
+#ifndef TXT_CONNECT
+#define TXT_CONNECT "Connect"
+#endif
+#ifndef TXT_PING
+#define TXT_PING "Ping"
+#endif
+
+// -- Text entry --
+#ifndef TXT_ENTER_NAME
+#define TXT_ENTER_NAME "Enter Name"
+#endif
+#ifndef TXT_WIFI_NAME
+#define TXT_WIFI_NAME "WiFi Name"
+#endif
+#ifndef TXT_WIFI_PASSWORD
+#define TXT_WIFI_PASSWORD "WiFi Password"
+#endif
+#ifndef TXT_UPI_MERCHANT_ID
+#define TXT_UPI_MERCHANT_ID "UPI Merchant ID"
+#endif
+#ifndef TXT_UPI_STORE_ID
+#define TXT_UPI_STORE_ID "UPI Store ID"
+#endif
+#ifndef TXT_MACHINE_NAME
+#define TXT_MACHINE_NAME "Machine Name"
+#endif
+#ifndef TXT_GMAIL_ADDRESS
+#define TXT_GMAIL_ADDRESS "Gmail Address"
+#endif
+#ifndef TXT_GMAIL_APP_PASSWORD
+#define TXT_GMAIL_APP_PASSWORD "Gmail App Password"
+#endif
+#ifndef TXT_SEND_REPORT_TO
+#define TXT_SEND_REPORT_TO "Send Report To"
+#endif
+#ifndef TXT_EMAIL_1_AT_HH_MM
+#define TXT_EMAIL_1_AT_HH_MM "Email 1 at HH:MM"
+#endif
+#ifndef TXT_EMAIL_2_AT_HH_MM
+#define TXT_EMAIL_2_AT_HH_MM "Email 2 at HH:MM"
+#endif
+#ifndef TXT_CARD_NUMBER_HEX
+#define TXT_CARD_NUMBER_HEX "Card Number (hex)"
+#endif
+#ifndef TXT_CARD_HOLDER_NAME
+#define TXT_CARD_HOLDER_NAME "Card Holder Name"
+#endif
+#ifndef TXT_CONFIRM_NEW_PIN
+#define TXT_CONFIRM_NEW_PIN "Confirm New PIN"
+#endif
+#ifndef TXT_USE_HH_MM_24H
+#define TXT_USE_HH_MM_24H "Use HH:MM (24h)"
+#endif
+#ifndef TXT_NEED_4_8_DIGITS
+#define TXT_NEED_4_8_DIGITS "Need 4-8 digits"
+#endif
+#ifndef TXT_PINS_DIDN_T_MATCH
+#define TXT_PINS_DIDN_T_MATCH "PINs didn't match"
+#endif
+
+// -- 4G / LTE setup --
+#ifndef TXT_THIS_CAN_TAKE_20_SECONDS
+#define TXT_THIS_CAN_TAKE_20_SECONDS "This can take 20+ seconds"
+#endif
+#ifndef TXT_TURNED_OFF
+#define TXT_TURNED_OFF "Turned off"
+#endif
+#ifndef TXT_CONNECTED
+#define TXT_CONNECTED "Connected"
+#endif
+#ifndef TXT_NOT_CONNECTED
+#define TXT_NOT_CONNECTED "Not connected"
+#endif
+#ifndef TXT_USED_AS_THE_BACKUP_LINK_WHEN_W
+#define TXT_USED_AS_THE_BACKUP_LINK_WHEN_W "Used as the backup link when WiFi is down"
+#endif
+#ifndef TXT_TEST_4G_IS_TURNED_OFF
+#define TXT_TEST_4G_IS_TURNED_OFF "Test: 4G is turned off"
+#endif
+#ifndef TXT_TEST_NOT_TESTED_YET
+#define TXT_TEST_NOT_TESTED_YET "Test: not tested yet"
+#endif
+#ifndef TXT_TEST_FAILED_COULD_NOT_REACH_TH
+#define TXT_TEST_FAILED_COULD_NOT_REACH_TH "Test failed - could not reach the internet"
+#endif
+#ifndef TXT_4G_LTE_SETUP
+#define TXT_4G_LTE_SETUP "4G / LTE Setup"
+#endif
+#ifndef TXT_TEST_4G
+#define TXT_TEST_4G "Test 4G"
+#endif
+
+// -- Reports --
+#ifndef TXT_TRANSACTIONS
+#define TXT_TRANSACTIONS "Transactions"
+#endif
+#ifndef TXT_PRODUCTS_SOLD
+#define TXT_PRODUCTS_SOLD "Products sold"
+#endif
+#ifndef TXT_TOTAL_SALES_RS
+#define TXT_TOTAL_SALES_RS "Total sales (Rs.)"
+#endif
+#ifndef TXT_UNITS_IN_STOCK
+#define TXT_UNITS_IN_STOCK "Units in stock"
+#endif
+#ifndef TXT_TODAY_RS
+#define TXT_TODAY_RS "Today (Rs.)"
+#endif
+#ifndef TXT_TODAY_UNITS_TXNS
+#define TXT_TODAY_UNITS_TXNS "Today units/txns"
+#endif
+#ifndef TXT_OFF
+#define TXT_OFF "Off"
+#endif
+#ifndef TXT_SEND_THIS_REPORT
+#define TXT_SEND_THIS_REPORT "Send this report"
+#endif
+#ifndef TXT_REPORT_TIME_1
+#define TXT_REPORT_TIME_1 "Report time 1"
+#endif
+#ifndef TXT_REPORT_TIME_2
+#define TXT_REPORT_TIME_2 "Report time 2"
+#endif
+#ifndef TXT_LOW_STOCK_ALERT
+#define TXT_LOW_STOCK_ALERT "Low-stock alert"
+#endif
+#ifndef TXT_ALERT_BELOW
+#define TXT_ALERT_BELOW "Alert below"
+#endif
+#ifndef TXT_GMAIL
+#define TXT_GMAIL "Gmail"
+#endif
+#ifndef TXT_SEND_TO
+#define TXT_SEND_TO "Send to"
+#endif
+#ifndef TXT_HISTORY_STORED
+#define TXT_HISTORY_STORED "History stored"
+#endif
+#ifndef TXT_SENDING_VIA
+#define TXT_SENDING_VIA "Sending via"
+#endif
+#ifndef TXT_TAP_AGAIN_TO_ERASE
+#define TXT_TAP_AGAIN_TO_ERASE "Tap again to erase"
+#endif
+#ifndef TXT_CLEAR_SALES_DATA
+#define TXT_CLEAR_SALES_DATA "Clear sales data"
+#endif
+#ifndef TXT_CONFIRM
+#define TXT_CONFIRM "Confirm"
+#endif
+#ifndef TXT_CLEAR
+#define TXT_CLEAR "Clear"
+#endif
+#ifndef TXT_SALES
+#define TXT_SALES "Sales"
+#endif
+#ifndef TXT_ITEMS
+#define TXT_ITEMS "Items"
+#endif
+#ifndef TXT_AUTO
+#define TXT_AUTO "Auto"
+#endif
+#ifndef TXT_EMAIL
+#define TXT_EMAIL "Email"
+#endif
+#ifndef TXT_DATA
+#define TXT_DATA "Data"
+#endif
+#ifndef TXT_SEND_TODAY
+#define TXT_SEND_TODAY "Send Today"
+#endif
+#ifndef TXT_SEND_60_DAYS
+#define TXT_SEND_60_DAYS "Send 60 Days"
+#endif
+#ifndef TXT_SENDING_REPORT
+#define TXT_SENDING_REPORT "Sending report..."
+#endif
+#ifndef TXT_THIS_CAN_TAKE_A_MINUTE_OVER_4G
+#define TXT_THIS_CAN_TAKE_A_MINUTE_OVER_4G "This can take a minute over 4G. Please wait."
+#endif
+
+// -- RFID cards --
+#ifndef TXT_SCAN_NEW_CARD
+#define TXT_SCAN_NEW_CARD "Scan New Card"
+#endif
+#ifndef TXT_HOLD_THE_CARD_NEAR
+#define TXT_HOLD_THE_CARD_NEAR "Hold the card near"
+#endif
+#ifndef TXT_THE_READER
+#define TXT_THE_READER "the reader"
+#endif
+#ifndef TXT_CANCELS_AUTOMATICALLY_AFTER_30
+#define TXT_CANCELS_AUTOMATICALLY_AFTER_30 "Cancels automatically after 30 seconds"
+#endif
+#ifndef TXT_RFID_CARDS
+#define TXT_RFID_CARDS "RFID Cards"
+#endif
+#ifndef TXT_NO_CARDS_REGISTERED_YET
+#define TXT_NO_CARDS_REGISTERED_YET "No cards registered yet"
+#endif
+#ifndef TXT_EDIT_CARD
+#define TXT_EDIT_CARD "Edit Card"
+#endif
+#ifndef TXT_NO_NAME
+#define TXT_NO_NAME "(no name)"
+#endif
+#ifndef TXT_CARD_ID
+#define TXT_CARD_ID "Card ID"
+#endif
+#ifndef TXT_LIMIT
+#define TXT_LIMIT "Limit"
+#endif
+#ifndef TXT_USED
+#define TXT_USED "Used"
+#endif
+#ifndef TXT_RFID_AUTO_RESET
+#define TXT_RFID_AUTO_RESET "RFID Auto-Reset"
+#endif
+#ifndef TXT_MONTHLY_RESET
+#define TXT_MONTHLY_RESET "Monthly reset"
+#endif
+#ifndef TXT_ZEROES_EVERY_CARD_S_USAGE
+#define TXT_ZEROES_EVERY_CARD_S_USAGE "Zeroes every card's usage"
+#endif
+
+// -- Date and time --
+#ifndef TXT_DATE_TIME
+#define TXT_DATE_TIME "Date & Time"
+#endif
+#ifndef TXT_24_HOUR
+#define TXT_24_HOUR "24 hour"
+#endif
+#ifndef TXT_12_HOUR
+#define TXT_12_HOUR "12 hour"
+#endif
+
+// -- Network --
+#ifndef TXT_WIFI
+#define TXT_WIFI "WiFi"
+#endif
+#ifndef TXT_4G_LTE
+#define TXT_4G_LTE "4G / LTE"
+#endif
+#ifndef TXT_BACKUP_LINK_WHEN_WIFI_IS_DOWN
+#define TXT_BACKUP_LINK_WHEN_WIFI_IS_DOWN "Backup link when WiFi is down"
+#endif
+
+// -- Machine --
+#ifndef TXT_CHANGE
+#define TXT_CHANGE "Change"
+#endif
+#ifndef TXT_NOT_SET_LOWER
+#define TXT_NOT_SET_LOWER "not set"
+#endif
+#ifndef TXT_CLOCK
+#define TXT_CLOCK "Clock"
+#endif
+#ifndef TXT_SET
+#define TXT_SET "Set"
+#endif
+#ifndef TXT_TIMEOUT_OFF
+#define TXT_TIMEOUT_OFF "Timeout off"
+#endif
+#ifndef TXT_CUSTOMER
+#define TXT_CUSTOMER "Customer"
+#endif
+#ifndef TXT_OPEN
+#define TXT_OPEN "Open"
+#endif
+
+// -- Customer screen settings --
+#ifndef TXT_CUSTOMER_SCREENS
+#define TXT_CUSTOMER_SCREENS "Customer Screens"
+#endif
+#ifndef TXT_MAX_ITEMS
+#define TXT_MAX_ITEMS "Max items"
+#endif
+#ifndef TXT_AUTO_TIMEOUT
+#define TXT_AUTO_TIMEOUT "Auto timeout"
+#endif
+#ifndef TXT_SECONDS
+#define TXT_SECONDS "Seconds"
+#endif
+#ifndef TXT_SHOW_COUNTDOWN
+#define TXT_SHOW_COUNTDOWN "Show countdown"
+#endif
+
+// -- Dispensing --
+#ifndef TXT_PRODUCT
+#define TXT_PRODUCT "Product"
+#endif
+#ifndef TXT_DISPENSING
+#define TXT_DISPENSING "Dispensing..."
+#endif
+#ifndef TXT_PRODUCT_DISPENSED
+#define TXT_PRODUCT_DISPENSED "Product Dispensed!"
+#endif
+#ifndef TXT_COLLECT
+#define TXT_COLLECT "Collect!"
+#endif
+#ifndef TXT_THANK_YOU
+#define TXT_THANK_YOU "Thank You!"
+#endif
+
+// -- Idle time out --
+#ifndef TXT_TIME_OUT
+#define TXT_TIME_OUT "Time Out!"
+#endif
+#ifndef TXT_NO_ACTIVITY_FOR_A_WHILE
+#define TXT_NO_ACTIVITY_FOR_A_WHILE "No activity for a while"
+#endif
+#ifndef TXT_RETURNING_TO_THE_HOME_SCREEN
+#define TXT_RETURNING_TO_THE_HOME_SCREEN "Returning to the home screen"
+#endif
