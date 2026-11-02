@@ -1,0 +1,12 @@
+Compact display fonts in this folder
+====================================
+Each .h file is a bitmap rendering (Adafruit GFX format, 141 dpi, glyphs 0x20-0x7E) of an open-licence font:
+
+  RobotoCondensed*   Roboto Condensed    Copyright Christian Robertson / Google - SIL Open Font License 1.1
+  SourceSans*        Source Sans 3       Copyright Adobe - SIL Open Font License 1.1
+  Oswald*            Oswald              Copyright Vernon Adams, Kalapi Gajjar, Cyreal - SIL Open Font License 1.1
+  FiraCondensed*     Fira Sans Condensed Copyright The Mozilla Foundation, Telefonica S.A. - SIL Open Font License 1.1
+  BarlowSemi*        Barlow Semi Condensed Copyright Jeremy Tribby - SIL Open Font License 1.1
+
+Naming: <Family>[Bold]<size>pt7b, sizes 9, 12, 18, 24. Select them in custom_theme.h (UI_FONT_* lines), or from docs/theme_designer.html.
+The OFL permits embedding these in a product. Fonts that nothing references are removed by the linker.
