@@ -8,6 +8,23 @@ void saveMotorStockSlot(int m) {
   prefs.putInt(key, motorStock[m]);
 }
 
+// Capacity of each tray, set from Admin > Stock > Edit > Set Max. The figure in Config.h
+// (CFG_STOCK_MAX) is only the starting value until an admin changes it. stockMaxAll is the last
+// "all trays" figure, shown as the default when setting every tray at once.
+const int STOCK_MAX_LIMIT = 99;
+int motorMax[MAX_MOTORS];
+int stockMaxAll = STOCK_MAX;
+
+void saveMotorMaxSlot(int m) {
+  char key[8];
+  snprintf(key, sizeof(key), "mmax%d", m);
+  prefs.putInt(key, motorMax[m]);
+}
+
+void saveStockMaxAll() {
+  prefs.putInt("allmax", stockMaxAll);
+}
+
 void decrementMotorStock(int m, int qty) {
   motorStock[m] -= qty;
   if (motorStock[m] < 0) motorStock[m] = 0;
@@ -598,10 +615,13 @@ void loadPersistedProductData() {
   if (upiTimeoutMs < UPI_TIMEOUT_MIN_MS) upiTimeoutMs = UPI_TIMEOUT_MIN_MS;
   if (upiTimeoutMs > UPI_TIMEOUT_MAX_MS) upiTimeoutMs = UPI_TIMEOUT_MAX_MS;
 
+  stockMaxAll = constrain(prefs.getInt("allmax", STOCK_MAX), 1, STOCK_MAX_LIMIT);
   for (int m = 0; m < MAX_MOTORS; m++) {
-    char keyMStock[9];
+    char keyMax[8], keyMStock[9];
+    snprintf(keyMax, sizeof(keyMax), "mmax%d", m);
+    motorMax[m] = constrain(prefs.getInt(keyMax, stockMaxAll), 1, STOCK_MAX_LIMIT);
     snprintf(keyMStock, sizeof(keyMStock), "mstock%d", m);
-    motorStock[m] = prefs.getInt(keyMStock, STOCK_MAX);
+    motorStock[m] = min(prefs.getInt(keyMStock, motorMax[m]), motorMax[m]);
   }
 
   for (int i = 0; i < MAX_PRODUCTS; i++) {

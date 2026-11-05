@@ -151,7 +151,7 @@
 #define COL_COUNTDOWN_URGENT    COL_DANGER            // Idle countdown in the last 10 seconds
 
 // ---------- Fonts ----------
-// Family: Serif, Sans or Mono. Sizes: 9, 12, 18 or 24. Keep XS <= SM <= MD <= LG.
+// One family for the whole UI: Serif, Sans or Mono. Sizes are fixed: XS 9, SM bold 9, MD bold 12, LG bold 18, RM 12.
 #define UI_FONT_XS              FreeSerif9pt7b
 #define UI_FONT_SM              FreeSerifBold9pt7b
 #define UI_FONT_MD              FreeSerifBold12pt7b
@@ -297,6 +297,8 @@
 #define TXT_UNASSIGNED                  "Unassigned"
 #define TXT_TAP_EDIT_TO_TYPE_AN_EXACT_QUAN"Tap Edit to type an exact quantity"
 #define TXT_REFILL_TRAYS                "Refill Trays"
+#define TXT_SET_MAX                     "Set Max"
+#define TXT_ALL_TRAYS                   "All Trays"
 
 // -- Admin payments --
 #define TXT_FREE_VEND_LABEL             "Free Vend"

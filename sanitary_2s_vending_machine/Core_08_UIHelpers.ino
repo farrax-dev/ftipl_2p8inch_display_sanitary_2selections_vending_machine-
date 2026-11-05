@@ -108,15 +108,43 @@ const int HDR_STATUS_W = 30;                       // right strip left clear for
 //
 // Returns the x of the title's right edge, which is where the rule's solid
 // section ends.
+// Shortens s with ".." until it fits maxW in the given font, so a long title or message can never run
+// into its neighbour or off the screen, whichever font family the theme uses.
+void clipToFont(const GFXfont* font, const char* s, int maxW, char* out, size_t n) {
+  int16_t x1, y1;
+  uint16_t w, h;
+  size_t total = strlen(s);
+  size_t full = (total > n - 3) ? n - 3 : total;
+  tft.setTextSize(1);
+  tft.setFont(font);
+  for (size_t len = full + 1; len-- > 0;) {          // the whole string first, then shorter
+    memcpy(out, s, len);
+    if (len < total) { out[len] = '.'; out[len + 1] = '.'; out[len + 2] = '\0'; }
+    else             { out[len] = '\0'; }
+    tft.getTextBounds(out, 0, 0, &x1, &y1, &w, &h);
+    if ((int)w <= maxW) return;
+  }
+  strcpy(out, "..");
+}
+
 int drawHeaderTitle(const char* title, int availW) {
   int16_t x1, y1;
   uint16_t w, h;
 
+  char titleBuf[48];
   tft.setTextSize(1);
   tft.setFont(&UI_FONT_MD);
   tft.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
+  const GFXfont* titleFont = &UI_FONT_MD;
   if ((int)w > availW) {
-    tft.setFont(&UI_FONT_SM);
+    titleFont = &UI_FONT_SM;
+    tft.setFont(titleFont);
+    tft.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
+  }
+  if ((int)w > availW) {          // still too wide even at the small size: shorten it with ".."
+    clipToFont(titleFont, title, availW, titleBuf, sizeof(titleBuf));
+    title = titleBuf;
+    tft.setFont(titleFont);
     tft.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
   }
 
@@ -211,7 +239,15 @@ int headerRightX() {
 // Text size is passed in; color is whatever the caller last set.
 const int WRAP_LINE_GAP = 2;
 
+// Same as wrapTextInBox(), but never more than maxLines lines: whatever is left goes on the last line,
+// which is then shortened with ".." to fit. Keeps a long name from growing past its card.
+int wrapTextInBoxLines(const char* text, int boxX, int boxW, int topY, int size, bool draw, int maxLines);
+
 int wrapTextInBox(const char* text, int boxX, int boxW, int topY, int size, bool draw) {
+  return wrapTextInBoxLines(text, boxX, boxW, topY, size, draw, 99);
+}
+
+int wrapTextInBoxLines(const char* text, int boxX, int boxW, int topY, int size, bool draw, int maxLines) {
   int lineH = uiBmpLineH(size);
   char buf[40];
   int lines = 0;
@@ -235,6 +271,10 @@ int wrapTextInBox(const char* text, int boxX, int boxW, int topY, int size, bool
       j = k;
       while (text[j] == ' ') j++;
       if (text[j] == '\0' || text[j] == '\n') break;
+    }
+    if (lines + 1 >= maxLines) {               // last line allowed: take the rest, clipping shows the cut
+      end = start;
+      while (text[end] != '\0' && text[end] != '\n') end++;
     }
     if (draw) {
       int len = end - start;
@@ -354,9 +394,16 @@ int drawSerifRegularLine(const char* text, int boxX, int boxW, int centerY, uint
     if ((int)w <= boxW - 4) break;
   }
   if (face > 2) face = 2;
+  char fitBuf[64];
   tft.setTextSize(1);
   tft.setFont(faces[face]);
   tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  if ((int)w > boxW - 4) {           // smallest face still too wide: shorten with ".."
+    clipToFont(faces[face], text, boxW - 4, fitBuf, sizeof(fitBuf));
+    text = fitBuf;
+    tft.setFont(faces[face]);
+    tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  }
   tft.setTextColor(color);
   tft.setCursor(boxX + (boxW - (int)w) / 2 - x1, centerY - (int)h / 2 - y1);
   tft.print(text);
@@ -382,9 +429,16 @@ int drawSerifLine(const char* text, int boxX, int boxW, int centerY, uint16_t co
     if ((int)w <= boxW - 4) break;
   }
   if (face > 2) face = 2;
+  char fitBuf[64];
   tft.setTextSize(1);
   tft.setFont(faces[face]);
   tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  if ((int)w > boxW - 4) {           // smallest face still too wide: shorten with ".."
+    clipToFont(faces[face], text, boxW - 4, fitBuf, sizeof(fitBuf));
+    text = fitBuf;
+    tft.setFont(faces[face]);
+    tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  }
   tft.setTextColor(color);
   tft.setCursor(boxX + (boxW - (int)w) / 2 - x1, centerY - (int)h / 2 - y1);
   tft.print(text);
@@ -492,6 +546,10 @@ void centerText(const char* text, int y) {
 
 void centerTextInBox(const char* text, int y, int boxX, int boxW) {
   uiBmpDraw(text, 1, boxX, boxW, y);
+}
+
+void leftTextInBox(const char* text, int x, int boxW, int y) {
+  uiBmpDraw(text, 0, x, boxW, y);
 }
 
 void leftText(const char* text, int x, int y) {

@@ -112,7 +112,7 @@ void drawCartRow(int i, int x, int y, int w, int h) {
   // showing the quantity, and "Rs15 x1 = Rs15" was restating that in the
   // least legible type on the screen.
   const GFXfont* nameFont = cartNameFont(textW, h);
-  int nameSize = (h < 20) ? 1 : 2;   // bitmap fallback only
+  int nameSize = (h - 4 >= uiBmpCapH(2)) ? 2 : 1;   // fallback only: the larger size needs its font's caps to fit the row
   int nameH = nameFont ? nameFont->yAdvance : 8 * nameSize;
   bool twoLine = (nameH + 6 + 8 <= h - 4) && !hideProductPrices;
 
@@ -153,7 +153,7 @@ void drawCartRow(int i, int x, int y, int w, int h) {
     char nameBuf[24];
     snprintf(nameBuf, sizeof(nameBuf), "%.*s", maxChars, products[i].name);
     tft.setTextSize(nameSize);
-    leftText(nameBuf, textX, blockY);
+    leftTextInBox(nameBuf, textX, textW, blockY);
   }
 
   if (twoLine) {

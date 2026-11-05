@@ -492,12 +492,11 @@
 
 // ---------- Fonts ----------
 // The text roles the UI draws with. Each is one Adafruit GFX font: Free<Family>[Bold]<size>pt7b,
-// where family is Serif, Sans or Mono and size is 9, 12, 18 or 24. Keep XS <= SM <= MD <= LG;
-// bigger fonts need bigger boxes, and text that no longer fits is shrunk or clipped with '..'.
-// A theme (custom_theme.h) can #define any of these before this point to change them.
-//   XS regular small   captions, long values       SM bold small   secondary labels, small buttons
-//   MD bold medium     main labels, buttons, titles LG bold large   big numbers, Welcome title, messages
-//   RM regular medium  the stock figure on product cards
+// where family is Serif, Sans or Mono. Use ONE family for all five roles, at these fixed sizes:
+//   XS regular 9    captions, long values       SM bold 9     secondary labels, small buttons
+//   MD bold 12      main labels, buttons        LG bold 18    big numbers, Welcome title, messages
+//   RM regular 12   the stock figure on product cards
+// Serif is the default. A theme (custom_theme.h) can #define any of these before this point.
 #ifndef UI_FONT_XS
 #define UI_FONT_XS FreeSerif9pt7b
 #endif
@@ -820,6 +819,12 @@
 #endif
 #ifndef TXT_REFILL_TRAYS
 #define TXT_REFILL_TRAYS "Refill Trays"
+#endif
+#ifndef TXT_SET_MAX
+#define TXT_SET_MAX "Set Max"
+#endif
+#ifndef TXT_ALL_TRAYS
+#define TXT_ALL_TRAYS "All Trays"
 #endif
 
 // -- Admin payments --

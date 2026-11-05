@@ -138,6 +138,11 @@ int uiBmpSize() {
   return (s < 1) ? 1 : s;
 }
 
+// Height of a capital in the font that size maps to.
+int uiBmpCapH(int size) {
+  return auiCapH((size >= 3) ? FACE_LG : (size == 2) ? FACE_MD : FACE_SM);
+}
+
 int uiBmpFaceFor(int size) {
   return (size >= 3) ? FACE_LG : (size == 2) ? FACE_MD : FACE_SM;
 }
@@ -163,7 +168,13 @@ void uiBmpDraw(const char* s, int align, int x, int boxW, int topY) {
   if (s == NULL || s[0] == '\0') return;
   int size = uiBmpSize();
   int face = uiBmpFaceFor(size);
-  if (boxW > 0) face = auiFitFace(s, boxW, face);
+  char clipped[72];
+  if (boxW > 0) {
+    int fitW = (boxW > 16) ? boxW - 8 : boxW;              // 4px of air each side, so text never touches the edge
+    face = auiFitFace(s, fitW, face);
+    auiClip(clipped, sizeof(clipped), s, fitW, face);       // still too wide at the smallest face: ".."
+    s = clipped;
+  }
   int16_t x1, y1;
   uint16_t w, h;
   auiFace(face);

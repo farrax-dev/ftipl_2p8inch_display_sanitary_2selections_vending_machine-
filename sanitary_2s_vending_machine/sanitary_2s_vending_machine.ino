@@ -39,98 +39,24 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-// Fonts. Every family the theme can pick (Core_03_Theme.ino, custom_theme.h): Serif is the
-// default; Sans and Mono (and the italic / oblique cuts of all three) are there for the Custom theme. Fonts that nothing references are
-// dropped by the linker, so they cost no flash.
+// Fonts. The UI uses one family at a time (Serif by default; Sans or Mono from the Custom theme,
+// see custom_theme.h). Each family needs five fonts: small, small bold, medium, medium bold, large bold.
+// Fonts that nothing references are dropped by the linker.
 #include <Fonts/FreeSerif9pt7b.h>
-#include <Fonts/FreeSerif12pt7b.h>
-#include <Fonts/FreeSerif18pt7b.h>
-#include <Fonts/FreeSerif24pt7b.h>
 #include <Fonts/FreeSerifBold9pt7b.h>
+#include <Fonts/FreeSerif12pt7b.h>
 #include <Fonts/FreeSerifBold12pt7b.h>
 #include <Fonts/FreeSerifBold18pt7b.h>
-#include <Fonts/FreeSerifBold24pt7b.h>
 #include <Fonts/FreeSans9pt7b.h>
-#include <Fonts/FreeSans12pt7b.h>
-#include <Fonts/FreeSans18pt7b.h>
-#include <Fonts/FreeSans24pt7b.h>
 #include <Fonts/FreeSansBold9pt7b.h>
+#include <Fonts/FreeSans12pt7b.h>
 #include <Fonts/FreeSansBold12pt7b.h>
 #include <Fonts/FreeSansBold18pt7b.h>
-#include <Fonts/FreeSansBold24pt7b.h>
 #include <Fonts/FreeMono9pt7b.h>
-#include <Fonts/FreeMono12pt7b.h>
-#include <Fonts/FreeMono18pt7b.h>
-#include <Fonts/FreeMono24pt7b.h>
 #include <Fonts/FreeMonoBold9pt7b.h>
+#include <Fonts/FreeMono12pt7b.h>
 #include <Fonts/FreeMonoBold12pt7b.h>
 #include <Fonts/FreeMonoBold18pt7b.h>
-#include <Fonts/FreeMonoBold24pt7b.h>
-#include <Fonts/FreeSerifItalic9pt7b.h>
-#include <Fonts/FreeSerifItalic12pt7b.h>
-#include <Fonts/FreeSerifItalic18pt7b.h>
-#include <Fonts/FreeSerifItalic24pt7b.h>
-#include <Fonts/FreeSerifBoldItalic9pt7b.h>
-#include <Fonts/FreeSerifBoldItalic12pt7b.h>
-#include <Fonts/FreeSerifBoldItalic18pt7b.h>
-#include <Fonts/FreeSerifBoldItalic24pt7b.h>
-#include <Fonts/FreeSansOblique9pt7b.h>
-#include <Fonts/FreeSansOblique12pt7b.h>
-#include <Fonts/FreeSansOblique18pt7b.h>
-#include <Fonts/FreeSansOblique24pt7b.h>
-#include <Fonts/FreeSansBoldOblique9pt7b.h>
-#include <Fonts/FreeSansBoldOblique12pt7b.h>
-#include <Fonts/FreeSansBoldOblique18pt7b.h>
-#include <Fonts/FreeSansBoldOblique24pt7b.h>
-#include <Fonts/FreeMonoOblique9pt7b.h>
-#include <Fonts/FreeMonoOblique12pt7b.h>
-#include <Fonts/FreeMonoOblique18pt7b.h>
-#include <Fonts/FreeMonoOblique24pt7b.h>
-#include <Fonts/FreeMonoBoldOblique9pt7b.h>
-#include <Fonts/FreeMonoBoldOblique12pt7b.h>
-#include <Fonts/FreeMonoBoldOblique18pt7b.h>
-#include <Fonts/FreeMonoBoldOblique24pt7b.h>
-// Compact families for the Custom theme (generated from open-licence fonts, see src/fonts/LICENSES.txt).
-#include "src/fonts/RobotoCondensed9pt7b.h"
-#include "src/fonts/RobotoCondensed12pt7b.h"
-#include "src/fonts/RobotoCondensed18pt7b.h"
-#include "src/fonts/RobotoCondensed24pt7b.h"
-#include "src/fonts/RobotoCondensedBold9pt7b.h"
-#include "src/fonts/RobotoCondensedBold12pt7b.h"
-#include "src/fonts/RobotoCondensedBold18pt7b.h"
-#include "src/fonts/RobotoCondensedBold24pt7b.h"
-#include "src/fonts/SourceSans9pt7b.h"
-#include "src/fonts/SourceSans12pt7b.h"
-#include "src/fonts/SourceSans18pt7b.h"
-#include "src/fonts/SourceSans24pt7b.h"
-#include "src/fonts/SourceSansBold9pt7b.h"
-#include "src/fonts/SourceSansBold12pt7b.h"
-#include "src/fonts/SourceSansBold18pt7b.h"
-#include "src/fonts/SourceSansBold24pt7b.h"
-#include "src/fonts/Oswald9pt7b.h"
-#include "src/fonts/Oswald12pt7b.h"
-#include "src/fonts/Oswald18pt7b.h"
-#include "src/fonts/Oswald24pt7b.h"
-#include "src/fonts/OswaldBold9pt7b.h"
-#include "src/fonts/OswaldBold12pt7b.h"
-#include "src/fonts/OswaldBold18pt7b.h"
-#include "src/fonts/OswaldBold24pt7b.h"
-#include "src/fonts/FiraCondensed9pt7b.h"
-#include "src/fonts/FiraCondensed12pt7b.h"
-#include "src/fonts/FiraCondensed18pt7b.h"
-#include "src/fonts/FiraCondensed24pt7b.h"
-#include "src/fonts/FiraCondensedBold9pt7b.h"
-#include "src/fonts/FiraCondensedBold12pt7b.h"
-#include "src/fonts/FiraCondensedBold18pt7b.h"
-#include "src/fonts/FiraCondensedBold24pt7b.h"
-#include "src/fonts/BarlowSemi9pt7b.h"
-#include "src/fonts/BarlowSemi12pt7b.h"
-#include "src/fonts/BarlowSemi18pt7b.h"
-#include "src/fonts/BarlowSemi24pt7b.h"
-#include "src/fonts/BarlowSemiBold9pt7b.h"
-#include "src/fonts/BarlowSemiBold12pt7b.h"
-#include "src/fonts/BarlowSemiBold18pt7b.h"
-#include "src/fonts/BarlowSemiBold24pt7b.h"
 #include <Adafruit_ILI9341.h>
 #include <XPT2046_Touchscreen.h>
 #include <Preferences.h>
@@ -247,6 +173,7 @@ int wrapFontInBox(const GFXfont* font, const char* text, int boxX, int boxW, int
 int wrapFontHeight(int lines, const GFXfont* font);
 const GFXfont* productNameFont(int nameBoxW, int cardH, int priceSize, int &outLines, int &outBitmapSize);
 const GFXfont* cartNameFont(int textW, int rowH);
+void clipToFont(const GFXfont* font, const char* s, int maxW, char* out, size_t n);
 bool rtcReadTime(struct tm &out);
 bool rtcWriteTime(const struct tm &t);
 String computePhonePeChecksum(const String &base64Body, const String &endpointPath);

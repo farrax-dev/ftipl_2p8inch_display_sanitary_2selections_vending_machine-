@@ -18,6 +18,8 @@ int motorStockPage = 0;
 // Motor being edited on the Motor Stock keypad (-1 = none); Screen_08 resets it.
 int  motorEditing = -1;
 char motorEditBuf[6] = "";
+// What the Motor Stock keypad is editing: 0 = this tray's quantity, 1 = this tray's maximum.
+int  motorEditMode = 0;
 
 // Which of the Report screen's three pages is showing, and whether the
 // destructive "Reset all totals" action has been armed by a first tap. Both

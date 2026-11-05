@@ -327,6 +327,15 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   int nameLines = 0, bitmapSize = 1;
   const GFXfont* nameFont = productNameFont(innerW, h, priceSize, nameLines, bitmapSize);
   int nameH = nameFont ? wrapFontHeight(nameLines, nameFont) : wrapTextHeight(nameLines, bitmapSize);
+  // No font in the name list fits the card (crowded 5-6 product layouts, or a long name): the name is
+  // drawn in the small size. nameLines was never filled in on that path, so the price and status lines
+  // were drawn on top of the name. Count the lines here, and drop to one clipped line if the card is
+  // still too short for two.
+  int nameMaxLines = PCARD_MAX_NAME_LINES;
+  if (!nameFont) {
+    nameLines = wrapTextInBoxLines(products[i].name, innerX, innerW, 0, bitmapSize, false, nameMaxLines);
+    nameH = wrapTextHeight(nameLines, bitmapSize);
+  }
 
   // The price may never out-size the name. Only matters on the bitmap-font
   // fallback path — the name there can be forced down to size 1 while
@@ -337,6 +346,12 @@ void drawProductCard(int i, int x, int y, int w, int h) {
   if (!nameFont && priceSize > bitmapSize) priceSize = bitmapSize;
 
   int blockH = nameH + (showPrice ? PCARD_GAP + 8 * priceSize : 0) + PCARD_GAP + statusH;
+  if (!nameFont && nameLines > 1 && blockH > h - 4) {
+    nameMaxLines = 1;
+    nameLines = 1;
+    nameH = wrapTextHeight(1, bitmapSize);
+    blockH = nameH + (showPrice ? PCARD_GAP + 8 * priceSize : 0) + PCARD_GAP + statusH;
+  }
   int cursorY = y + (h - blockH) / 2;
 
   tft.setTextColor(outOfStock ? COL_PRODUCT_NAME : COL_PRODUCT_NAME, bg);
@@ -344,7 +359,7 @@ void drawProductCard(int i, int x, int y, int w, int h) {
     wrapFontInBox(nameFont, products[i].name, innerX, innerW, cursorY, true);
   } else {
     tft.setTextSize(bitmapSize);
-    wrapTextInBox(products[i].name, innerX, innerW, cursorY, bitmapSize, true);
+    wrapTextInBoxLines(products[i].name, innerX, innerW, cursorY, bitmapSize, true, nameMaxLines);
   }
   cursorY += nameH;
 

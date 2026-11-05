@@ -131,7 +131,7 @@ int motorStockTestX() { return auiStepLeftX(MSTOCK_RIGHT) - 6 - MSTOCK_TEST_W; }
 // take the left of the screen and Save/Cancel the right, so there is no bottom
 // bar on this view and the keys can be full height.
 const int MKP_X0 = 16, MKP_Y0 = 78, MKP_W = 62, MKP_H = 32, MKP_GX = 6, MKP_GY = 4;
-const int MKP_SIDE_X = 226, MKP_SIDE_W = 78, MKP_SIDE_H = 44;
+const int MKP_SIDE_X = 226, MKP_SIDE_W = 78, MKP_SIDE_H = 32;
 const char* const MKP_LABELS[12] = {"1","2","3","4","5","6","7","8","9","Clear","0","Del"};
 
 void getKeypadKeyRect(int k, int &x, int &y) {
@@ -146,14 +146,15 @@ void drawMotorEditValue() {
   tft.drawRoundRect(16, 38, 288, 34, 8, COL_FIELD_BORDER);
   auiPut(motorEditBuf[0] ? motorEditBuf : "0", AL_CENTER, 24, 272, 55, COL_FIELD_TEXT, FACE_LG);
   char lim[16];
-  snprintf(lim, sizeof(lim), "max %d", STOCK_MAX);
+  if (motorEditMode == 0) snprintf(lim, sizeof(lim), "max %d", motorMax[motorEditing]);
+  else                    snprintf(lim, sizeof(lim), "1 - %d", STOCK_MAX_LIMIT);
   auiPut(lim, AL_RIGHT, 200, 96, 55, COL_FIELD_COUNT, FACE_XS);
 }
 
 void drawMotorEditKeypad() {
   drawGradientBackground();
   char title[24];
-  snprintf(title, sizeof(title), "Motor %d Stock", motorEditing + 1);
+  snprintf(title, sizeof(title), (motorEditMode == 0) ? "Motor %d Stock" : "Motor %d Max", motorEditing + 1);
   drawScreenTitle(title);
   drawMotorEditValue();
 
@@ -163,11 +164,14 @@ void drawMotorEditKeypad() {
     auiButton(x, y, MKP_W, MKP_H, MKP_LABELS[k], ABTN_SECONDARY, (k == 9 || k == 11) ? FACE_SM : FACE_MD);
   }
 
-  // Save / Fill Max / Cancel stacked down the right. Fill Max is the per-tray
-  // refill: this motor goes straight to the maximum and the keypad closes.
+  // Four buttons down the right.
+  //   Stock view: Save | Fill Max (this tray to its maximum) | Set Max (switch to the max view) | Cancel
+  //   Max view:   Save (this tray's maximum) | All Trays (the typed figure becomes every tray's
+  //               maximum) | Stock (back to the quantity) | Cancel
   auiButton(MKP_SIDE_X, mkpSideY(0), MKP_SIDE_W, MKP_SIDE_H, TXT_SAVE, ABTN_PRIMARY, FACE_MD);
-  auiButton(MKP_SIDE_X, mkpSideY(1), MKP_SIDE_W, MKP_SIDE_H, TXT_FILL_MAX, ABTN_PRIMARY, FACE_MD);
-  auiButton(MKP_SIDE_X, mkpSideY(2), MKP_SIDE_W, MKP_SIDE_H, TXT_CANCEL, ABTN_SECONDARY, FACE_MD);
+  auiButton(MKP_SIDE_X, mkpSideY(1), MKP_SIDE_W, MKP_SIDE_H, (motorEditMode == 0) ? TXT_FILL_MAX : TXT_ALL_TRAYS, ABTN_PRIMARY, FACE_MD);
+  auiButton(MKP_SIDE_X, mkpSideY(2), MKP_SIDE_W, MKP_SIDE_H, (motorEditMode == 0) ? TXT_SET_MAX : TXT_STOCK, ABTN_SECONDARY, FACE_MD);
+  auiButton(MKP_SIDE_X, mkpSideY(3), MKP_SIDE_W, MKP_SIDE_H, TXT_CANCEL, ABTN_SECONDARY, FACE_MD);
 }
 
 void handleMotorEditKeypad() {
@@ -177,26 +181,53 @@ void handleMotorEditKeypad() {
   int sx, sy;
   mapTouchToScreen(raw, sx, sy);
 
-  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(2), MKP_SIDE_W, MKP_SIDE_H)) {
+  int m = motorEditing;
+
+  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(3), MKP_SIDE_W, MKP_SIDE_H)) {       // Cancel
     motorEditing = -1;
+    motorEditMode = 0;
     drawAdminMotorStockScreen();
+    return;
+  }
+  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(2), MKP_SIDE_W, MKP_SIDE_H)) {       // Set Max <-> Stock
+    motorEditMode = (motorEditMode == 0) ? 1 : 0;
+    snprintf(motorEditBuf, sizeof(motorEditBuf), "%d", (motorEditMode == 1) ? motorMax[m] : motorStock[m]);
+    drawMotorEditKeypad();
     return;
   }
   if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(1), MKP_SIDE_W, MKP_SIDE_H)) {
-    int m = motorEditing;
-    motorStock[m] = STOCK_MAX;
-    saveMotorStockSlot(m);
+    if (motorEditMode == 0) {                                                       // Fill Max
+      motorStock[m] = motorMax[m];
+      saveMotorStockSlot(m);
+    } else {                                                                        // All Trays
+      int v = constrain(atoi(motorEditBuf), 1, STOCK_MAX_LIMIT);
+      stockMaxAll = v;
+      saveStockMaxAll();
+      for (int t = 0; t < MAX_MOTORS; t++) {
+        motorMax[t] = v;
+        saveMotorMaxSlot(t);
+        if (motorStock[t] > v) { motorStock[t] = v; saveMotorStockSlot(t); }
+      }
+    }
     refreshLowStockArm();
     motorEditing = -1;
+    motorEditMode = 0;
     drawAdminMotorStockScreen();
     return;
   }
-  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(0), MKP_SIDE_W, MKP_SIDE_H)) {
-    int m = motorEditing;
-    motorStock[m] = constrain(atoi(motorEditBuf), 0, STOCK_MAX);
-    saveMotorStockSlot(m);
+  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(0), MKP_SIDE_W, MKP_SIDE_H)) {       // Save
+    if (motorEditMode == 0) {
+      motorStock[m] = constrain(atoi(motorEditBuf), 0, motorMax[m]);
+      saveMotorStockSlot(m);
+    } else {
+      int v = constrain(atoi(motorEditBuf), 1, STOCK_MAX_LIMIT);
+      motorMax[m] = v;
+      saveMotorMaxSlot(m);
+      if (motorStock[m] > v) { motorStock[m] = v; saveMotorStockSlot(m); }   // never more stock than capacity
+    }
     refreshLowStockArm();
     motorEditing = -1;
+    motorEditMode = 0;
     drawAdminMotorStockScreen();
     return;
   }
@@ -214,8 +245,8 @@ void handleMotorEditKeypad() {
       char digit = MKP_LABELS[k][0];
       char next[8];
       snprintf(next, sizeof(next), "%s%c", motorEditBuf, digit);
-      // A value above the configured maximum is simply not accepted.
-      if (atoi(next) <= STOCK_MAX) {
+      // A value above the tray's maximum (or, in the max view, above 99) is simply not accepted.
+      if (atoi(next) <= ((motorEditMode == 0) ? motorMax[motorEditing] : STOCK_MAX_LIMIT)) {
         strncpy(motorEditBuf, next, sizeof(motorEditBuf) - 1);
         motorEditBuf[sizeof(motorEditBuf) - 1] = '\0';
         // No leading zeros: "0" then "5" reads as 5.
@@ -296,7 +327,7 @@ void handleAdminMotorStockScreen() {
         // maximum. Unassigned motors are left alone.
         for (int m = 0; m < MAX_MOTORS; m++) {
           if (productForMotor(m) < 0) continue;
-          motorStock[m] = STOCK_MAX;
+          motorStock[m] = motorMax[m];
           saveMotorStockSlot(m);
         }
         refreshLowStockArm();
@@ -319,6 +350,7 @@ void handleAdminMotorStockScreen() {
 
         if (auiRowButtonHit(sx, sy, motorStockTestX(), cy, MSTOCK_TEST_W)) {
           motorEditing = m;
+          motorEditMode = 0;
           snprintf(motorEditBuf, sizeof(motorEditBuf), "%d", motorStock[m]);
           drawMotorEditKeypad();
           return;
@@ -336,7 +368,7 @@ void handleAdminMotorStockScreen() {
           // Capped at STOCK_MAX (CFG_STOCK_MAX from Config.h), not an
           // arbitrary 99 — that's the ceiling a technician flashed for this
           // machine's chute/hopper capacity.
-          if (motorStock[m] < STOCK_MAX) motorStock[m]++;
+          if (motorStock[m] < motorMax[m]) motorStock[m]++;
           saveMotorStockSlot(m);
           // Re-arms the low-stock alert for a motor that's just been
           // refilled, without mailing anything mid-refill.
@@ -347,6 +379,7 @@ void handleAdminMotorStockScreen() {
 
         if (pointInRect(sx, sy, auiStepValX(MSTOCK_RIGHT), cy - ASTEP_H / 2, ASTEP_VAL_W, ASTEP_H)) {
           motorEditing = m;
+          motorEditMode = 0;
           snprintf(motorEditBuf, sizeof(motorEditBuf), "%d", motorStock[m]);
           drawMotorEditKeypad();
           return;
