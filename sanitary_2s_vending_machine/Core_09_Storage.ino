@@ -621,7 +621,7 @@ void loadPersistedProductData() {
     snprintf(keyMax, sizeof(keyMax), "mmax%d", m);
     motorMax[m] = constrain(prefs.getInt(keyMax, stockMaxAll), 1, STOCK_MAX_LIMIT);
     snprintf(keyMStock, sizeof(keyMStock), "mstock%d", m);
-    motorStock[m] = min(prefs.getInt(keyMStock, motorMax[m]), motorMax[m]);
+    motorStock[m] = min((int)prefs.getInt(keyMStock, motorMax[m]), (int)motorMax[m]);
   }
 
   for (int i = 0; i < MAX_PRODUCTS; i++) {
