@@ -364,9 +364,8 @@ void handlePaymentCashScreen() {
         drawDispensedScreen();
       } else {
         drawGradientBackground();
-        drawSerifLine(TXT_DISPENSE, 0, tft.width(), 70, COL_ERR_TEXT, 0);
-        drawSerifLine(TXT_FAILED, 0, tft.width(), 108, COL_ERR_TEXT, 0);
-        drawSerifLine(TXT_PLEASE_CONTACT_SUPPORT, 0, tft.width(), 150, COL_MSG_BODY, 1);
+        drawSerifLine(TXT_DISPENSE, 0, tft.width(), 90, COL_ERR_TEXT, 0);
+        drawSerifLine(TXT_FAILED, 0, tft.width(), 128, COL_ERR_TEXT, 0);
       }
       delay(2500);
 
@@ -407,7 +406,6 @@ void handlePaymentCashScreen() {
     drawGradientBackground();
     drawSerifLine(TXT_PAYMENT, 0, tft.width(), 70, COL_ERR_TEXT, 0);
     drawSerifLine(TXT_TIMED_OUT, 0, tft.width(), 108, COL_ERR_TEXT, 0);
-    drawSerifLine(TXT_NO_PAYMENT_WAS_RECEIVED_IN_TIM, 0, tft.width(), 150, COL_MSG_BODY, 1);
     delay(2000);
 
     resetCart();
@@ -565,8 +563,7 @@ void handlePaymentRFIDScreen() {
         drawDispensedScreen();
       } else {
         drawGradientBackground();
-        drawSerifLine(TXT_DISPENSE_FAILED, 0, tft.width(), 80, COL_ERR_TEXT, 0);
-        drawSerifLine(TXT_PLEASE_CONTACT_SUPPORT, 0, tft.width(), 125, COL_MSG_BODY, 1);
+        drawSerifLine(TXT_DISPENSE_FAILED, 0, tft.width(), 108, COL_ERR_TEXT, 0);
       }
       delay(2000);
 
@@ -592,7 +589,6 @@ void handlePaymentRFIDScreen() {
     drawGradientBackground();
     drawSerifLine(TXT_PAYMENT, 0, tft.width(), 70, COL_ERR_TEXT, 0);
     drawSerifLine(TXT_TIMED_OUT, 0, tft.width(), 108, COL_ERR_TEXT, 0);
-    drawSerifLine(TXT_NO_CARD_WAS_TAPPED_IN_TIME, 0, tft.width(), 150, COL_MSG_BODY, 1);
     delay(2000);
 
     resetCart();

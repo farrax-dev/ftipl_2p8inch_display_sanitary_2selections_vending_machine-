@@ -33,7 +33,7 @@ void panelCaption(int k, char* out, size_t n) {
       break;
     }
     case 1:
-      snprintf(out, n, "%d units left", totalStockOnHand());
+      snprintf(out, n, "%d Units Available", totalStockOnHand());
       break;
     case 2: {
       if (freeVendMode) { snprintf(out, n, TXT_FREE_VEND); break; }

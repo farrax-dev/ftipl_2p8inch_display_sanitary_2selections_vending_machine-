@@ -78,29 +78,34 @@ void drawWelcomeCard() {
   // font too, so 18pt at a leftover size 2 is 36pt and off the card. This
   // card has always rendered right, but only because drawWelcomeClock() runs
   // first and happens to leave the size at 1 — that is luck, not a contract.
+  // All lines (title and subtitle) share ONE font and ONE colour. The large face is used unless
+  // some line is too wide for the card, in which case every line steps down together.
+  const char* lines[3];
+  int n = 0;
+  if (has1)   lines[n++] = CFG_TITLE_LINE_1;
+  if (has2)   lines[n++] = CFG_TITLE_LINE_2;
+  if (hasSub) lines[n++] = CFG_TITLE_SUBTITLE;
+
   tft.setTextSize(1);
-  tft.setFont(&UI_FONT_LG);
-  // The font's own line-height metric, not a guess — replaces the old
-  // "line height at text size 4" constant, which was tuned for the default
-  // bitmap font and would be wrong for this one.
-  const int BIG_H = UI_FONT_LG.yAdvance;
-  const int SUB_H = 30;    // subtitle line plus the gap above it (default font, unchanged)
-  int blockH = (has1 ? BIG_H : 0) + (has2 ? BIG_H : 0) + (hasSub ? SUB_H : 0);
-  int cursorY = y + (h - blockH) / 2;
-
-  // Single draw, not the old double-offset faux-bold — FreeSerifBold is
-  // already a bold weight, so stacking the faux-bold trick on top of it
-  // over-thickens the strokes at this size.
-  tft.setTextColor(COL_CARD_TITLE, COL_CARD_FILL);
-  if (has1) { drawBigTitleLine(CFG_TITLE_LINE_1, cursorY); cursorY += BIG_H; }
-  if (has2) { drawBigTitleLine(CFG_TITLE_LINE_2, cursorY); cursorY += BIG_H; }
-  tft.setFont();  // back to the default font before the subtitle
-
-  if (hasSub) {
-    tft.setTextSize(2);
-    tft.setTextColor(COL_WELCOME_SUB, COL_CARD_FILL);
-    centerText(CFG_TITLE_SUBTITLE, cursorY + 10);
+  const GFXfont* titleFont = &UI_FONT_LG;
+  for (int pass = 0; pass < 2; pass++) {
+    tft.setFont(titleFont);
+    bool fits = true;
+    for (int k = 0; k < n; k++) {
+      int16_t bx, by; uint16_t bw, bh;
+      tft.getTextBounds(lines[k], 0, 0, &bx, &by, &bw, &bh);
+      if ((int)bw > w - 16) fits = false;
+    }
+    if (fits || titleFont == &UI_FONT_MD) break;
+    titleFont = &UI_FONT_MD;
   }
+  // The font's own line-height metric, not a guess.
+  const int BIG_H = titleFont->yAdvance;
+  int cursorY = y + (h - n * BIG_H) / 2;
+
+  tft.setTextColor(COL_CARD_TITLE, COL_CARD_FILL);
+  for (int k = 0; k < n; k++) { drawBigTitleLine(lines[k], cursorY); cursorY += BIG_H; }
+  tft.setFont();  // back to the default font
 }
 
 // Pulses between a filled and an outlined pill instead of blinking on/off.

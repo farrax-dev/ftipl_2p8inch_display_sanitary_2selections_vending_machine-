@@ -119,9 +119,9 @@ void drawReportSalesPage() {
 // actually in service, but a disabled slot with past sales still appears
 // (that history is real money).
 const int RPT_TBL_Y0 = 62;
-const int RPT_TBL_COL_NAME = 118;
-const int RPT_TBL_COL_SOLD = 54;
-const int RPT_TBL_COL_RS   = 62;
+const int RPT_TBL_COL_NAME = 104;   // narrower than before so the last column can hold "Available"
+const int RPT_TBL_COL_SOLD = 50;
+const int RPT_TBL_COL_RS   = 56;
 const int RPT_TBL_COL_LEFT = RPT_ROW_W - RPT_TBL_COL_NAME - RPT_TBL_COL_SOLD - RPT_TBL_COL_RS;
 
 // header: accent fill, column captions. Data row: zebra-striped (alternating
@@ -157,7 +157,7 @@ void drawReportProductPage() {
   int lines = n + 1;                            // + header
   int h = min(28, 116 / lines);
 
-  drawReportTableRow(RPT_TBL_Y0, h, 0, "Product", "Sold", "Rs.", "Left", true);
+  drawReportTableRow(RPT_TBL_Y0, h, 0, "Product", "Sold", "Rs.", "Available", true);
 
   for (int k = 0; k < n; k++) {
     int i = listed[k];

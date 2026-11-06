@@ -88,7 +88,7 @@ void initiateUPIPayment() {
 
   if (!haveConnectivity) {
     upiStage = UPI_STAGE_ERROR;
-    strncpy(upiErrorMsg, "No internet (WiFi and 4G both down)", sizeof(upiErrorMsg) - 1);
+    strncpy(upiErrorMsg, "No internet connection", sizeof(upiErrorMsg) - 1);
     return;
   }
 
@@ -276,7 +276,7 @@ void drawUPISuccessScreen() {
   if (upiVendPending) {
     drawSerifLine(TXT_PREPARING_YOUR_ITEM, 0, tft.width(), 165, COL_MSG_BODY, 1);
   } else if (upiDispenseFailed) {
-    drawSerifLine(TXT_DISPENSE_FAILED_CONTACT_SUPPOR, 0, tft.width(), 165, COL_ERR_TEXT, 1);
+    drawSerifLine(TXT_DISPENSE_FAILED, 0, tft.width(), 165, COL_ERR_TEXT, 1);
     drawProceedButton(TXT_DONE);
   }
 }
@@ -290,7 +290,6 @@ void drawUPITimeoutScreen() {
 
   drawSerifLine(TXT_PAYMENT, 0, tft.width(), 70, COL_ERR_TEXT, 0);
   drawSerifLine(TXT_TIMED_OUT, 0, tft.width(), 108, COL_ERR_TEXT, 0);
-  drawSerifLine(TXT_NO_PAYMENT_WAS_RECEIVED_IN_TIM, 0, tft.width(), 150, COL_MSG_BODY, 1);
 }
 
 void drawUPIErrorScreen() {

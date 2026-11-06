@@ -60,6 +60,16 @@ int auiCapH(int face) {
   return cache[face];
 }
 
+// auiCapH() resets the font to the default and the text size to 1 the first time it measures a
+// face. If that first call lands between auiFace() and print() the string is drawn in the 5x7
+// pixel font at the wrong baseline (broken clock / PIN pad right after boot, fine after a redraw).
+// Measuring all four faces once at startup means no draw ever hits that path.
+void auiWarmFontMetrics() {
+  for (int f = FACE_XS; f <= FACE_LG; f++) auiCapH(f);
+  tft.setTextSize(1);
+  tft.setFont();
+}
+
 void auiFace(int face) {
   tft.setTextSize(1);
   tft.setFont(AUI_FONT(face));
@@ -106,6 +116,7 @@ void auiPut(const char* s, int align, int bx, int bw, int cy, uint16_t col, int 
   char buf[72];
   auiClip(buf, sizeof(buf), s, bw, face);
 
+  int cap = auiCapH(face);       // before auiFace(): it may reset the font on a cache miss
   int16_t x1, y1;
   uint16_t w, h;
   auiFace(face);
@@ -117,7 +128,7 @@ void auiPut(const char* s, int align, int bx, int bw, int cy, uint16_t col, int 
   else                        x = bx;
 
   tft.setTextColor(col);
-  tft.setCursor(x - x1, cy + auiCapH(face) / 2);
+  tft.setCursor(x - x1, cy + cap / 2);
   tft.print(buf);
   tft.setFont();
 }
@@ -175,12 +186,13 @@ void uiBmpDraw(const char* s, int align, int x, int boxW, int topY) {
     auiClip(clipped, sizeof(clipped), s, fitW, face);       // still too wide at the smallest face: ".."
     s = clipped;
   }
+  int cap = auiCapH(face);       // before auiFace(): it may reset the font on a cache miss
   int16_t x1, y1;
   uint16_t w, h;
   auiFace(face);
   tft.getTextBounds(s, 0, 0, &x1, &y1, &w, &h);
-  int px = (align == 1) ? x + (boxW - (int)w) / 2 : (align == 2) ? x - (int)w : x;
-  tft.setCursor(px - x1, topY + (8 * size) / 2 + auiCapH(face) / 2);
+  int px =(align == 1) ? x + (boxW - (int)w) / 2 : (align == 2) ? x - (int)w : x;
+  tft.setCursor(px - x1, topY + (8 * size) / 2 + cap / 2);
   tft.print(s);
   tft.setFont();
   tft.setTextSize(size);

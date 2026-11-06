@@ -21,6 +21,7 @@ void setup() {
   SPI.begin();
   tft.begin(8000000);
   tft.setRotation(1);
+  auiWarmFontMetrics();   // fill the cap-height cache now, so no screen's first draw pays for it
 
   ts.begin();
   loadPersistedProductData();
