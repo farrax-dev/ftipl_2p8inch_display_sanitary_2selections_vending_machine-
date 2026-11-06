@@ -108,7 +108,6 @@ void handleAdminPanelScreen() {
           case 1:
             motorStockPage = 0;
             motorEditing = -1;
-            motorEditMode = 0;
             currentScreen = SCREEN_ADMIN_MOTOR_STOCK;
             drawAdminMotorStockScreen();
             break;

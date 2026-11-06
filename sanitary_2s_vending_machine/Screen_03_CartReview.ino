@@ -113,39 +113,48 @@ void drawCartRow(int i, int x, int y, int w, int h) {
   // least legible type on the screen.
   const GFXfont* nameFont = cartNameFont(textW, h);
   int nameSize = (h - 4 >= uiBmpCapH(2)) ? 2 : 1;   // fallback only: the larger size needs its font's caps to fit the row
-  int nameH = nameFont ? nameFont->yAdvance : 8 * nameSize;
-  bool twoLine = (nameH + 6 + 8 <= h - 4) && !hideProductPrices;
 
-  const int ROW_LINE_GAP = 6;
+  // Everything is placed by CAP HEIGHT (the visible height of a capital letter), not by the font's
+  // line height. yAdvance includes leading and descender room that is not ink, so stacking by it
+  // let the price line of a 47px row (3 items) run off the bottom of the card, and centred a lone
+  // name (4-5 items) a few pixels above the +/- buttons it sits beside.
+  const int ROW_LINE_GAP = 8;    // from the bottom of the name's capitals to the top of the price's
+  const int ROW_MARGIN   = 8;    // total spare room kept top and bottom, descenders included
+  int nameCap = nameFont ? uiBmpCapH(nameFont == &UI_FONT_MD ? 2 : 1) : uiBmpCapH(nameSize);
+  bool twoLine = !hideProductPrices && (nameCap + ROW_LINE_GAP + uiBmpCapH(1) <= h - ROW_MARGIN);
+
   int moneySize = 0;
   char moneyBuf[32];
   if (twoLine) {
     int lineTotal = products[i].price * cartQty[i];
-    // Multi-unit lines read "Rs. 30 (2x15)" — qty x unit price — so the
+    // Multi-unit lines read "Rs. 30 (2x15)" - qty x unit price - so the
     // price setting is visible at a glance; a single unit is just "Rs. 15".
     if (cartQty[i] > 1) {
       snprintf(moneyBuf, sizeof(moneyBuf), "Rs. %d (%dx%d)", lineTotal, cartQty[i], products[i].price);
     } else {
       snprintf(moneyBuf, sizeof(moneyBuf), "Rs. %d", lineTotal);
     }
-    // Shorter string than before, so it can afford a bigger size: 3 when the
-    // row is tall enough, else 2, else 1. fitTextSize() steps it down further
-    // if the text still would not fit the column.
-    int maxMoney = (nameH + ROW_LINE_GAP + 24 <= h - 4) ? 3
-                 : (nameH + ROW_LINE_GAP + 16 <= h - 4) ? 2 : 1;
+    // Largest size the row is tall enough for; fitTextSize() steps it down further if the text
+    // still would not fit the column.
+    int maxMoney = 1;
+    if (nameCap + ROW_LINE_GAP + uiBmpCapH(3) <= h - ROW_MARGIN)      maxMoney = 3;
+    else if (nameCap + ROW_LINE_GAP + uiBmpCapH(2) <= h - ROW_MARGIN) maxMoney = 2;
     moneySize = fitTextSize(moneyBuf, textW, maxMoney);
   }
 
-  int blockH = nameH + (twoLine ? ROW_LINE_GAP + 8 * moneySize : 0);
-  int blockY = y + (h - blockH) / 2;
+  int moneyCap = twoLine ? uiBmpCapH(moneySize) : 0;
+  int blockCap = nameCap + (twoLine ? ROW_LINE_GAP + moneyCap : 0);
+  int blockTop = y + (h - blockCap) / 2;
+  int nameCy   = blockTop + nameCap / 2;                                   // centre of the name's capitals
+  int moneyCy  = blockTop + nameCap + ROW_LINE_GAP + moneyCap / 2;         // centre of the price's capitals
 
   tft.setTextColor(COL_PRODUCT_NAME, COL_CARD_FILL);
   if (nameFont) {
     tft.setTextSize(1);
     tft.setFont(nameFont);
-    int16_t x1, y1; uint16_t w, hh;
-    tft.getTextBounds(products[i].name, 0, 0, &x1, &y1, &w, &hh);
-    tft.setCursor(textX - x1, blockY - y1);
+    int16_t x1, y1; uint16_t bw, bh;
+    tft.getTextBounds(products[i].name, 0, 0, &x1, &y1, &bw, &bh);
+    tft.setCursor(textX - x1, nameCy + nameCap / 2);                       // baseline = capital centre + half the cap height
     tft.print(products[i].name);
     tft.setFont();
   } else {
@@ -153,13 +162,13 @@ void drawCartRow(int i, int x, int y, int w, int h) {
     char nameBuf[24];
     snprintf(nameBuf, sizeof(nameBuf), "%.*s", maxChars, products[i].name);
     tft.setTextSize(nameSize);
-    leftTextInBox(nameBuf, textX, textW, blockY);
+    leftTextInBox(nameBuf, textX, textW, nameCy - 4 * nameSize);
   }
 
   if (twoLine) {
     tft.setTextSize(moneySize);
     tft.setTextColor(COL_PRICE_TEXT, COL_CARD_FILL);
-    leftText(moneyBuf, textX, blockY + nameH + ROW_LINE_GAP);
+    leftText(moneyBuf, textX, moneyCy - 4 * moneySize);
   }
 
   // 28, not 26: a size-3 glyph is 18x24, which in a 26px button leaves one

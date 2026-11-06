@@ -288,8 +288,8 @@ void drawUPISuccessScreen() {
 void drawUPITimeoutScreen() {
   drawGradientBackground();
 
-  drawSerifLine(TXT_PAYMENT, 0, tft.width(), 70, COL_ERR_TEXT, 0);
-  drawSerifLine(TXT_TIMED_OUT, 0, tft.width(), 108, COL_ERR_TEXT, 0);
+  drawSerifLine(TXT_PAYMENT, 0, tft.width(), 101, COL_ERR_TEXT, 0);      // the pair is centred on y=120
+  drawSerifLine(TXT_TIMED_OUT, 0, tft.width(), 139, COL_ERR_TEXT, 0);
 }
 
 void drawUPIErrorScreen() {

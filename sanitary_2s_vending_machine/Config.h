@@ -104,7 +104,7 @@
 // entire coin subsystem has nowhere left to run — turn
 // CFG_PAYMENT_CASH_AVAILABLE off below to match. Either way, flip the
 // matching dip switch(es) to their motor throw first, then reflash.
-#define CFG_MOTOR_COUNT        2
+#define CFG_MOTOR_COUNT        4
 
 // How many product slots the admin menu offers. Names, prices and motor
 // assignments for each are set on the admin screens.
@@ -113,7 +113,7 @@
 // set CFG_MOTOR_COUNT below 3, those products keep an assignment to a motor
 // that is not fitted and will fail to dispense — reassign them under
 // Admin > product > Assign Motors after flashing.
-#define CFG_PRODUCT_COUNT      2
+#define CFG_PRODUCT_COUNT      4
 
 // Stock level a freshly-initialised motor starts at, and the maximum the
 // admin can set for a motor (the +/- buttons and the Edit keypad both stop

@@ -817,6 +817,9 @@
 #ifndef TXT_TAP_EDIT_TO_TYPE_AN_EXACT_QUAN
 #define TXT_TAP_EDIT_TO_TYPE_AN_EXACT_QUAN "Tap Edit to type an exact quantity"
 #endif
+#ifndef TXT_TAP_EDIT_TO_SET_THE_MAXIMUM
+#define TXT_TAP_EDIT_TO_SET_THE_MAXIMUM "Tap Edit to set the tray maximum"
+#endif
 #ifndef TXT_REFILL_TRAYS
 #define TXT_REFILL_TRAYS "Refill Trays"
 #endif

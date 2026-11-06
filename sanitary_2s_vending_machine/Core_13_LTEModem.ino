@@ -91,9 +91,19 @@ bool ltePingSuccess = false;
 int  ltePingHttpCode = 0;
 unsigned long ltePingMs = 0;
 
+// The modem's UART is open only while LTE is actually switched on. With LTE off from the admin
+// menu it used to stay open, so a modem that was still powered and chattering kept feeding the
+// port, and the half-initialised modem state stayed around - unlike a build with LTE off in
+// Config.h, where none of this ever exists. Off now means the same thing either way.
+bool lteUartUp = false;
+
 void initLTEModem() {
+  if (lteUartUp) return;
   Serial2.begin(LTE_UART_BAUD, SERIAL_8N1, LTE_RX_PIN, LTE_TX_PIN);
+  lteUartUp = true;
 }
+
+void stopLTEModem();   // defined after the status variables it clears
 
 // ---------- TEMPORARY wiring diagnostic ----------
 // Set to true, upload, then open the Serial Monitor at 115200 baud with line
@@ -106,6 +116,7 @@ const bool LTE_AT_BRIDGE_TEST = false;
 
 void runLTEATBridgeIfEnabled() {
   if (!LTE_AT_BRIDGE_TEST) return;
+  initLTEModem();
 
   Serial.println();
   Serial.println("=== LTE AT bridge test: type AT commands, Enter to send ===");
@@ -528,6 +539,7 @@ bool connectLTEIfNeeded() {
   // "Test Internet" button (Screen_16_AdminLTE.ino) refuse instantly rather
   // than spending several seconds finding out the modem is deliberately off.
   if (!lteEnabled) return false;
+  initLTEModem();   // no-op when the port is already open
   // Use isLTEConnected(), not lteModem.isGprsConnected() directly: the latter
   // reports on the socket service, which reads false on this setup, so the
   // whole init/register/APN/activate sequence was re-running on every call.
@@ -1004,12 +1016,30 @@ void setLteEnabled(bool requestedOn) {
   saveLteEnabled();  // Core_09_Storage.ino
 
   if (!lteEnabled) {
-    lteRegistered = false;
-    lteHaveIP = false;
+    stopLTEModem();    // close the UART and forget every bit of modem state
   } else {
+    initLTEModem();
     lteLastAttemptMs = 0;
   }
   indicatorDirty = true;  // Core_08_UIHelpers.ino — redraw the status icon now
+}
+
+// Puts the software back to exactly what a build with no modem has: UART closed, nothing
+// "started", no cached signal/IP/error, retry and time-sync counters reset. Turning LTE back on
+// then starts from scratch (initLTEModem() + a fresh connectLTEIfNeeded()).
+void stopLTEModem() {
+  if (lteUartUp) {
+    Serial2.end();
+    lteUartUp = false;
+  }
+  lteModemStarted = false;
+  lteRegistered = false;
+  lteHaveIP = false;
+  lteLastCsq = 0;
+  lteLastStatusPollMs = 0;
+  lteLastError[0] = '\0';
+  lteLastTimeSyncAttemptMs = 0;
+  lteTimeSyncFailures = 0;
 }
 
 // Mirrors pingGoogleTest() (Core_06_Network.ino) but over the cellular data

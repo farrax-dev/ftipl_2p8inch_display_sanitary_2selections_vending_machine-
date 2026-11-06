@@ -146,15 +146,14 @@ void drawMotorEditValue() {
   tft.drawRoundRect(16, 38, 288, 34, 8, COL_FIELD_BORDER);
   auiPut(motorEditBuf[0] ? motorEditBuf : "0", AL_CENTER, 24, 272, 55, COL_FIELD_TEXT, FACE_LG);
   char lim[16];
-  if (motorEditMode == 0) snprintf(lim, sizeof(lim), "max %d", motorMax[motorEditing]);
-  else                    snprintf(lim, sizeof(lim), "1 - %d", STOCK_MAX_LIMIT);
+  snprintf(lim, sizeof(lim), "1 - %d", STOCK_MAX_LIMIT);
   auiPut(lim, AL_RIGHT, 200, 96, 55, COL_FIELD_COUNT, FACE_XS);
 }
 
 void drawMotorEditKeypad() {
   drawGradientBackground();
   char title[24];
-  snprintf(title, sizeof(title), (motorEditMode == 0) ? "Motor %d Stock" : "Motor %d Max", motorEditing + 1);
+  snprintf(title, sizeof(title), "Motor %d Max", motorEditing + 1);
   drawScreenTitle(title);
   drawMotorEditValue();
 
@@ -164,14 +163,9 @@ void drawMotorEditKeypad() {
     auiButton(x, y, MKP_W, MKP_H, MKP_LABELS[k], ABTN_SECONDARY, (k == 9 || k == 11) ? FACE_SM : FACE_MD);
   }
 
-  // Four buttons down the right.
-  //   Stock view: Save | Fill Max (this tray to its maximum) | Set Max (switch to the max view) | Cancel
-  //   Max view:   Save (this tray's maximum) | All Trays (the typed figure becomes every tray's
-  //               maximum) | Stock (back to the quantity) | Cancel
+  // The number typed here is this tray's MAXIMUM - what "Refill Trays" fills it back up to.
   auiButton(MKP_SIDE_X, mkpSideY(0), MKP_SIDE_W, MKP_SIDE_H, TXT_SAVE, ABTN_PRIMARY, FACE_MD);
-  auiButton(MKP_SIDE_X, mkpSideY(1), MKP_SIDE_W, MKP_SIDE_H, (motorEditMode == 0) ? TXT_FILL_MAX : TXT_ALL_TRAYS, ABTN_PRIMARY, FACE_MD);
-  auiButton(MKP_SIDE_X, mkpSideY(2), MKP_SIDE_W, MKP_SIDE_H, (motorEditMode == 0) ? TXT_SET_MAX : TXT_STOCK, ABTN_SECONDARY, FACE_MD);
-  auiButton(MKP_SIDE_X, mkpSideY(3), MKP_SIDE_W, MKP_SIDE_H, TXT_CANCEL, ABTN_SECONDARY, FACE_MD);
+  auiButton(MKP_SIDE_X, mkpSideY(1), MKP_SIDE_W, MKP_SIDE_H, TXT_CANCEL, ABTN_SECONDARY, FACE_MD);
 }
 
 void handleMotorEditKeypad() {
@@ -183,51 +177,18 @@ void handleMotorEditKeypad() {
 
   int m = motorEditing;
 
-  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(3), MKP_SIDE_W, MKP_SIDE_H)) {       // Cancel
+  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(1), MKP_SIDE_W, MKP_SIDE_H)) {       // Cancel
     motorEditing = -1;
-    motorEditMode = 0;
-    drawAdminMotorStockScreen();
-    return;
-  }
-  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(2), MKP_SIDE_W, MKP_SIDE_H)) {       // Set Max <-> Stock
-    motorEditMode = (motorEditMode == 0) ? 1 : 0;
-    snprintf(motorEditBuf, sizeof(motorEditBuf), "%d", (motorEditMode == 1) ? motorMax[m] : motorStock[m]);
-    drawMotorEditKeypad();
-    return;
-  }
-  if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(1), MKP_SIDE_W, MKP_SIDE_H)) {
-    if (motorEditMode == 0) {                                                       // Fill Max
-      motorStock[m] = motorMax[m];
-      saveMotorStockSlot(m);
-    } else {                                                                        // All Trays
-      int v = constrain(atoi(motorEditBuf), 1, STOCK_MAX_LIMIT);
-      stockMaxAll = v;
-      saveStockMaxAll();
-      for (int t = 0; t < MAX_MOTORS; t++) {
-        motorMax[t] = v;
-        saveMotorMaxSlot(t);
-        if (motorStock[t] > v) { motorStock[t] = v; saveMotorStockSlot(t); }
-      }
-    }
-    refreshLowStockArm();
-    motorEditing = -1;
-    motorEditMode = 0;
     drawAdminMotorStockScreen();
     return;
   }
   if (pointInRect(sx, sy, MKP_SIDE_X, mkpSideY(0), MKP_SIDE_W, MKP_SIDE_H)) {       // Save
-    if (motorEditMode == 0) {
-      motorStock[m] = constrain(atoi(motorEditBuf), 0, motorMax[m]);
-      saveMotorStockSlot(m);
-    } else {
-      int v = constrain(atoi(motorEditBuf), 1, STOCK_MAX_LIMIT);
-      motorMax[m] = v;
-      saveMotorMaxSlot(m);
-      if (motorStock[m] > v) { motorStock[m] = v; saveMotorStockSlot(m); }   // never more stock than capacity
-    }
+    int v = constrain(atoi(motorEditBuf), 1, STOCK_MAX_LIMIT);
+    motorMax[m] = v;
+    saveMotorMaxSlot(m);
+    if (motorStock[m] > v) { motorStock[m] = v; saveMotorStockSlot(m); }   // never more stock than capacity
     refreshLowStockArm();
     motorEditing = -1;
-    motorEditMode = 0;
     drawAdminMotorStockScreen();
     return;
   }
@@ -245,8 +206,8 @@ void handleMotorEditKeypad() {
       char digit = MKP_LABELS[k][0];
       char next[8];
       snprintf(next, sizeof(next), "%s%c", motorEditBuf, digit);
-      // A value above the tray's maximum (or, in the max view, above 99) is simply not accepted.
-      if (atoi(next) <= ((motorEditMode == 0) ? motorMax[motorEditing] : STOCK_MAX_LIMIT)) {
+      // A value above the largest tray capacity (STOCK_MAX_LIMIT) is simply not accepted.
+      if (atoi(next) <= STOCK_MAX_LIMIT) {
         strncpy(motorEditBuf, next, sizeof(motorEditBuf) - 1);
         motorEditBuf[sizeof(motorEditBuf) - 1] = '\0';
         // No leading zeros: "0" then "5" reads as 5.
@@ -291,7 +252,7 @@ void drawAdminMotorStockScreen() {
 
   if (rowsOnPage < MOTORS_PER_PAGE) {
     int hintY = motorStockRowY(rowsOnPage) + 8;
-    if (hintY <= 186) auiHint(TXT_TAP_EDIT_TO_TYPE_AN_EXACT_QUAN, hintY);
+    if (hintY <= 186) auiHint(TXT_TAP_EDIT_TO_SET_THE_MAXIMUM, hintY);
   }
 
   // Back | Refill Trays [| Page n/m]. Refill Trays is instant, no confirm:
@@ -350,8 +311,7 @@ void handleAdminMotorStockScreen() {
 
         if (auiRowButtonHit(sx, sy, motorStockTestX(), cy, MSTOCK_TEST_W)) {
           motorEditing = m;
-          motorEditMode = 0;
-          snprintf(motorEditBuf, sizeof(motorEditBuf), "%d", motorStock[m]);
+          snprintf(motorEditBuf, sizeof(motorEditBuf), "%d", motorMax[m]);   // Edit sets the tray's maximum
           drawMotorEditKeypad();
           return;
         }
@@ -377,13 +337,6 @@ void handleAdminMotorStockScreen() {
           return;
         }
 
-        if (pointInRect(sx, sy, auiStepValX(MSTOCK_RIGHT), cy - ASTEP_H / 2, ASTEP_VAL_W, ASTEP_H)) {
-          motorEditing = m;
-          motorEditMode = 0;
-          snprintf(motorEditBuf, sizeof(motorEditBuf), "%d", motorStock[m]);
-          drawMotorEditKeypad();
-          return;
-        }
       }
     }
   }

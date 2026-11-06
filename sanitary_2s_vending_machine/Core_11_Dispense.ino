@@ -177,8 +177,8 @@ void runFreeVendCheckout() {
     drawDispensedScreen();
   } else {
     drawGradientBackground();
-    drawSerifLine(TXT_DISPENSE, 0, tft.width(), 90, COL_ERR_TEXT, 0);
-    drawSerifLine(TXT_FAILED, 0, tft.width(), 128, COL_ERR_TEXT, 0);
+    drawSerifLine(TXT_DISPENSE, 0, tft.width(), 101, COL_ERR_TEXT, 0);
+    drawSerifLine(TXT_FAILED, 0, tft.width(), 139, COL_ERR_TEXT, 0);
   }
   delay(2000);
 

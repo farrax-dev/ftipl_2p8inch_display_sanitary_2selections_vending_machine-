@@ -364,8 +364,8 @@ void handlePaymentCashScreen() {
         drawDispensedScreen();
       } else {
         drawGradientBackground();
-        drawSerifLine(TXT_DISPENSE, 0, tft.width(), 90, COL_ERR_TEXT, 0);
-        drawSerifLine(TXT_FAILED, 0, tft.width(), 128, COL_ERR_TEXT, 0);
+        drawSerifLine(TXT_DISPENSE, 0, tft.width(), 101, COL_ERR_TEXT, 0);
+        drawSerifLine(TXT_FAILED, 0, tft.width(), 139, COL_ERR_TEXT, 0);
       }
       delay(2500);
 
@@ -404,8 +404,8 @@ void handlePaymentCashScreen() {
     // Drawn exactly like drawUPITimeoutScreen() (Screen_05_PaymentUPI.ino) so
     // every payment timeout looks the same: the Welcome screen's serif face.
     drawGradientBackground();
-    drawSerifLine(TXT_PAYMENT, 0, tft.width(), 70, COL_ERR_TEXT, 0);
-    drawSerifLine(TXT_TIMED_OUT, 0, tft.width(), 108, COL_ERR_TEXT, 0);
+    drawSerifLine(TXT_PAYMENT, 0, tft.width(), 101, COL_ERR_TEXT, 0);    // the pair is centred on y=120
+    drawSerifLine(TXT_TIMED_OUT, 0, tft.width(), 139, COL_ERR_TEXT, 0);
     delay(2000);
 
     resetCart();
@@ -563,7 +563,7 @@ void handlePaymentRFIDScreen() {
         drawDispensedScreen();
       } else {
         drawGradientBackground();
-        drawSerifLine(TXT_DISPENSE_FAILED, 0, tft.width(), 108, COL_ERR_TEXT, 0);
+        drawSerifLine(TXT_DISPENSE_FAILED, 0, tft.width(), 120, COL_ERR_TEXT, 0);
       }
       delay(2000);
 
@@ -587,8 +587,8 @@ void handlePaymentRFIDScreen() {
   if (millis() - rfidPayEnteredMs > rfidPayTimeoutMs()
       || millis() - rfidPaySessionStartMs > rfidPayHardCapMs()) {
     drawGradientBackground();
-    drawSerifLine(TXT_PAYMENT, 0, tft.width(), 70, COL_ERR_TEXT, 0);
-    drawSerifLine(TXT_TIMED_OUT, 0, tft.width(), 108, COL_ERR_TEXT, 0);
+    drawSerifLine(TXT_PAYMENT, 0, tft.width(), 101, COL_ERR_TEXT, 0);    // the pair is centred on y=120
+    drawSerifLine(TXT_TIMED_OUT, 0, tft.width(), 139, COL_ERR_TEXT, 0);
     delay(2000);
 
     resetCart();

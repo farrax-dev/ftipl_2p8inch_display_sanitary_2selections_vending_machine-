@@ -65,8 +65,8 @@ void drawAdminRFIDCardsScreen() {
 
   drawScreenTitle(TXT_RFID_CARDS, 70);
 
-  char countBuf[12];
-  snprintf(countBuf, sizeof(countBuf), "%d / %d", rfidCardCount, MAX_RFID_CARDS);
+  char countBuf[16];
+  snprintf(countBuf, sizeof(countBuf), "%d / %d", rfidCardCount, rfidCardCap);
   auiPut(countBuf, AL_RIGHT, 200, headerRightX() - 200, HDR_Y + HDR_H / 2, COL_HDR_COUNT_DIM, FACE_SM);
 
   int first = rfidCardsPage * RFCARD_ROWS_PER_PAGE;
@@ -111,7 +111,7 @@ void drawAdminRFIDCardsScreen() {
     auiPut(rfidCardsMsg, AL_CENTER, 12, 296, RFCARD_MSG_CY, rfidCardsMsgColor, FACE_SM);
   }
 
-  bool full = (rfidCardCount >= MAX_RFID_CARDS);
+  bool full = (rfidCardCount >= rfidCardCap);
   int style = full ? ABTN_OFF : ABTN_PRIMARY;
   auiButton(rfidActionX(0), RFCARD_ACTION_Y, rfidActionW(), RFCARD_ACTION_H,
             full ? "List full" : "Scan Card", style, FACE_SM);
@@ -119,10 +119,11 @@ void drawAdminRFIDCardsScreen() {
             full ? "List full" : "Enter Number", style, FACE_SM);
 
   if (pages > 1) {
-    char pageLabel[16];
-    snprintf(pageLabel, sizeof(pageLabel), "Page %d/%d", rfidCardsPage + 1, pages);
-    auiBarButton(0, 2, TXT_BACK, ABTN_SECONDARY);
-    auiBarButton(1, 2, pageLabel, ABTN_PRIMARY);
+    char pageLabel[20];
+    snprintf(pageLabel, sizeof(pageLabel), "%d/%d >", rfidCardsPage + 1, pages);
+    auiBarButton(0, 3, TXT_BACK, ABTN_SECONDARY);
+    auiBarButton(1, 3, "<", ABTN_SECONDARY);
+    auiBarButton(2, 3, pageLabel, ABTN_PRIMARY);
   } else {
     auiBarButton(0, 1, TXT_BACK, ABTN_SECONDARY);
   }
@@ -177,7 +178,7 @@ void handleAdminRFIDCardsScreen() {
       mapTouchToScreen(raw, sx, sy);
 
       int pages = rfidCardsPageCount();
-      int slots = (pages > 1) ? 2 : 1;
+      int slots = (pages > 1) ? 3 : 1;
 
       if (auiBarHit(sx, sy, 0, slots)) {
         currentScreen = SCREEN_ADMIN_SETTINGS;
@@ -185,13 +186,18 @@ void handleAdminRFIDCardsScreen() {
         return;
       }
 
-      if (pages > 1 && auiBarHit(sx, sy, 1, slots)) {
+      if (pages > 1 && auiBarHit(sx, sy, 1, slots)) {      // previous page
+        rfidCardsPage = (rfidCardsPage + pages - 1) % pages;
+        drawAdminRFIDCardsScreen();
+        return;
+      }
+      if (pages > 1 && auiBarHit(sx, sy, 2, slots)) {      // next page
         rfidCardsPage = (rfidCardsPage + 1) % pages;
         drawAdminRFIDCardsScreen();
         return;
       }
 
-      bool full = (rfidCardCount >= MAX_RFID_CARDS);
+      bool full = (rfidCardCount >= rfidCardCap);
       if (!full && pointInRect(sx, sy, rfidActionX(0), RFCARD_ACTION_Y, rfidActionW(), RFCARD_ACTION_H)) {
         rfidCardsScanning = true;
         rfidCardsScanStartMs = millis();

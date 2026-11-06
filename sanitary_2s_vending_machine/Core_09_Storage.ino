@@ -8,7 +8,7 @@ void saveMotorStockSlot(int m) {
   prefs.putInt(key, motorStock[m]);
 }
 
-// Capacity of each tray, set from Admin > Stock > Edit > Set Max. The figure in Config.h
+// Capacity of each tray, set from Admin > Stock > Edit. The figure in Config.h
 // (CFG_STOCK_MAX) is only the starting value until an admin changes it. stockMaxAll is the last
 // "all trays" figure, shown as the default when setting every tray at once.
 const int STOCK_MAX_LIMIT = 99;
@@ -251,8 +251,13 @@ void saveLteEnabled() {
 // Screen_19_AdminRFIDCardEdit.ino's per-card "Reset Usage" button, or
 // automatically for every card at once by the monthly schedule further down
 // this file (rfidResetEnabled et al. / maintainRFIDResetSchedule()).
-const int MAX_RFID_CARDS = 50;
+// 1000 cards. They no longer live in NVS: that partition is ~20KB and a card took ~6 entries
+// there, so even 50 cards used most of it. The list is one fixed-size-record file on LittleFS
+// (RFID_FILE), kept in a heap array - 1000 x 48 bytes is too much to add to static RAM.
+const int MAX_RFID_CARDS = 1000;
 const int RFID_NAME_MAXLEN = 16;
+const char* RFID_FILE = "/rfid.dat";
+const char* RFID_FILE_TMP = "/rfid.tmp";
 
 struct RFIDCard {
   char uid[21];                       // 20 hex chars (10-byte UID) + null
@@ -260,37 +265,119 @@ struct RFIDCard {
   int  withdrawLimit;                 // 0 = unlimited
   int  withdrawUsed;
 };
-RFIDCard rfidCards[MAX_RFID_CARDS];
+struct RFIDFileHeader {
+  uint16_t recSize;                   // sizeof(RFIDCard) when written; a mismatch means "ignore the file"
+  uint16_t reserved;
+  int32_t  count;
+};
+RFIDCard* rfidCards = nullptr;        // heap array, rfidCardCap slots
+int  rfidCardCap = 0;                 // slots actually allocated (MAX_RFID_CARDS unless memory was short)
 int  rfidCardCount = 0;
 
-void loadRFIDCards() {
-  rfidCardCount = prefs.getInt("rfidcount", 0);
-  if (rfidCardCount < 0) rfidCardCount = 0;
-  if (rfidCardCount > MAX_RFID_CARDS) rfidCardCount = MAX_RFID_CARDS;
-  for (int i = 0; i < rfidCardCount; i++) {
-    char key[10];
-    snprintf(key, sizeof(key), "rfid%d", i);
-    prefs.getString(key, "").toCharArray(rfidCards[i].uid, sizeof(rfidCards[i].uid));
-    snprintf(key, sizeof(key), "rfidn%d", i);
-    prefs.getString(key, "").toCharArray(rfidCards[i].name, sizeof(rfidCards[i].name));
-    snprintf(key, sizeof(key), "rfidl%d", i);
-    rfidCards[i].withdrawLimit = prefs.getInt(key, 0);
-    snprintf(key, sizeof(key), "rfidu%d", i);
-    rfidCards[i].withdrawUsed = prefs.getInt(key, 0);
-  }
+// Whole list -> temp file -> rename, so losing power mid-write cannot leave a half-written list.
+bool rfidFileWriteAll() {
+  File f = LittleFS.open(RFID_FILE_TMP, FILE_WRITE);
+  if (!f) return false;
+  RFIDFileHeader h = { (uint16_t)sizeof(RFIDCard), 0, (int32_t)rfidCardCount };
+  size_t bodyLen = (size_t)rfidCardCount * sizeof(RFIDCard);
+  bool ok = (f.write((const uint8_t*)&h, sizeof(h)) == sizeof(h));
+  if (ok && bodyLen > 0) ok = (f.write((const uint8_t*)rfidCards, bodyLen) == bodyLen);
+  f.close();
+  if (!ok) { LittleFS.remove(RFID_FILE_TMP); return false; }
+  LittleFS.remove(RFID_FILE);
+  return LittleFS.rename(RFID_FILE_TMP, RFID_FILE);
+}
+
+// One card's record plus the header's count, in place. False if the file is missing or short.
+bool rfidFileWriteSlot(int i) {
+  File f = LittleFS.open(RFID_FILE, "r+");
+  if (!f) return false;
+  RFIDFileHeader h = { (uint16_t)sizeof(RFIDCard), 0, (int32_t)rfidCardCount };
+  bool ok = f.seek(sizeof(RFIDFileHeader) + (size_t)i * sizeof(RFIDCard))
+         && (f.write((const uint8_t*)&rfidCards[i], sizeof(RFIDCard)) == sizeof(RFIDCard))
+         && f.seek(0)
+         && (f.write((const uint8_t*)&h, sizeof(h)) == sizeof(h));
+  f.close();
+  return ok;
 }
 
 void saveRFIDCardSlot(int i) {
-  char key[10];
-  snprintf(key, sizeof(key), "rfid%d", i);
-  prefs.putString(key, rfidCards[i].uid);
-  snprintf(key, sizeof(key), "rfidn%d", i);
-  prefs.putString(key, rfidCards[i].name);
-  snprintf(key, sizeof(key), "rfidl%d", i);
-  prefs.putInt(key, rfidCards[i].withdrawLimit);
-  snprintf(key, sizeof(key), "rfidu%d", i);
-  prefs.putInt(key, rfidCards[i].withdrawUsed);
-  prefs.putInt("rfidcount", rfidCardCount);
+  if (i < 0 || i >= rfidCardCount) return;
+  if (!rfidFileWriteSlot(i) && !rfidFileWriteAll()) {
+    Serial.println("RFID: could not save the card list");
+  }
+}
+
+void saveAllRFIDCards() {
+  if (!rfidFileWriteAll()) Serial.println("RFID: could not save the card list");
+}
+
+void loadRFIDCards() {
+  if (!rfidCards) {
+    rfidCardCap = MAX_RFID_CARDS;
+    rfidCards = (RFIDCard*)calloc(rfidCardCap, sizeof(RFIDCard));
+    if (!rfidCards) {                           // short of memory: a smaller list beats none
+      rfidCardCap = 50;
+      rfidCards = (RFIDCard*)calloc(rfidCardCap, sizeof(RFIDCard));
+    }
+    if (!rfidCards) {
+      rfidCardCap = 0;
+      Serial.println("RFID: no memory for the card list");
+      return;
+    }
+  }
+  rfidCardCount = 0;
+
+  bool fsOk = LittleFS.begin(true);             // initSalesLog() mounts it again later; harmless
+  bool loaded = false;
+  if (fsOk && LittleFS.exists(RFID_FILE)) {
+    File f = LittleFS.open(RFID_FILE, "r");
+    if (f) {
+      RFIDFileHeader h;
+      if (f.read((uint8_t*)&h, sizeof(h)) == sizeof(h) && h.recSize == sizeof(RFIDCard) && h.count >= 0) {
+        int n = (h.count > rfidCardCap) ? rfidCardCap : (int)h.count;
+        size_t want = (size_t)n * sizeof(RFIDCard);
+        if (f.read((uint8_t*)rfidCards, want) == want) { rfidCardCount = n; loaded = true; }
+      }
+      f.close();
+    }
+  }
+
+  // First boot after this change: the list is still in NVS (rfid<n>, rfidn<n>, rfidl<n>, rfidu<n>).
+  // Copy it into the file, then delete the NVS keys, which also gives that space back.
+  if (!loaded) {
+    int old = prefs.getInt("rfidcount", 0);
+    if (old < 0) old = 0;
+    if (old > rfidCardCap) old = rfidCardCap;
+    for (int i = 0; i < old; i++) {
+      char key[10];
+      snprintf(key, sizeof(key), "rfid%d", i);
+      prefs.getString(key, "").toCharArray(rfidCards[i].uid, sizeof(rfidCards[i].uid));
+      snprintf(key, sizeof(key), "rfidn%d", i);
+      prefs.getString(key, "").toCharArray(rfidCards[i].name, sizeof(rfidCards[i].name));
+      snprintf(key, sizeof(key), "rfidl%d", i);
+      rfidCards[i].withdrawLimit = prefs.getInt(key, 0);
+      snprintf(key, sizeof(key), "rfidu%d", i);
+      rfidCards[i].withdrawUsed = prefs.getInt(key, 0);
+    }
+    rfidCardCount = old;
+    if (old > 0 && fsOk && rfidFileWriteAll()) {
+      for (int i = 0; i < old; i++) {
+        char key[10];
+        snprintf(key, sizeof(key), "rfid%d", i);  prefs.remove(key);
+        snprintf(key, sizeof(key), "rfidn%d", i); prefs.remove(key);
+        snprintf(key, sizeof(key), "rfidl%d", i); prefs.remove(key);
+        snprintf(key, sizeof(key), "rfidu%d", i); prefs.remove(key);
+      }
+      prefs.remove("rfidcount");
+      Serial.printf("RFID: moved %d card(s) from NVS to %s\n", old, RFID_FILE);
+    }
+  }
+
+  for (int i = 0; i < rfidCardCount; i++) {      // never trust the strings to be terminated
+    rfidCards[i].uid[sizeof(rfidCards[i].uid) - 1] = 0;
+    rfidCards[i].name[sizeof(rfidCards[i].name) - 1] = 0;
+  }
 }
 
 // -1 when no card matches — callers that need the row (edit, limit checks)
@@ -308,7 +395,7 @@ bool isCardRegistered(const char* uid) {
 
 // Returns false if the card is already registered or the list is full.
 bool addRFIDCard(const char* uid) {
-  if (strlen(uid) == 0 || rfidCardCount >= MAX_RFID_CARDS) return false;
+  if (strlen(uid) == 0 || rfidCardCount >= rfidCardCap) return false;
   if (isCardRegistered(uid)) return false;
   RFIDCard &c = rfidCards[rfidCardCount];
   strncpy(c.uid, uid, sizeof(c.uid) - 1);
@@ -321,25 +408,13 @@ bool addRFIDCard(const char* uid) {
   return true;
 }
 
-// Shifts every later card down one slot so the stored list never has a gap
-// in the middle — loadRFIDCards() only reads rfid0..rfid(count-1).
+// Shifts every later card down one slot so the stored list never has a gap in the middle, then
+// rewrites the file once (one write for up to 1000 cards, not one per shifted card).
 void removeRFIDCard(int index) {
   if (index < 0 || index >= rfidCardCount) return;
-  for (int i = index; i < rfidCardCount - 1; i++) {
-    rfidCards[i] = rfidCards[i + 1];
-    saveRFIDCardSlot(i);
-  }
+  for (int i = index; i < rfidCardCount - 1; i++) rfidCards[i] = rfidCards[i + 1];
   rfidCardCount--;
-  char key[10];
-  snprintf(key, sizeof(key), "rfid%d", rfidCardCount);
-  prefs.remove(key);
-  snprintf(key, sizeof(key), "rfidn%d", rfidCardCount);
-  prefs.remove(key);
-  snprintf(key, sizeof(key), "rfidl%d", rfidCardCount);
-  prefs.remove(key);
-  snprintf(key, sizeof(key), "rfidu%d", rfidCardCount);
-  prefs.remove(key);
-  prefs.putInt("rfidcount", rfidCardCount);
+  saveAllRFIDCards();
 }
 
 void setRFIDCardName(int i, const char* name) {
@@ -431,7 +506,8 @@ void maintainRFIDResetSchedule() {
   int nowMin = currentMinutesOfDay();          // Core_16_ReportSchedule.ino
   if (nowMin < 0 || nowMin < rfidResetHour * 60 + rfidResetMinute) return;
 
-  for (int i = 0; i < rfidCardCount; i++) resetRFIDCardUsage(i);
+  for (int i = 0; i < rfidCardCount; i++) rfidCards[i].withdrawUsed = 0;
+  saveAllRFIDCards();   // one write, not one per card
 
   rfidResetFiredMonth = yyyymm;
   saveRFIDResetFired();

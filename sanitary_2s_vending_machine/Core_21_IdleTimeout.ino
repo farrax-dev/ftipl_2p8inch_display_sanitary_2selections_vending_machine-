@@ -57,9 +57,8 @@ void drawIdleCountdown(int remainingSec) {
 
 void showIdleTimeoutWarning() {
   drawGradientBackground();
-  drawSerifLine("Sorry", 0, tft.width(), 70, COL_ERR_TEXT, 0);
-  drawSerifLine(TXT_TIME_OUT, 0, tft.width(), 108, COL_ERR_TEXT, 0);
-  drawSerifLine(TXT_NO_ACTIVITY_FOR_A_WHILE, 0, tft.width(), 150, COL_MSG_BODY, 1);
+  drawSerifLine("Sorry", 0, tft.width(), 100, COL_ERR_TEXT, 0);
+  drawSerifLine(TXT_NO_ACTIVITY_FOR_A_WHILE, 0, tft.width(), 142, COL_MSG_BODY, 1);
   delay(2000);
 }
 

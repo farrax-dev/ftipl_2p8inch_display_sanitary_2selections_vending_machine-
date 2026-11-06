@@ -6,15 +6,12 @@ void setup() {
   initRFID();
   initDropSensor();
 
-  // CFG_LTE_ENABLED specifically, not lteEnabled: this runs before
-  // loadPersistedProductData() below has loaded lteEnabled's real value from
-  // NVS, and hardware bring-up belongs to "is a modem fitted" (the compile-
-  // time macro), not "is the admin currently choosing to use it" (the
-  // runtime flag Admin > 4G/LTE Setup's toggle controls). Bringing the UART
-  // up whenever a modem is fitted, regardless of that toggle, is what lets
-  // switching it back on take effect immediately with no reboot needed.
+  // The modem's UART is NOT opened here any more. It is opened further down, once
+  // loadPersistedProductData() has loaded lteEnabled (the admin's on/off choice), and only when
+  // that is on - so a modem the admin switched off is left completely alone, exactly like a
+  // build with CFG_LTE_ENABLED false. Switching it back on from Admin > 4G/LTE Setup opens the
+  // port again at that moment (setLteEnabled()), so no reboot is needed.
   if (CFG_LTE_ENABLED) {
-    initLTEModem();
     runLTEATBridgeIfEnabled();  // TEMPORARY diagnostic - see Core_13_LTEModem.ino
   }
 
@@ -25,6 +22,7 @@ void setup() {
 
   ts.begin();
   loadPersistedProductData();
+  if (lteEnabled) initLTEModem();   // lteEnabled is already ANDed with CFG_LTE_ENABLED
 
   // Identifies the build on a bench full of machines. The seeding line printed
   // just above says whether an edited Config.h was picked up on this boot.
