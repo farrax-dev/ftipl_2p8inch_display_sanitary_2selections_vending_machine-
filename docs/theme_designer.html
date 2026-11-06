@@ -509,12 +509,22 @@ const SCREENS=[
 /* ===== Customer ===== */
 {id:"welcome",group:"Customer",name:"Welcome",fn(){
   rect(0,0,320,30,0,P.STRIP_BG);rect(0,31,320,1,0,P.STRIP_LINE);bmp("10:42 PM",10,8,2,P.STRIP_TIME);bmp("Mon 26 Oct",284,8,2,P.STRIP_DATE,"end");wifiGlyph(308,17,1,3,true);
-  cardShadow(16,40,288,138,16);rect(16,40,288,138,16,P.CARD_FILL,P.CARD_BORDER);rect(17,41,286,136,15,"none",P.CARD_RING);
-  {/* title + subtitle: one font, one colour; every line steps down together if any is too wide */
-    const L=["SANITARY","NAPKIN","VENDING MACHINE"];let f="LG";if(L.some(s=>tw(s,f)>288-16))f="MD";
-    const F=FACES[f],bh=F.y;
-    L.forEach((s,k)=>{const w=tw(s,f),top=40+(138-L.length*bh)/2+k*bh;txt(s,r1(160-w/2),r1(top+F.cap+.5),F.sz,F.w,P.CARD_TITLE,"start",null,w)})}
+  {/* "SANITARY NAPKIN" on one line + subtitle; one font and colour, all lines step down together if too wide */
+    const L=["SANITARY NAPKIN","VENDING MACHINE"];let f="LG";if(L.some(s=>tw(s,f)>288-16))f="MD";
+    const F=FACES[f],bh=F.y,h=Math.min(138,L.length*bh+44),y=40+(138-h)/2;
+    cardShadow(16,y,288,h,16);rect(16,y,288,h,16,P.CARD_FILL,P.CARD_BORDER);rect(17,y+1,286,h-2,15,"none",P.CARD_RING);
+    L.forEach((s,k)=>{const w=tw(s,f),top=y+(h-L.length*bh)/2+k*bh;txt(s,r1(160-w/2),r1(top+F.cap+.5),F.sz,F.w,P.CARD_TITLE,"start",null,w)})}
   rect(40,190,240,36,18,P.PILL_FILL,P.PILL_FILL);bmp(tx("Touch to Continue"),40,201,2,P.PILL_TEXT,"middle",240)}},
+{id:"welcome2",group:"Customer",name:"Welcome (new design - proposal)",fn(){
+  /* PROPOSAL: same strip; taller card with an accent bar and left-aligned title; pill with an outer ring and a chevron. Existing theme colours only. */
+  rect(0,0,320,30,0,P.STRIP_BG);rect(0,31,320,1,0,P.STRIP_LINE);bmp("10:42 PM",10,8,2,P.STRIP_TIME);bmp("Mon 26 Oct",284,8,2,P.STRIP_DATE,"end");wifiGlyph(308,17,1,3,true);
+  {const L=["SANITARY NAPKIN","VENDING MACHINE"];let f="LG";if(L.some(s=>tw(s,f)>250))f="MD";
+    const F=FACES[f],bh=F.y,h=Math.min(148,L.length*bh+44),y=38+(148-h)/2;
+    cardShadow(16,y,288,h,16);rect(16,y,288,h,16,P.CARD_FILL,P.CARD_BORDER);ring(16,y,288,h,16);rect(30,y+14,5,h-28,2,P.CARD_RING);
+    L.forEach((s,k)=>{const w=tw(s,f),top=y+(h-L.length*bh)/2+k*bh;txt(s,46,r1(top+F.cap+.5),F.sz,F.w,P.CARD_TITLE,"start",null,w)})}
+  rect(36,192,248,44,22,"none",P.CARD_RING);
+  rect(40,196,240,36,18,P.PILL_FILL,P.PILL_FILL);bmp(tx("Touch to Continue"),40,207,2,P.PILL_TEXT,"middle",210);
+  line(257,208,263,214,P.PILL_TEXT,3);line(263,214,257,220,P.PILL_TEXT,3)}},
 {id:"select",group:"Customer",name:"Select products",fn(){selectScreen(false)}},
 {id:"select2",group:"Customer",name:"Select products (item in cart)",fn(){selectScreen(true)}},
 {id:"cart",group:"Customer",name:"Your cart",fn(){

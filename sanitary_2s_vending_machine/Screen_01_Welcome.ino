@@ -53,39 +53,31 @@ void drawBigTitleLine(const char* text, int topY) {
 }
 
 void drawWelcomeCard() {
-  int x = 16, y = 40, w = tft.width() - 32, h = 138;
+  // The card is centred on the same point the old fixed 138px card was (y 40..178) and sized to
+  // the text, so a two-line title doesn't float in a mostly empty card.
+  const int x = 16, w = tft.width() - 32;
+  const int areaY = 40, areaH = 138, PAD = 22;
 
-  drawCardShadow(x, y, w, h, 16);
-  tft.fillRoundRect(x, y, w, h, 16, COL_CARD_FILL);
-  tft.drawRoundRect(x, y, w, h, 16, COL_CARD_BORDER);
-  tft.drawRoundRect(x + 1, y + 1, w - 2, h - 2, 15, COL_CARD_RING);
-
-  // Title comes from Config.h. Any of the three lines may be blank, so the
-  // block is centred on whatever is actually set rather than at fixed
-  // positions — a one-line title would otherwise sit high on the card with
-  // an obvious empty gap beneath it.
+  // Title comes from Config.h. Lines 1 and 2 share ONE line ("SANITARY NAPKIN"), the subtitle goes
+  // on the next. Any may be blank; the block is centred on whatever is set.
   bool has1 = (strlen(CFG_TITLE_LINE_1) > 0);
   bool has2 = (strlen(CFG_TITLE_LINE_2) > 0);
   bool hasSub = (strlen(CFG_TITLE_SUBTITLE) > 0);
 
-  // Serif, not sans — same family as the screen title strips
-  // (Core_08_UIHelpers.ino's drawHeaderTitle()) so every heading in the app
-  // reads as one typographic voice. 18pt, not 24pt — 24pt ran a line like
-  // "ALL PURPOSE" past the card's edge; 18pt is the next size down in the
-  // bundled Free* set.
-  // Size pinned to 1 before the face is set, for the reason spelled out in
-  // drawHeaderTitle() (Core_08_UIHelpers.ino): setTextSize() scales a custom
-  // font too, so 18pt at a leftover size 2 is 36pt and off the card. This
-  // card has always rendered right, but only because drawWelcomeClock() runs
-  // first and happens to leave the size at 1 — that is luck, not a contract.
-  // All lines (title and subtitle) share ONE font and ONE colour. The large face is used unless
-  // some line is too wide for the card, in which case every line steps down together.
-  const char* lines[3];
-  int n = 0;
-  if (has1)   lines[n++] = CFG_TITLE_LINE_1;
-  if (has2)   lines[n++] = CFG_TITLE_LINE_2;
-  if (hasSub) lines[n++] = CFG_TITLE_SUBTITLE;
+  char joined[40];
+  joined[0] = '\0';
+  if (has1) strlcpy(joined, CFG_TITLE_LINE_1, sizeof(joined));
+  if (has1 && has2) strlcat(joined, " ", sizeof(joined));
+  if (has2) strlcat(joined, CFG_TITLE_LINE_2, sizeof(joined));
 
+  const char* lines[2];
+  int n = 0;
+  if (has1 || has2) lines[n++] = joined;
+  if (hasSub)       lines[n++] = CFG_TITLE_SUBTITLE;
+
+  // Serif bold, one font and one colour for every line. The large face is used when every line fits
+  // the card, otherwise all lines step down together. Size is pinned to 1 first: setTextSize()
+  // scales a custom font too (see drawHeaderTitle() in Core_08_UIHelpers.ino).
   tft.setTextSize(1);
   const GFXfont* titleFont = &UI_FONT_LG;
   for (int pass = 0; pass < 2; pass++) {
@@ -99,11 +91,18 @@ void drawWelcomeCard() {
     if (fits || titleFont == &UI_FONT_MD) break;
     titleFont = &UI_FONT_MD;
   }
-  // The font's own line-height metric, not a guess.
-  const int BIG_H = titleFont->yAdvance;
-  int cursorY = y + (h - n * BIG_H) / 2;
+  const int BIG_H = titleFont->yAdvance;           // the font's own line height
+  int h = min(areaH, n * BIG_H + 2 * PAD);
+  int y = areaY + (areaH - h) / 2;
 
+  drawCardShadow(x, y, w, h, 16);
+  tft.fillRoundRect(x, y, w, h, 16, COL_CARD_FILL);
+  tft.drawRoundRect(x, y, w, h, 16, COL_CARD_BORDER);
+  tft.drawRoundRect(x + 1, y + 1, w - 2, h - 2, 15, COL_CARD_RING);
+
+  tft.setFont(titleFont);
   tft.setTextColor(COL_CARD_TITLE, COL_CARD_FILL);
+  int cursorY = y + (h - n * BIG_H) / 2;
   for (int k = 0; k < n; k++) { drawBigTitleLine(lines[k], cursorY); cursorY += BIG_H; }
   tft.setFont();  // back to the default font
 }
