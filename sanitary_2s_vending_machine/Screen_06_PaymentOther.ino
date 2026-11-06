@@ -73,7 +73,14 @@ const int COIN_ENABLE_PIN = 32;
 const bool COIN_POWER_PIN_FREE = (MAX_MOTORS < 5);
 const bool COIN_PULSE_PIN_FREE = (MAX_MOTORS < 6);
 
-const unsigned long COIN_TRAIN_GAP_MS = 200;    // silence -> burst is complete
+// A coin is a train of pulses; two pulses further apart than this belong to DIFFERENT coins.
+// It was 200 ms, which let a second coin dropped in right behind the first join its train
+// (1+1 read as one "Rs 2", 1+5 as an unrecognised 6, 2+2 as a "Rs 5"). Each coin's pulse train
+// has its own internal spacing, so this must stay larger than that spacing and smaller than the
+// gap between two quickly inserted coins. The Serial Monitor prints the measured spacing of
+// every coin ("spacing ms: ..."): if a single coin is ever split in two, raise this; if two
+// quick coins still merge, lower it. Always compare it with the numbers in the log.
+const unsigned long COIN_TRAIN_GAP_MS = 150;
 const unsigned long COIN_TRAIN_MAX_MS = 3000;   // safety cap on a stuck line
 const unsigned long CASH_TIMEOUT_MS   = (unsigned long)CFG_CASH_TIMEOUT_SEC * 1000UL;  // give up if nothing happens
 
@@ -83,7 +90,14 @@ const unsigned long CASH_TIMEOUT_MS   = (unsigned long)CFG_CASH_TIMEOUT_SEC * 10
 // appears; lower it (e.g. 500) if customers need to insert a coin sooner.
 const unsigned long COIN_POWER_SETTLE_MS = 1000;
 
-volatile uint32_t coinISRPulseCount = 0;
+// Every pulse is stamped with the time it happened, inside the interrupt, and queued here. The
+// main loop used to look only at "how many pulses so far" and "when was the last one", so a slow
+// loop pass (the screen redraw after a coin takes ~100+ ms) saw two coins' pulses at once and
+// could not tell they had been apart. With a timestamp per pulse the coins are split by their
+// real gaps, whenever the loop gets round to looking.
+const uint32_t COIN_RING_SIZE = 64;              // power of two; far more pulses than ever queue up
+volatile unsigned long coinRingMs[COIN_RING_SIZE];
+volatile uint32_t coinRingHead = 0;              // next slot to write - touched only by the ISR
 volatile unsigned long coinISRLastPulseMs = 0;
 volatile unsigned long coinISRIgnoreUntilMs = 0;  // pulses before this time are power-up noise
 
@@ -97,7 +111,8 @@ void IRAM_ATTR coinPulseISR() {
   if ((long)(now - coinISRIgnoreUntilMs) < 0) return;  // still settling after power-on
   if (now - coinISRLastPulseMs < COIN_DEBOUNCE_MS) return;
   coinISRLastPulseMs = now;
-  coinISRPulseCount++;
+  coinRingMs[coinRingHead & (COIN_RING_SIZE - 1)] = now;
+  coinRingHead = coinRingHead + 1;
 }
 
 // Same HIGH/LOW-energises convention as motorWrite() in Core_04_Hardware.ino
@@ -148,10 +163,14 @@ void coinAcceptorListen(bool on) {
   else    detachInterrupt(digitalPinToInterrupt(COIN_PIN));
 }
 
-int coinPulseCount = 0;  // pulses seen so far in the burst being timed
-bool coinBurstActive = false;
-unsigned long coinBurstStartMs = 0;
-uint32_t coinLastSeenISRCount = 0;
+// The coin (pulse train) currently being collected by pollCoinAcceptor(). Main loop only.
+const int COIN_LOG_MAX = 16;                     // pulses whose timing is kept for the log line
+uint32_t coinRingTail = 0;                       // next queued pulse to read
+int coinBurstCount = 0;                          // pulses in the current train (0 = none open)
+unsigned long coinBurstFirstMs = 0;
+unsigned long coinBurstLastMs = 0;
+unsigned long coinBurstMs[COIN_LOG_MAX];
+unsigned long coinPrevBurstEndMs = 0;            // when the previous coin's last pulse was, for the log
 
 int cashAmountDue = 0;
 bool cashAnyCoinAccepted = false;
@@ -162,12 +181,12 @@ uint16_t cashStatusColor = COL_MSG_BODY;
 
 void resetCoinAcceptorState() {
   noInterrupts();
-  coinISRPulseCount = 0;
+  coinRingHead = 0;
   coinISRLastPulseMs = 0;
   interrupts();
-  coinPulseCount = 0;
-  coinBurstActive = false;
-  coinLastSeenISRCount = 0;
+  coinRingTail = 0;
+  coinBurstCount = 0;
+  coinPrevBurstEndMs = 0;
 }
 
 // Classic pulse-count -> coin value table (tune to your acceptor's DIP-
@@ -181,54 +200,74 @@ int coinValueForPulseCount(int pulses) {
   return 0;  // unrecognized count -> not credited
 }
 
-// Returns the coin value just credited (>0), 0 if no burst has resolved yet,
-// -1 if a burst finished but didn't match a known coin value, or -2 if it
+// Closes the open pulse train and turns it into a coin value. Also prints each pulse's spacing
+// and how long after the previous coin this one started - the numbers to tune
+// COIN_TRAIN_GAP_MS with.
+int finishCoinBurst() {
+  int pulses = coinBurstCount;
+  char spacing[96];
+  int n = 0;
+  spacing[0] = 0;
+  for (int i = 1; i < pulses && i < COIN_LOG_MAX && n < (int)sizeof(spacing) - 8; i++) {
+    n += snprintf(spacing + n, sizeof(spacing) - n, " %lu", coinBurstMs[i] - coinBurstMs[i - 1]);
+  }
+  unsigned long sincePrev = coinPrevBurstEndMs ? (coinBurstFirstMs - coinPrevBurstEndMs) : 0;
+  coinPrevBurstEndMs = coinBurstLastMs;
+  coinBurstCount = 0;
+
+  int value = coinValueForPulseCount(pulses);
+  if (value <= 0) {
+    Serial.printf("coin acceptor: %d pulses (spacing ms:%s; %lu ms after previous coin) -> unrecognized\n",
+                  pulses, spacing, sincePrev);
+    return -1;
+  }
+  Serial.printf("coin acceptor: %d pulses (spacing ms:%s; %lu ms after previous coin) -> Rs %d\n",
+                pulses, spacing, sincePrev, value);
+  return value;
+}
+
+// Returns the coin value just credited (>0), 0 if no coin has resolved yet,
+// -1 if a train finished but didn't match a known coin value, or -2 if it
 // matched a real denomination the admin has disabled (Admin > Settings >
 // Coin). Either way the coin is already mechanically retained by the
-// acceptor — there's no path to return it, just to decline crediting it.
+// acceptor - there's no path to return it, just to decline crediting it.
+//
+// One coin per call: a train ends when the next pulse is >= COIN_TRAIN_GAP_MS after the
+// previous one (judged by the pulses' own timestamps, so it is right however late this runs),
+// or when the line has been quiet that long. Any later pulses stay queued for the next call.
 int pollCoinAcceptor() {
+  noInterrupts();
+  uint32_t head = coinRingHead;
+  interrupts();
+
   // Still settling after power-on: throw away anything seen and report nothing
   if ((long)(millis() - coinISRIgnoreUntilMs) < 0) {
-    noInterrupts();
-    coinISRPulseCount = 0;
-    interrupts();
-    coinLastSeenISRCount = 0;
-    coinPulseCount = 0;
-    coinBurstActive = false;
+    coinRingTail = head;
+    coinBurstCount = 0;
     return 0;
   }
 
-  noInterrupts();
-  uint32_t isrCount = coinISRPulseCount;
-  unsigned long lastPulseMs = coinISRLastPulseMs;
-  interrupts();
+  if (head - coinRingTail > COIN_RING_SIZE) coinRingTail = head - COIN_RING_SIZE;   // fell behind: oldest were overwritten
 
-  if (isrCount != coinLastSeenISRCount) {
-    if (!coinBurstActive) {
-      coinBurstActive = true;
-      coinBurstStartMs = millis();
+  while (coinRingTail != head) {
+    unsigned long t = coinRingMs[coinRingTail & (COIN_RING_SIZE - 1)];
+    if (coinBurstCount > 0 && (t - coinBurstLastMs) >= COIN_TRAIN_GAP_MS) {
+      return finishCoinBurst();                  // this pulse starts the NEXT coin; leave it queued
     }
-    coinPulseCount += (int)(isrCount - coinLastSeenISRCount);
-    coinLastSeenISRCount = isrCount;
+    if (coinBurstCount == 0) coinBurstFirstMs = t;
+    if (coinBurstCount < COIN_LOG_MAX) coinBurstMs[coinBurstCount] = t;
+    coinBurstCount++;
+    coinBurstLastMs = t;
+    coinRingTail++;
   }
 
-  if (!coinBurstActive) return 0;
+  if (coinBurstCount == 0) return 0;
 
-  bool gapElapsed = (millis() - lastPulseMs) >= COIN_TRAIN_GAP_MS;
-  bool tooLong    = (millis() - coinBurstStartMs) >= COIN_TRAIN_MAX_MS;
-  if (!gapElapsed && !tooLong) return 0;
-
-  int pulses = coinPulseCount;
-  int value = coinValueForPulseCount(pulses);
-  coinPulseCount = 0;
-  coinBurstActive = false;
-
-  if (value <= 0) {
-    Serial.printf("coin acceptor: %d pulses -> unrecognized\n", pulses);
-    return -1;
-  }
-  Serial.printf("coin acceptor: %d pulses -> Rs %d\n", pulses, value);
-  return value;
+  unsigned long now = millis();
+  bool quiet   = (now - coinBurstLastMs) >= COIN_TRAIN_GAP_MS;
+  bool tooLong = (now - coinBurstFirstMs) >= COIN_TRAIN_MAX_MS;
+  if (quiet || tooLong) return finishCoinBurst();
+  return 0;
 }
 
 // Total / Paid chips plus the big "Remaining" card — they all change together
