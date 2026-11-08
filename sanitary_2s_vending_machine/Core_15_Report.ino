@@ -176,6 +176,10 @@ String buildDailyHTML(uint32_t dateNum, bool hasCsv) {
        String(dayRevenue(slot)) + "</b></td></tr>";
   h += "<tr><td>Current Stock</td><td align=right><b>" + String(totalStockOnHand()) +
        "</b></td></tr>";
+  h += "<tr><td>Failed Partial Cash Payments</td><td align=right><b>" +
+       String(partialCountForDay(dateNum)) + "</b></td></tr>";
+  h += "<tr><td>Partial Payment Amount (not refunded)</td><td align=right><b>Rs. " +
+       String(partialAmountForDay(dateNum)) + "</b></td></tr>";
   h += "</table>";
 
   // 3. Per-product movement: opened with, sold, left, at what price, paid how.
@@ -236,6 +240,12 @@ String buildDailyHTML(uint32_t dateNum, bool hasCsv) {
   h += "<tr style='background:#eee'><td><b>TOTAL</b></td><td align=right><b>" +
        String(slot >= 0 ? dailyHistory[slot].txns : 0) + "</b></td>";
   h += "<td align=right><b>" + String(dayRevenue(slot)) + "</b></td></tr>";
+  // Shown below the total: this money was taken but no order completed, so it is not in TOTAL.
+  if (partialCountForDay(dateNum) > 0) {
+    h += "<tr style='color:#c00'><td>Cash - partial, failed (not in total)</td><td align=right>" +
+         String(partialCountForDay(dateNum)) + "</td><td align=right>" +
+         String(partialAmountForDay(dateNum)) + "</td></tr>";
+  }
   h += "</table>";
 
   if (!anySale) h += "<p style='color:#888'>No sales were recorded in this period.</p>";
@@ -319,6 +329,10 @@ String buildFullHTML(bool csvTruncated) {
        String(n ? winRs / n : 0) + "</td></tr>";
   h += "<tr><td>Current Stock</td><td align=right><b>" + String(totalStockOnHand()) +
        "</b></td></tr>";
+  h += "<tr><td>Failed Partial Cash Payments</td><td align=right><b>" +
+       String(partialCountAll()) + "</b></td></tr>";
+  h += "<tr><td>Partial Payment Amount (not refunded)</td><td align=right><b>Rs. " +
+       String(partialAmountAll()) + "</b></td></tr>";
   h += "</table>";
 
   // Same columns as the daily table. "Start" is the stock the oldest stored
@@ -381,13 +395,19 @@ String buildFullHTML(bool csvTruncated) {
   }
   h += "<tr style='background:#eee'><td><b>TOTAL</b></td><td align=right><b>" +
        String(winTxns) + "</b></td><td align=right><b>" + String(winRs) + "</b></td></tr>";
+  if (partialCountAll() > 0) {
+    h += "<tr style='color:#c00'><td>Cash - partial, failed (not in total)</td><td align=right>" +
+         String(partialCountAll()) + "</td><td align=right>" + String(partialAmountAll()) +
+         "</td></tr>";
+  }
   h += "</table>";
 
 
   h += "<h3>Daily Breakdown</h3>";
   h += "<table border=1 cellpadding=4 cellspacing=0>";
   h += "<tr style='background:#eee'><th>Date</th><th>Transactions</th>"
-       "<th>Units Dispensed</th><th>Payment Received</th></tr>";
+       "<th>Units Dispensed</th><th>Payment Received</th>"
+       "<th>Failed Partial (count)</th><th>Failed Partial (Rs)</th></tr>";
   // Newest first — recent days are what anyone actually scans for.
   for (int k = n - 1; k >= 0; k--) {
     int s = order[k];
@@ -396,7 +416,9 @@ String buildFullHTML(bool csvTruncated) {
     h += "<tr><td>" + String(d) + "</td>";
     h += "<td align=right>" + String(dailyHistory[s].txns) + "</td>";
     h += "<td align=right>" + String(dayUnits(s)) + "</td>";
-    h += "<td align=right>" + String(dayRevenue(s)) + "</td></tr>";
+    h += "<td align=right>" + String(dayRevenue(s)) + "</td>";
+    h += "<td align=right>" + String(partialCountForDay(dailyHistory[s].date)) + "</td>";
+    h += "<td align=right>" + String(partialAmountForDay(dailyHistory[s].date)) + "</td></tr>";
   }
   h += "</table>";
   if (n == 0) h += "<p style='color:#888'>No dated sales recorded yet.</p>";

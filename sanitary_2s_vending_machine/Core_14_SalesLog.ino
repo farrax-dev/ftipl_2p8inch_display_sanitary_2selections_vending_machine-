@@ -62,6 +62,73 @@ const char* CSV_HEADER =
 DailyRecord dailyHistory[DAILY_HISTORY_DAYS];
 bool salesLogReady = false;
 
+// ---------- Failed partial cash payments ----------
+// A customer who pays only part of the price in coins and then walks away (the screen times out)
+// has paid real money for nothing - there is no refund path. That money is not a sale, so it stays
+// out of the sales figures above, but it must appear in every report. It lives in its own small
+// table (/partial.dat) rather than in DailyRecord so the existing daily.dat history is not
+// invalidated by a layout change.
+const char* PARTIAL_DAT_PATH = "/partial.dat";
+struct PartialRecord {
+  uint32_t date;     // YYYYMMDD, 0 = unused slot
+  uint16_t count;    // abandoned partial payments that day
+  uint32_t amount;   // total Rs inserted and not refunded
+};
+PartialRecord partialHistory[DAILY_HISTORY_DAYS];
+
+void savePartialHistory() {
+  if (!salesLogReady) return;
+  File f = LittleFS.open(PARTIAL_DAT_PATH, FILE_WRITE);
+  if (!f) return;
+  f.write((const uint8_t*)partialHistory, sizeof(partialHistory));
+  f.close();
+}
+
+void loadPartialHistory() {
+  memset(partialHistory, 0, sizeof(partialHistory));
+  if (!salesLogReady || !LittleFS.exists(PARTIAL_DAT_PATH)) return;
+  File f = LittleFS.open(PARTIAL_DAT_PATH, FILE_READ);
+  if (!f) return;
+  if (f.size() == sizeof(partialHistory)) f.read((uint8_t*)partialHistory, sizeof(partialHistory));
+  f.close();
+}
+
+// Index of the entry for `date`; -1 if none. With create it recycles the oldest entry when full.
+int partialSlotFor(uint32_t date, bool create) {
+  if (date == 0) return -1;
+  int freeIdx = -1, oldestIdx = 0;
+  uint32_t oldestDate = 0xFFFFFFFF;
+  for (int i = 0; i < DAILY_HISTORY_DAYS; i++) {
+    if (partialHistory[i].date == date) return i;
+    if (partialHistory[i].date == 0) { if (freeIdx < 0) freeIdx = i; continue; }
+    if (partialHistory[i].date < oldestDate) { oldestDate = partialHistory[i].date; oldestIdx = i; }
+  }
+  if (!create) return -1;
+  int idx = (freeIdx >= 0) ? freeIdx : oldestIdx;
+  memset(&partialHistory[idx], 0, sizeof(PartialRecord));
+  partialHistory[idx].date = date;
+  return idx;
+}
+
+int partialCountForDay(uint32_t date) {
+  int s = partialSlotFor(date, false);
+  return s >= 0 ? partialHistory[s].count : 0;
+}
+long partialAmountForDay(uint32_t date) {
+  int s = partialSlotFor(date, false);
+  return s >= 0 ? (long)partialHistory[s].amount : 0;
+}
+long partialCountAll() {
+  long t = 0;
+  for (int i = 0; i < DAILY_HISTORY_DAYS; i++) t += partialHistory[i].count;
+  return t;
+}
+long partialAmountAll() {
+  long t = 0;
+  for (int i = 0; i < DAILY_HISTORY_DAYS; i++) t += partialHistory[i].amount;
+  return t;
+}
+
 // ---------- Lifetime totals (NVS) ----------
 long lifetimeUnitsSold[MAX_PRODUCTS];
 long lifetimeRevenue[MAX_PRODUCTS];
@@ -374,6 +441,7 @@ void initSalesLog() {
     }
   }
   loadDailyHistory();
+  loadPartialHistory();
 
   int used = 0;
   for (int i = 0; i < DAILY_HISTORY_DAYS; i++) if (dailyHistory[i].date) used++;
@@ -439,7 +507,24 @@ void recordTransaction(const char* paymentMethod) {
   saveDailyHistory();   // covers the txns/txnsByPay bump above; recordSale() already flushed its own per-line fields
 }
 
+// A cash payment that ended with only part of the price inserted (timed out). Rs `paid` was kept
+// by the coin acceptor and nothing was dispensed. Logged in the CSV (Payment Received = what was
+// inserted, QTY 0, Unit Price = the order total that was due) and in the daily partial table.
+void recordFailedPartialPayment(int paid, int due) {
+  if (paid <= 0) return;
+  uint32_t today = todayDateNum();
+  int s = partialSlotFor(today, true);
+  if (s >= 0) {
+    if (partialHistory[s].count < 65535) partialHistory[s].count++;
+    partialHistory[s].amount += (uint32_t)paid;
+    savePartialHistory();
+  }
+  appendTxnLine("PARTIAL PAYMENT - FAILED", due, 0, paid, "Cash-Partial-Failed", totalStockOnHand());
+}
+
 void resetSalesTotals() {
+  memset(partialHistory, 0, sizeof(partialHistory));
+  savePartialHistory();
   for (int i = 0; i < MAX_PRODUCTS; i++) {
     lifetimeUnitsSold[i] = 0;
     lifetimeRevenue[i] = 0;

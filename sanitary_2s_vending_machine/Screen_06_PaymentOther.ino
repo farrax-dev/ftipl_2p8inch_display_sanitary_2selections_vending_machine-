@@ -435,6 +435,11 @@ void handlePaymentCashScreen() {
     Serial.printf("coin acceptor: cash screen timed out, Rs %d of Rs %d still due\n",
                   cashAmountDue, orderTotal);
     coinAcceptorListen(false);
+    // Coins were inserted but the order was never fully paid: the money is kept, nothing is
+    // dispensed. Record it so the reports show it.
+    if (cashAnyCoinAccepted && cashAmountDue > 0) {
+      recordFailedPartialPayment(orderTotal - cashAmountDue, orderTotal);
+    }
 
     // Same "say what happened, then go home" shape as a successful dispense
     // above — any coins already credited are forfeited either way (no

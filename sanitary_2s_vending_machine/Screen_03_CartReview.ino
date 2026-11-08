@@ -65,10 +65,25 @@ void drawCartReviewScreen() {
 // largest (12pt, else 9pt) at which every name in the cart fits the text
 // column on one line and the row is tall enough. nullptr means neither fits
 // and the bitmap font is used instead.
+// Visible height of a capital in a font (resets the font to the default afterwards).
+// (Takes const void*: the Arduino auto-prototype for a function with a GFXfont parameter lands
+// before the type is declared and fails to compile.)
+int cartFontCapH(const void* font) {
+  int16_t x1, y1; uint16_t w, h;
+  tft.setTextSize(1);
+  tft.setFont((const GFXfont*)font);
+  tft.getTextBounds("H", 0, 0, &x1, &y1, &w, &h);
+  tft.setFont();
+  return (int)h;
+}
+
+// Regular-weight (not bold) serif for the name. The largest one that fits the text column AND,
+// when prices are shown, leaves room for the price line under it in this row height.
 const GFXfont* cartNameFont(int textW, int rowH) {
-  const GFXfont* candidates[2] = { &UI_FONT_MD, &UI_FONT_SM };
+  const GFXfont* candidates[2] = { &UI_FONT_RM, &UI_FONT_XS };
   for (int c = 0; c < 2; c++) {
     if (candidates[c]->yAdvance > rowH - 4) continue;
+    if (!hideProductPrices && cartFontCapH(candidates[c]) + 4 + uiBmpCapH(1) > rowH - 4) continue;
     tft.setTextSize(1);
     tft.setFont(candidates[c]);
     bool fits = true;
@@ -112,15 +127,21 @@ void drawCartRow(int i, int x, int y, int w, int h) {
   // showing the quantity, and "Rs15 x1 = Rs15" was restating that in the
   // least legible type on the screen.
   const GFXfont* nameFont = cartNameFont(textW, h);
-  int nameSize = (h - 4 >= uiBmpCapH(2)) ? 2 : 1;   // fallback only: the larger size needs its font's caps to fit the row
+  int nameSize = (h - 4 >= uiBmpCapH(2) && (hideProductPrices || uiBmpCapH(2) + 4 + uiBmpCapH(1) <= h - 4)) ? 2 : 1;  // fallback only: the larger size needs its font's caps to fit the row
 
   // Everything is placed by CAP HEIGHT (the visible height of a capital letter), not by the font's
   // line height. yAdvance includes leading and descender room that is not ink, so stacking by it
   // let the price line of a 47px row (3 items) run off the bottom of the card, and centred a lone
   // name (4-5 items) a few pixels above the +/- buttons it sits beside.
-  const int ROW_LINE_GAP = 8;    // from the bottom of the name's capitals to the top of the price's
-  const int ROW_MARGIN   = 8;    // total spare room kept top and bottom, descenders included
-  int nameCap = nameFont ? uiBmpCapH(nameFont == &UI_FONT_MD ? 2 : 1) : uiBmpCapH(nameSize);
+  int ROW_LINE_GAP = 8;    // from the bottom of the name's capitals to the top of the price's
+  int ROW_MARGIN   = 8;    // total spare room kept top and bottom, descenders included
+  int nameCap = nameFont ? cartFontCapH(nameFont) : uiBmpCapH(nameSize);
+  // With 4 items a row is only ~34px: the roomy spacing above left no space for the price line, so
+  // it was dropped. Tighten the spacing before giving the price up.
+  if (!hideProductPrices && nameCap + ROW_LINE_GAP + uiBmpCapH(1) > h - ROW_MARGIN) {
+    ROW_LINE_GAP = 4;
+    ROW_MARGIN   = 4;
+  }
   bool twoLine = !hideProductPrices && (nameCap + ROW_LINE_GAP + uiBmpCapH(1) <= h - ROW_MARGIN);
 
   int moneySize = 0;

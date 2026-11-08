@@ -179,7 +179,7 @@
 // Maximum items in one purchase. Setting this to 1 with a single enabled
 // product turns on quick-vend: the cart is hidden and tapping the product
 // goes straight to payment.
-#define CFG_MAX_CART_QTY       3
+#define CFG_MAX_CART_QTY       4
 
 // PIN for the admin menu, reached by holding any screen corner for 2 seconds.
 #define CFG_ADMIN_PIN          "1234"
