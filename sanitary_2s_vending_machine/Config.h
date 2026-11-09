@@ -120,6 +120,11 @@
 // here).
 #define CFG_STOCK_MAX          25
 
+// Stock every motor is set to right after flashing a build whose Config.h
+// changed (same trigger as the other seeded values). Capped at each motor's
+// capacity. Change this number to make the next flash reseed to a new value.
+#define CFG_STOCK_INITIAL      5
+
 // Unit shown after the quantity-available figure on the product select
 // screen, e.g. a stock of 20 reads "20" with this left as "", "20ml" with
 // this set to "ml", or "20 Units" with this set to " Units" (include the
@@ -182,7 +187,7 @@
 #define CFG_MAX_CART_QTY       4
 
 // PIN for the admin menu, reached by holding any screen corner for 2 seconds.
-#define CFG_ADMIN_PIN          "1234"
+#define CFG_ADMIN_PIN          "12345"
 
 // Which payment methods this machine can use at all. Admin > Settings only
 // shows a toggle for methods listed here — leaving one out removes it from

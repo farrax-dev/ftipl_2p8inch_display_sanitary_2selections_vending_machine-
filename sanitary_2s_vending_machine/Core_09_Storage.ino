@@ -559,6 +559,7 @@ uint32_t configFingerprint() {
                String(CFG_MAX_CART_QTY) +
                String(CFG_LOW_STOCK_LEVEL) + String(CFG_LOW_STOCK_ALERT ? 1 : 0) +
                String(CFG_MOTOR_COUNT) + String(CFG_PRODUCT_COUNT) +
+               String(CFG_STOCK_INITIAL) +
                String(CFG_FREE_VEND_MODE ? 1 : 0);
 
   uint32_t h = 2166136261u;
@@ -579,7 +580,8 @@ void loadPersistedProductData() {
   // nothing on a machine that already has settings stored, because
   // getString() prefers the stored value.
   uint32_t fp = configFingerprint();
-  if (prefs.getULong("cfgfp", 0) != fp) {
+  bool reseeded = (prefs.getULong("cfgfp", 0) != fp);
+  if (reseeded) {
     Serial.printf("Config: contents changed, seeding defaults (fingerprint %08X)\n",
                   (unsigned)fp);
     prefs.putString("machname", CFG_MACHINE_NAME);
@@ -698,6 +700,10 @@ void loadPersistedProductData() {
     motorMax[m] = constrain(prefs.getInt(keyMax, stockMaxAll), 1, STOCK_MAX_LIMIT);
     snprintf(keyMStock, sizeof(keyMStock), "mstock%d", m);
     motorStock[m] = min((int)prefs.getInt(keyMStock, motorMax[m]), (int)motorMax[m]);
+    if (reseeded) {
+      motorStock[m] = min((int)CFG_STOCK_INITIAL, (int)motorMax[m]);
+      saveMotorStockSlot(m);
+    }
   }
 
   for (int i = 0; i < MAX_PRODUCTS; i++) {
