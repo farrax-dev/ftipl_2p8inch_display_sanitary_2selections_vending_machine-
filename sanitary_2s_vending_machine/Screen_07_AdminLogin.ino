@@ -96,6 +96,8 @@ void handleAdminLoginScreen() {
             currentScreen = SCREEN_ADMIN_PANEL;
             drawAdminPanelScreen();
           } else {
+            // TEMPORARY DEBUG: remove once the PIN problem is solved.
+            Serial.printf("DEBUG PIN: entered \"%s\" but expected \"%s\"\n", pinBuffer, adminPin);
             drawPinField("Wrong PIN", COL_ERR_TEXT);
             delay(900);
             pinBuffer[0] = '\0';

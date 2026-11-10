@@ -656,6 +656,9 @@ void loadPersistedProductData() {
   prefs.getString("storeid", "").toCharArray(storeId, sizeof(storeId));
   prefs.getString("machname", CFG_MACHINE_NAME).toCharArray(machineName, sizeof(machineName));
   prefs.getString("adminpin", CFG_ADMIN_PIN).toCharArray(adminPin, sizeof(adminPin));
+  // TEMPORARY DEBUG: remove once the PIN problem is solved.
+  Serial.printf("DEBUG PIN: active admin PIN = \"%s\" (Config.h seed = \"%s\", reseeded this boot = %d, fingerprint %08X)\n",
+                adminPin, CFG_ADMIN_PIN, (int)reseeded, (unsigned)fp);
 
   prefs.getString("reportto", DEFAULT_REPORT_TO).toCharArray(reportTo, sizeof(reportTo));
   prefs.getString("gmailuser", DEFAULT_GMAIL_USER).toCharArray(gmailUser, sizeof(gmailUser));
